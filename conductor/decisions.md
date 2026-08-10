@@ -181,6 +181,21 @@
 - **Decision:** Many commercial/product formulas do **not** block Phase 1. Mark them `DEFERRED — OWNER DECISION REQUIRED BEFORE RELEVANT IMPLEMENTATION PHASE`. Build interfaces/extension points; do not invent answers. Full list in `open-questions.md`.
 - **Owner review:** Complete
 
+### ADR-020 — One-time Owner bootstrap (Phase 1 closeout)
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 closeout)
+- **Decision:** Owner bootstrap requires configured identity + secret + registered user; persists completion in DB; rejects if already completed or active OWNER exists; constant-time secret compare; no secret leakage; not reusable via env token alone after completion.
+- **Owner review:** Complete
+
+### ADR-021 — Privileged MFA Phase 1 vs Phase 2
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 closeout)
+- **Decision:** Phase 1 is **MFA-READY, NOT YET PRODUCTION-ENFORCED**. Phase 2 must implement real privileged MFA enrollment/challenge before privileged production access.
+- **Owner review:** Complete
+
+### ADR-022 — Copyright vs third-party licences
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 closeout)
+- **Decision:** Voxora product copyright © Maryke Farrell. All rights reserved. Expo template MIT preserved only as third-party attribution (`apps/mobile/THIRD_PARTY_NOTICES.md`). Do not present Voxora as MIT. Public OSS licence for Voxora-owned code requires **OWNER / LEGAL DECISION**.
+- **Owner review:** Complete
+
 ---
 
 ## Process gate
@@ -188,7 +203,6 @@
 | Gate | Status |
 |------|--------|
 | Phase 0 architecture approved with amendments | **YES** (2026-08-10) |
-| Phase 0 documentation updated to reflect decisions | In progress / this document |
-| Phase 0 on `main` before Phase 1 code | Required |
-| Phase 1 authorised after documentation update | **YES** — Core Foundation only |
-| Phase 2 | **NOT authorised** until Phase 1 owner review |
+| Phase 0 on `main` | **YES** |
+| Phase 1 Core Foundation + closeout | **READY FOR OWNER MERGE REVIEW** (PR #2) |
+| Phase 2 | **NOT authorised** until Phase 1 merged + explicit Phase 2 authorisation |

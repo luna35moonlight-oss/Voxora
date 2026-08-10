@@ -1,3 +1,23 @@
+# Third-party notices (mobile app packaging)
+
+This directory records **third-party / open-source** licence texts that must be preserved for attribution.
+
+Voxora application source, branding, and product assets are **not** licensed under these third-party terms.
+
+Voxora product copyright:
+
+**© Maryke Farrell. All rights reserved.**
+
+See repository root [`NOTICE.md`](../../NOTICE.md) and [`README.md`](../../README.md).
+
+---
+
+## Expo blank-typescript template
+
+The Expo application was initially scaffolded from Expo’s `blank-typescript` template.
+The following MIT licence applies to that **template material from 650 Industries, Inc. (Expo)** and does **not** license the Voxora product as MIT.
+
+```text
 The MIT License (MIT)
 
 Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)
@@ -19,3 +39,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+Additional dependency licences are carried by those packages under `node_modules` / package manager metadata and must be respected when redistributing binaries.

@@ -14,6 +14,7 @@ import { RbacService } from '../rbac/rbac.service';
 import { AuditService } from '../audit/audit.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
+import { OWNER_BOOTSTRAP_COMPLETION_ID, safeEqualSecret } from './crypto.util';
 
 @Injectable()
 export class AuthService {
@@ -75,13 +76,14 @@ export class AuthService {
     const roles = await this.rbac.getUserRoles(user.id);
     const privileged = roles.some((r) => isPrivilegedRole(r as ContractRole));
     if (privileged && !user.mfaEnabled) {
-      // MFA challenge enforcement for production privileged access is required by policy.
-      // Phase 1 records the gate; full TOTP challenge UX arrives with MFA enrollment flows.
+      // PHASE 1 STATUS: MFA-READY, NOT YET PRODUCTION-ENFORCED.
+      // Privileged login without MFA is audited but still issues a session in Phase 1.
+      // Phase 2 must enforce real MFA enrollment/challenge before privileged production access.
       await this.audit.record({
         actorId: user.id,
         action: 'auth.privileged_login_without_mfa',
         subject: user.id,
-        payload: { roles },
+        payload: { roles, mfaStatus: 'ready_not_enforced' },
       });
     }
 
@@ -163,34 +165,79 @@ export class AuthService {
   }
 
   /**
-   * Secure owner bootstrap: requires matching configured email + one-time server token.
-   * Never elevate solely because email matches OWNER_BOOTSTRAP_EMAIL.
+   * Genuine one-time Owner bootstrap.
+   * Requires configured identity + secret + registered user.
+   * Email alone or token alone never grants Owner.
+   * Completion is persisted in DB and survives restarts.
+   * Bootstrap secrets are never returned in responses or audit payloads.
    */
   async bootstrapOwner(email: string, bootstrapToken: string) {
-    // Read from process.env at call time so local/test/runtime injection cannot drift
-    // from ConfigModule decorator load order. Never elevate on email alone.
     const configuredEmail = process.env.OWNER_BOOTSTRAP_EMAIL;
     const configuredToken = process.env.OWNER_BOOTSTRAP_TOKEN;
+    const normalizedEmail = email.trim().toLowerCase();
 
     if (!configuredEmail || !configuredToken || configuredToken.length < 16) {
       throw new BadRequestException('Owner bootstrap is not configured');
     }
-    if (email.trim().toLowerCase() !== configuredEmail.trim().toLowerCase()) {
-      throw new UnauthorizedException('Bootstrap rejected');
+
+    if (await this.isOwnerBootstrapComplete()) {
+      await this.audit.record({
+        action: 'owner.bootstrap_rejected_already_complete',
+        subject: normalizedEmail,
+        payload: { reason: 'bootstrap_already_completed' },
+      });
+      throw new ConflictException('Owner bootstrap has already been completed');
     }
-    if (bootstrapToken !== configuredToken) {
+
+    if (await this.hasActiveOwnerAssignment()) {
+      await this.audit.record({
+        action: 'owner.bootstrap_rejected_owner_exists',
+        subject: normalizedEmail,
+        payload: { reason: 'active_owner_exists' },
+      });
+      throw new ConflictException('An Owner already exists');
+    }
+
+    const emailMatches = safeEqualSecret(normalizedEmail, configuredEmail.trim().toLowerCase());
+    const tokenMatches = safeEqualSecret(bootstrapToken, configuredToken);
+
+    // Both identity and secret required — never elevate on either alone.
+    if (!emailMatches || !tokenMatches) {
       await this.audit.record({
         action: 'owner.bootstrap_rejected',
-        subject: email.trim().toLowerCase(),
+        subject: normalizedEmail,
+        payload: { reason: 'identity_or_secret_mismatch' },
       });
       throw new UnauthorizedException('Bootstrap rejected');
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
+      where: { email: normalizedEmail },
     });
     if (!user) {
+      await this.audit.record({
+        action: 'owner.bootstrap_rejected',
+        subject: normalizedEmail,
+        payload: { reason: 'user_not_registered' },
+      });
       throw new BadRequestException('User must register before owner bootstrap');
+    }
+
+    try {
+      await this.prisma.ownerBootstrapCompletion.create({
+        data: {
+          id: OWNER_BOOTSTRAP_COMPLETION_ID,
+          ownerUserId: user.id,
+          completedAt: new Date(),
+        },
+      });
+    } catch {
+      await this.audit.record({
+        action: 'owner.bootstrap_rejected_already_complete',
+        subject: normalizedEmail,
+        payload: { reason: 'bootstrap_race_or_duplicate' },
+      });
+      throw new ConflictException('Owner bootstrap has already been completed');
     }
 
     await this.rbac.assignRole({
@@ -202,9 +249,27 @@ export class AuthService {
       actorId: user.id,
       action: 'owner.bootstrap_assigned',
       subject: user.id,
+      payload: { via: 'one_time_bootstrap' },
     });
 
     return { status: 'owner_assigned' as const, userId: user.id };
+  }
+
+  async isOwnerBootstrapComplete(): Promise<boolean> {
+    const row = await this.prisma.ownerBootstrapCompletion.findUnique({
+      where: { id: OWNER_BOOTSTRAP_COMPLETION_ID },
+    });
+    return Boolean(row);
+  }
+
+  async hasActiveOwnerAssignment(): Promise<boolean> {
+    const count = await this.prisma.roleAssignment.count({
+      where: {
+        revokedAt: null,
+        role: { name: RoleName.OWNER },
+      },
+    });
+    return count > 0;
   }
 
   private async createEmailVerification(userId: string) {

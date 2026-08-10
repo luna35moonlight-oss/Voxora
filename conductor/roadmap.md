@@ -16,43 +16,29 @@ Documentation update incorporates those decisions.
 
 ---
 
-## Phase 1 — Core foundation — AUTHORISED AFTER PHASE 0 DOCS ON MAIN
+## Phase 1 — Core foundation — READY FOR OWNER MERGE REVIEW
 
-Scope (only):
+Delivered (including closeout):
 
-- monorepo foundation (`apps/mobile`, `apps/api`, real `packages/*` only when needed)
-- mobile application skeleton (Expo RN stable SDK, Android API 29+, iOS 16.4+)
-- API/backend skeleton (NestJS modular monolith)
-- PostgreSQL foundation + Prisma migrations (Phase 1 entities only)
-- Redis/job infrastructure foundation (BullMQ or equivalent)
-- environment configuration structure
-- shared contracts / config / design-system / testing helpers as needed
-- authentication foundation
-- RBAC foundation + permission architecture
-- MFA capability foundation (privileged roles policy documented)
-- security controls
-- feature flags foundation
-- audit foundation
-- structured logging + error handling + health checks
-- testing infrastructure + CI checks + development tooling
+- monorepo foundation (`apps/mobile`, `apps/api`, real `packages/*`)
+- Expo SDK 57 skeleton (Android API 29 / iOS 16.4)
+- NestJS + PostgreSQL + Prisma + Redis/BullMQ foundation
+- auth / RBAC / audit / feature flags / health / CI
+- **one-time Owner bootstrap** (DB-persisted completion)
+- MFA schema + **MFA-READY, NOT YET PRODUCTION-ENFORCED** documentation
+- copyright vs third-party licence notices
 
-**Explicitly out of Phase 1:**
+**Explicitly out of Phase 1 (confirmed):** Bondfire, Alpha providers, avatars/pets/Scene/Interaction production, games, battles, Wellness, mail/calendar, fake social/billing success.
 
-- Phase 2 onboarding/commercial product behaviour
-- Bondfire UI/functionality
-- pets, battles, games, Wellness
-- fake Connected/Verified provider screens
-- mass screen generation
-- permanent AI/STT/TTS vendor selection
-- inventing deferred commercial formulas
-
-**Exit / completion report required** (see owner Phase 1 checklist), then:
-
-# OWNER REVIEW REQUIRED BEFORE PHASE 2
+# PHASE 1 READY FOR OWNER MERGE REVIEW
 
 ---
 
 ## Phase 2 — Account and commercial foundation
+
+**Not authorised until Phase 1 is merged and Phase 2 is explicitly authorised.**
+
+Must include (when authorised):
 
 - Resumable onboarding  
 - Email verification (full product flows)  
@@ -61,11 +47,10 @@ Scope (only):
 - Products, prices (server)  
 - Subscriptions + Apple/Google receipt validation  
 - Entitlements engine  
-- Trials structure (Wellness trial wiring later)
+- Trials structure (Wellness trial wiring later)  
+- **Full privileged MFA enrollment/challenge enforcement** (OWNER/ADMIN/MODERATOR/SUPPORT) — no audit-only bypass
 
-**Exit criteria:** User can register, verify, subscribe (sandbox), receive entitlements; prices not hard-coded in UI.
-
-**Not started until Phase 1 owner approval.**
+**Exit criteria:** User can register, verify, subscribe (sandbox), receive entitlements; prices not hard-coded in UI; privileged MFA enforced.
 
 ---
 

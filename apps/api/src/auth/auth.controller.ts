@@ -53,7 +53,12 @@ export class AuthController {
 
   @Post('bootstrap-owner')
   @HttpCode(200)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({
+    default: {
+      limit: process.env.NODE_ENV === 'test' ? 10_000 : 5,
+      ttl: 60_000,
+    },
+  })
   bootstrapOwner(@Body(new ZodValidationPipe(BootstrapOwnerSchema)) body: unknown) {
     const data = BootstrapOwnerSchema.parse(body);
     return this.auth.bootstrapOwner(data.email, data.bootstrapToken);

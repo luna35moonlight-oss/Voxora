@@ -24,7 +24,8 @@ import { validateEnv } from './config/validate-env';
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
-        limit: 100,
+        // Elevated in automated tests so security suites are not blocked by abuse limits.
+        limit: process.env.NODE_ENV === 'test' ? 10_000 : 100,
       },
     ]),
     PrismaModule,

@@ -155,3 +155,12 @@ model AuditEvent {
   @@index([action, createdAt])
   @@index([actorId])
 }
+
+/// Singleton durable record proving Owner bootstrap completed.
+/// Key is always "owner_bootstrap". Survives restarts; bootstrap cannot reuse env token after this exists.
+model OwnerBootstrapCompletion {
+  id          String   @id
+  ownerUserId String   @db.Uuid
+  completedAt DateTime
+  createdAt   DateTime @default(now())
+}
