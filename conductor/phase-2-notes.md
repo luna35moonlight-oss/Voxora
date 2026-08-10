@@ -1,9 +1,14 @@
 # Voxora Phase 2 — Account & Commercial Foundation
 
-**Document status:** IMPLEMENTED — OWNER REVIEW REQUIRED BEFORE PHASE 3  
+**Document status:** PHASE 2 READY FOR OWNER MERGE REVIEW  
 **Product owner:** Maryke Farrell  
 **Branch:** `cursor/phase-2-account-commercial-9cb3`  
+**PR:** #3  
 **Last updated:** 2026-08-10  
+
+### CURRENT PRIVILEGED IDENTITY POLICY: SINGLE OWNER — MARYKE FARRELL
+
+Maryke Farrell is the sole privileged human account. One OWNER via bootstrap. ADMIN / MODERATOR / SUPPORT remain in RBAC for future authorised use only — not assigned now. OWNER is not dual-labelled with ADMIN.
 
 ---
 
@@ -48,11 +53,11 @@ Manual stage skipping is rejected (`403`).
 - Level 3 Wellness **trial architecture only** (`ARCHITECTURE_ONLY`) — no Wellness product start  
 - Level 4 Bondfire quota **not invented** (open question)
 
-### Privileged MFA
+### Privileged MFA + session assurance (closeout)
 
 Phase 1 “MFA-READY, NOT YET PRODUCTION-ENFORCED” is closed for privileged roles.
 
-OWNER / ADMIN / MODERATOR / SUPPORT:
+OWNER / ADMIN / MODERATOR / SUPPORT (when assigned):
 
 1. Primary auth  
 2. Enrollment required if MFA disabled  
@@ -60,8 +65,12 @@ OWNER / ADMIN / MODERATOR / SUPPORT:
 4. Enable only after valid code  
 5. Challenge required on subsequent privileged login  
 6. No full privileged session before MFA success  
+7. Session records store server-authoritative `authenticationAssurance` + `mfaVerifiedAt`  
+8. Refresh rejects privileged accounts without MFA-assured sessions (no silent USER→OWNER upgrade)  
+9. Owner bootstrap revokes pre-Owner sessions and returns **role only** (no privileged tokens)  
+10. Privileged role grant/revoke and MFA reset invalidate sessions  
 
-Audit events: enrollment, enable, challenge success/failure, reset.
+Audit events: enrollment, enable, challenge success/failure, reset, refresh rejection, session revocation.
 
 ### Settings
 
@@ -85,4 +94,4 @@ Remain in `conductor/open-questions.md` with **OWNER DECISION REQUIRED BEFORE RE
 
 ---
 
-# OWNER REVIEW REQUIRED BEFORE PHASE 3
+# PHASE 2 READY FOR OWNER MERGE REVIEW

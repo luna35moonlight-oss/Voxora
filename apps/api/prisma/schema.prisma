@@ -195,15 +195,23 @@ model AuthIdentity {
   @@index([userId])
 }
 
+enum AuthenticationAssurance {
+  PASSWORD
+  MFA
+}
+
 model Session {
-  id               String    @id @default(uuid()) @db.Uuid
-  userId           String    @db.Uuid
-  refreshTokenHash String
-  deviceLabel      String?
-  expiresAt        DateTime
-  revokedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                       String                    @id @default(uuid()) @db.Uuid
+  userId                   String                    @db.Uuid
+  refreshTokenHash         String
+  deviceLabel              String?
+  /// Server-authoritative MFA proof for this session chain. Never trust client-provided flags.
+  authenticationAssurance  AuthenticationAssurance   @default(PASSWORD)
+  mfaVerifiedAt            DateTime?
+  expiresAt                DateTime
+  revokedAt                DateTime?
+  createdAt                DateTime                  @default(now())
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([refreshTokenHash])

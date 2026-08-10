@@ -32,8 +32,9 @@ export function verifyTotp(
 
   for (let offset = -window; offset <= window; offset += 1) {
     const candidateStep = step + offset;
-    if (options?.lastUsedStep != null && candidateStep <= options.lastUsedStep) {
-      continue; // replay protection
+    // Replay protection: reject only the exact previously accepted step (not all older steps).
+    if (options?.lastUsedStep != null && candidateStep === options.lastUsedStep) {
+      continue;
     }
     const expected = hotp(secret, candidateStep);
     if (equalDigits(expected, code)) {

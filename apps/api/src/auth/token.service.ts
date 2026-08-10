@@ -3,6 +3,15 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { ApiEnv } from '@voxora/config';
+import type { AuthLevel } from './session-assurance';
+
+export type AccessTokenPayload = {
+  sub: string;
+  email: string;
+  roles: string[];
+  /** Server-issued only — never accept from client. */
+  authLevel: AuthLevel;
+};
 
 @Injectable()
 export class TokenService {
@@ -11,7 +20,7 @@ export class TokenService {
     private readonly config: ConfigService<ApiEnv, true>,
   ) {}
 
-  async signAccessToken(payload: { sub: string; email: string; roles: string[] }) {
+  async signAccessToken(payload: AccessTokenPayload) {
     return this.jwt.signAsync(payload, {
       secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
       expiresIn: this.config.get('JWT_ACCESS_TTL', { infer: true }),
@@ -19,7 +28,7 @@ export class TokenService {
   }
 
   async verifyAccessToken(token: string) {
-    return this.jwt.verifyAsync<{ sub: string; email: string; roles: string[] }>(token, {
+    return this.jwt.verifyAsync<AccessTokenPayload>(token, {
       secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
     });
   }

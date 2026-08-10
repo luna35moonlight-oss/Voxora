@@ -1,7 +1,10 @@
+import type { AuthLevel } from './session-assurance';
+
 export type AuthUserPayload = {
   userId: string;
   email: string;
   roles: string[];
+  authLevel: AuthLevel;
 };
 
 export type AuthenticatedRequest = {

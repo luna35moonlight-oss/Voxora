@@ -44,6 +44,11 @@ describe('totp util', () => {
 
     const replay = verifyTotp(secret, code, { nowMs, lastUsedStep: first.step });
     expect(replay.valid).toBe(false);
+
+    // Adjacent window remains usable after consuming the current step.
+    const nextCode = hotp(secret, step + 1);
+    const adjacent = verifyTotp(secret, nextCode, { nowMs, lastUsedStep: first.step });
+    expect(adjacent.valid).toBe(true);
   });
 
   it('rejects invalid codes', () => {

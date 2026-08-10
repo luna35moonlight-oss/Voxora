@@ -62,7 +62,8 @@ export class MfaController {
       throw new BadRequestException('challengeToken required');
     }
     const verified = await this.mfa.verifyChallenge(data.challengeToken, data.code);
-    const session = await this.auth.issueSessionForUser(verified.userId);
+    // Privileged session only after successful MFA — server sets assurance; never from client.
+    const session = await this.auth.issueSessionForUser(verified.userId, { mfaAssured: true });
     return { status: 'authenticated' as const, ...session };
   }
 

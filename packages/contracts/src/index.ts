@@ -64,12 +64,17 @@ export const AuthTokensSchema = z.object({
 });
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 
+export const AuthenticationAssurance = z.enum(['PASSWORD', 'MFA']);
+export type AuthenticationAssurance = z.infer<typeof AuthenticationAssurance>;
+
 export const AuthUserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
   emailVerified: z.boolean(),
   roles: z.array(RoleName),
   mfaEnabled: z.boolean(),
+  /** Server-authoritative session assurance — never trust a client-provided MFA flag. */
+  authenticationAssurance: AuthenticationAssurance.optional(),
 });
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 

@@ -360,6 +360,7 @@ describe('Voxora Phase 2 account & commercial (e2e)', () => {
       .expect(200);
     expect(authed.body.status).toBe('authenticated');
     expect(authed.body.user.roles).toContain('OWNER');
+    expect(authed.body.user.authenticationAssurance).toBe('MFA');
     expect(authed.body.tokens.accessToken).toBeTruthy();
 
     // Wrong code does not grant privileged session

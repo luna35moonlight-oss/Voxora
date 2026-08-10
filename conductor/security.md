@@ -49,6 +49,27 @@
 
 Privileged login without MFA no longer issues a full session. Responses are `mfa_enrollment_required` or `mfa_required` until TOTP succeeds. Secrets are encrypted at rest and never appear in logs/audit payloads.
 
+### CURRENT PRIVILEGED IDENTITY POLICY: SINGLE OWNER — MARYKE FARRELL
+
+- One OWNER account (Maryke Farrell) established via one-time bootstrap  
+- Do **not** assign ADMIN / MODERATOR / SUPPORT unless explicitly authorised later  
+- Do **not** assign both OWNER and ADMIN to Maryke merely to duplicate labels  
+- OWNER is the highest privileged authority  
+- ADMIN / MODERATOR / SUPPORT remain in RBAC for future use only  
+
+### Privileged session MFA assurance (Phase 2 closeout)
+
+| Rule | Behaviour |
+|------|-----------|
+| Session authority | DB `Session.authenticationAssurance` + `Session.mfaVerifiedAt` (never client flags) |
+| Privileged issuance | Only after successful MFA challenge (`mfaAssured` set server-side) |
+| Refresh (non-privileged) | Normal rotation |
+| Refresh (privileged, no MFA assurance) | Revoke session; reject; require fresh MFA login |
+| Refresh (privileged, MFA-assured) | Rotate and preserve MFA assurance |
+| Owner bootstrap | Grants role only; revokes all pre-Owner sessions; no privileged tokens returned |
+| Privileged role grant/revoke | Invalidate existing sessions |
+| MFA reset | Revoke sessions; force re-enrollment/authentication |
+
 Owner/bootstrap role elevation must be: server-side, auditable, restricted, revocable, protected, and **genuinely one-time** (persisted completion + active-OWNER guard).
 
 Never:

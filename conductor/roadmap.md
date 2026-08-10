@@ -51,7 +51,7 @@ Delivered:
 
 **Explicitly out of Phase 2:** Scene Engine, living avatars/pets, Bondfire conversations, Wellness product, games/battles, mail/calendar/contacts, fake Paid/Active billing.
 
-# PHASE 2 READY FOR OWNER REVIEW — DO NOT BEGIN PHASE 3 WITHOUT APPROVAL
+# PHASE 2 READY FOR OWNER MERGE REVIEW — DO NOT BEGIN PHASE 3 WITHOUT APPROVAL
 
 ---
 

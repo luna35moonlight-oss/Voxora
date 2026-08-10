@@ -7,7 +7,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RoleName, Visibility } from '@prisma/client';
+import { AuthenticationAssurance, RoleName, Visibility } from '@prisma/client';
 import type { ApiEnv } from '@voxora/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RbacService } from '../rbac/rbac.service';
@@ -18,6 +18,15 @@ import { OWNER_BOOTSTRAP_COMPLETION_ID, safeEqualSecret } from './crypto.util';
 import { MfaService } from '../mfa/mfa.service';
 import { VerificationService } from '../verification/verification.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
+import { rolesArePrivileged, type AuthLevel } from './session-assurance';
+
+export type IssueSessionOptions = {
+  /**
+   * Only true after successful MFA challenge verification (or secure refresh of an
+   * already MFA-assured session). Never accept from client input.
+   */
+  mfaAssured?: boolean;
+};
 
 @Injectable()
 export class AuthService {
@@ -37,7 +46,6 @@ export class AuthService {
     const normalized = email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email: normalized } });
     if (existing) {
-      // Keep Conflict for explicit duplicate registration attempts; rate-limited at controller.
       throw new ConflictException('Account already exists for this email');
     }
 
@@ -121,6 +129,10 @@ export class AuthService {
     return { status: 'authenticated' as const, ...session };
   }
 
+  /**
+   * Refresh rotation with privileged MFA assurance check.
+   * Never silently upgrades an ordinary session into an OWNER session.
+   */
   async refresh(refreshToken: string) {
     const hash = this.tokens.hashToken(refreshToken);
     const session = await this.prisma.session.findFirst({
@@ -130,12 +142,34 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
+    const roles = await this.rbac.getUserRoles(session.userId);
+    const privileged = rolesArePrivileged(roles);
+    const sessionMfaAssured =
+      session.authenticationAssurance === AuthenticationAssurance.MFA &&
+      session.mfaVerifiedAt != null;
+
+    if (privileged && !sessionMfaAssured) {
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      });
+      await this.audit.record({
+        actorId: session.userId,
+        action: 'auth.refresh_rejected_privileged_without_mfa',
+        subject: session.id,
+        payload: { roles, reason: 'stale_or_unassured_session' },
+      });
+      throw new UnauthorizedException('Privileged re-authentication with MFA required');
+    }
+
     await this.prisma.session.update({
       where: { id: session.id },
       data: { revokedAt: new Date() },
     });
 
-    const next = await this.issueSessionForUser(session.userId);
+    const next = await this.issueSessionForUser(session.userId, {
+      mfaAssured: privileged ? true : false,
+    });
     return { status: 'authenticated' as const, ...next };
   }
 
@@ -164,10 +198,8 @@ export class AuthService {
 
   /**
    * Genuine one-time Owner bootstrap.
-   * Requires configured identity + secret + registered user.
-   * Email alone or token alone never grants Owner.
-   * Completion is persisted in DB and survives restarts.
-   * Bootstrap secrets are never returned in responses or audit payloads.
+   * Grants OWNER role only — does not return privileged tokens.
+   * Revokes all pre-elevation sessions so ordinary refresh cannot become Owner.
    */
   async bootstrapOwner(email: string, bootstrapToken: string) {
     const configuredEmail = process.env.OWNER_BOOTSTRAP_EMAIL;
@@ -237,18 +269,29 @@ export class AuthService {
       throw new ConflictException('Owner bootstrap has already been completed');
     }
 
+    // assignRole(OWNER) revokes existing sessions (privileged role grant rule).
     await this.rbac.assignRole({
       userId: user.id,
       role: RoleName.OWNER,
       assignedBy: 'system:bootstrap',
     });
+
+    // Explicit second revoke for bootstrap clarity / race safety.
+    await this.rbac.revokeAllSessionsForUser(user.id, 'owner_bootstrap_elevation');
+
     await this.audit.record({
       actorId: user.id,
       action: 'owner.bootstrap_assigned',
       subject: user.id,
-      payload: { via: 'one_time_bootstrap' },
+      payload: {
+        via: 'one_time_bootstrap',
+        sessionsRevoked: true,
+        privilegedIdentityPolicy: 'SINGLE_OWNER_MARYKE_FARRELL',
+        note: 'Bootstrap grants role only; MFA login required for Owner session',
+      },
     });
 
+    // No privileged access/refresh tokens returned from bootstrap.
     return { status: 'owner_assigned' as const, userId: user.id };
   }
 
@@ -269,13 +312,35 @@ export class AuthService {
     return count > 0;
   }
 
-  async issueSessionForUser(userId: string) {
+  /**
+   * Issues a session. Privileged roles require mfaAssured=true (set only after MFA verify
+   * or assured refresh). Client-provided flags are never consulted.
+   */
+  async issueSessionForUser(userId: string, options: IssueSessionOptions = {}) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const roles = await this.rbac.getUserRoles(userId);
+    const privileged = rolesArePrivileged(roles);
+    const mfaAssured = options.mfaAssured === true;
+
+    if (privileged && !mfaAssured) {
+      await this.audit.record({
+        actorId: userId,
+        action: 'auth.privileged_session_blocked_without_mfa',
+        subject: userId,
+        payload: { roles },
+      });
+      throw new UnauthorizedException('Privileged re-authentication with MFA required');
+    }
+
+    const authLevel: AuthLevel = mfaAssured ? 'mfa' : 'password';
+    const assurance = mfaAssured ? AuthenticationAssurance.MFA : AuthenticationAssurance.PASSWORD;
+    const mfaVerifiedAt = mfaAssured ? new Date() : null;
+
     const accessToken = await this.tokens.signAccessToken({
       sub: user.id,
       email: user.email,
       roles,
+      authLevel,
     });
     const refresh = this.tokens.createRefreshToken();
     await this.prisma.session.create({
@@ -283,6 +348,8 @@ export class AuthService {
         userId: user.id,
         refreshTokenHash: refresh.hash,
         expiresAt: refresh.expiresAt,
+        authenticationAssurance: assurance,
+        mfaVerifiedAt,
       },
     });
 
@@ -293,6 +360,7 @@ export class AuthService {
         emailVerified: Boolean(user.emailVerifiedAt),
         roles,
         mfaEnabled: user.mfaEnabled,
+        authenticationAssurance: assurance,
       },
       tokens: {
         accessToken,

@@ -196,6 +196,29 @@
 - **Decision:** Voxora product copyright © Maryke Farrell. All rights reserved. Expo template MIT preserved only as third-party attribution (`apps/mobile/THIRD_PARTY_NOTICES.md`). Do not present Voxora as MIT. Public OSS licence for Voxora-owned code requires **OWNER / LEGAL DECISION**.
 - **Owner review:** Complete
 
+### ADR-023 — CURRENT PRIVILEGED IDENTITY POLICY: SINGLE OWNER — MARYKE FARRELL
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 Phase 2 closeout)
+- **Decision:**
+  - Maryke Farrell is the **only** privileged human account at this product stage
+  - One OWNER via one-time bootstrap; do **not** also assign ADMIN to Owner merely to duplicate authority
+  - ADMIN / MODERATOR / SUPPORT remain in RBAC architecture for future authorised use
+  - No additional privileged users/roles are assigned unless the Product Owner explicitly authorises it later
+  - OWNER is the highest privileged authority
+- **Owner review:** Complete
+
+### ADR-024 — Privileged session MFA assurance (no stale elevation)
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 Phase 2 closeout)
+- **Decision:**
+  - Server `Session` records carry authoritative `authenticationAssurance` + `mfaVerifiedAt`
+  - Privileged sessions may be issued only after successful MFA challenge
+  - Refresh of privileged accounts requires existing MFA-assured session; otherwise reject and require fresh MFA login
+  - Never silently upgrade an ordinary USER refresh into an OWNER session
+  - Owner bootstrap revokes all pre-elevation sessions and does **not** return privileged tokens
+  - Granting/revoking privileged roles invalidates existing sessions
+  - MFA reset revokes sessions so stale MFA assurance cannot continue
+  - Client-provided MFA flags are never trusted
+- **Owner review:** Complete
+
 ---
 
 ## Process gate
@@ -204,5 +227,6 @@
 |------|--------|
 | Phase 0 architecture approved with amendments | **YES** (2026-08-10) |
 | Phase 0 on `main` | **YES** |
-| Phase 1 Core Foundation + closeout | **READY FOR OWNER MERGE REVIEW** (PR #2) |
-| Phase 2 | **NOT authorised** until Phase 1 merged + explicit Phase 2 authorisation |
+| Phase 1 Core Foundation + closeout | **MERGED** (PR #2) |
+| Phase 2 | **READY FOR OWNER MERGE REVIEW** (PR #3) after session-assurance closeout |
+| Phase 3 | **NOT started** — requires Phase 2 merge + explicit authorisation |

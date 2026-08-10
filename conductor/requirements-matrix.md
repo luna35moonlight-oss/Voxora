@@ -43,6 +43,8 @@
 | REQ-022 | Apple/Google store adapters | IMPLEMENTED (NOT_CONFIGURED) | StoreService |
 | REQ-023 | Wellness trial architecture only | IMPLEMENTED | TrialGrant ARCHITECTURE_ONLY |
 | REQ-P2-MFA | Privileged MFA production enforcement | IMPLEMENTED / TESTED | TOTP enroll/challenge e2e |
+| REQ-P2-SESS | Privileged session MFA assurance + no stale elevation | IMPLEMENTED / TESTED | Session.mfaVerifiedAt + refresh/bootstrap/reset e2e |
+| REQ-P2-OWNER | Single Owner privileged identity (Maryke Farrell) | APPROVED / DOCUMENTED | ADR-023; no ADMIN dual-assign |
 | REQ-P2-SET | Settings surfaces | IMPLEMENTED | `/v1/settings` + mobile |
 | REQ-P2-HANDOFF | Avatar/pet handoff without fake ownership | IMPLEMENTED / TESTED | AVATAR_PET_HANDOFF |
 | REQ-090 | Alpha Bondfire conversations | NOT STARTED (correct) | — |

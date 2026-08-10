@@ -266,11 +266,17 @@ export class MfaService {
       }),
     ]);
 
+    // Privileged sessions must not remain usable as if MFA were still satisfied.
+    await this.rbac.revokeAllSessionsForUser(targetUserId, 'mfa_reset');
+
     await this.audit.record({
       actorId,
       action: 'mfa.reset',
       subject: targetUserId,
-      payload: { by: actorId === targetUserId ? 'self' : 'owner' },
+      payload: {
+        by: actorId === targetUserId ? 'self' : 'owner',
+        sessionsRevoked: true,
+      },
     });
 
     return { status: 'mfa_reset' as const };
