@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main, cursor/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: voxora
+          POSTGRES_PASSWORD: voxora
+          POSTGRES_DB: voxora_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U voxora -d voxora_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://voxora:voxora@localhost:5432/voxora_test?schema=public
+      DATABASE_URL_TEST: postgresql://voxora:voxora@localhost:5432/voxora_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-access-secret-min-32-characters!!!!
+      JWT_REFRESH_SECRET: ci-refresh-secret-min-32-characters!!!
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 30d
+      OWNER_BOOTSTRAP_EMAIL: luna35moonlight@gmail.com
+      OWNER_BOOTSTRAP_TOKEN: ci-bootstrap-token-min16
+      API_PORT: 3000
+      API_HOST: 127.0.0.1
+      CORS_ORIGINS: http://localhost:8081
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Format check
+        run: pnpm format:check
+      - name: Build packages
+        run: pnpm --filter @voxora/contracts --filter @voxora/config --filter @voxora/design-system --filter @voxora/testing run build
+      - name: Prisma generate + migrate
+        run: |
+          pnpm --filter @voxora/api prisma:generate
+          pnpm --filter @voxora/api exec prisma migrate deploy
+        working-directory: .
+      - name: Lint API
+        run: pnpm --filter @voxora/api lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: API build
+        run: pnpm --filter @voxora/api build
+      - name: API e2e
+        run: pnpm --filter @voxora/api test:e2e
+      - name: Mobile typecheck
+        run: pnpm --filter @voxora/mobile typecheck
+      - name: Mobile project validate
+        run: pnpm --filter @voxora/mobile exec expo config --type public
