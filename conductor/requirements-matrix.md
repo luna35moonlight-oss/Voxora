@@ -1,89 +1,100 @@
-# Voxora Requirements Matrix — Phase 0
+# Voxora Requirements Matrix — Phase 0 / Baseline
 
-**Document status:** OWNER REVIEW REQUIRED  
-**Status legend:** `NOT STARTED` · `IN PROGRESS` · `IMPLEMENTED` · `TESTED` · `BLOCKED` · `OWNER REVIEW REQUIRED`  
+**Document status:** OWNER APPROVED BASELINE (2026-08-10)  
+**Status legend:** `NOT STARTED` · `IN PROGRESS` · `IMPLEMENTED` · `TESTED` · `BLOCKED` · `OWNER REVIEW REQUIRED` · `DEFERRED` · `APPROVED`  
 **Rule:** A UI mock-up is not `IMPLEMENTED`.
 
 ---
 
-## Matrix
+## Architecture / process gates
 
-| ID | Description | Product area | UI | Service | API | DB entities | Impl location | Tests | Status | Limitation | Owner decision |
-|----|-------------|--------------|----|---------|-----|-------------|---------------|-------|--------|------------|----------------|
-| REQ-000 | Independent Android + iOS app (not WebView product) | Platform | Mobile shell | — | — | — | `apps/mobile` (future) | E2E smoke | NOT STARTED | None | Approve mobile stack |
-| REQ-001 | Official identity/tagline/copyright/support | Brand | Splash/settings | — | — | — | design tokens + copy | snapshot/copy | NOT STARTED | README currently outdated | Confirm brand assets |
-| REQ-002 | Terminology Bondfire (not Bonfire) | Brand | All copy | Analytics labels | — | display values | i18n keys | lint/copy tests | NOT STARTED | — | — |
-| REQ-010 | Resumable onboarding steps 1–12 | Account | Onboarding | Identity/Profile/Billing | `/v1/onboarding/*` | users, profiles, consents, verifications, subscriptions | future | API+E2E | NOT STARTED | — | IdP list for launch |
-| REQ-011 | Email verification hashed/expiring/single-use/throttled | Account | Verify screens | Auth | verify endpoints | verification_records | future | unit/API | NOT STARTED | — | Email provider |
-| REQ-012 | Unique username server-side | Account | Username step | Profile | username check | profiles | future | API | NOT STARTED | — | Reserved names list |
-| REQ-013 | Privacy defaults private email/phone | Privacy | Privacy step | Profile | settings | privacy_settings | future | API | NOT STARTED | — | — |
-| REQ-014 | Region/locale/timezone/currency | Profile | Region step | Profile | profile | profiles | future | API | NOT STARTED | — | Supported countries |
-| REQ-015 | Phone OTP real verification for paid tiers | Account | Phone step | Auth/SMS | otp | verification_records | future | API | NOT STARTED | SMS cost/provider | OTP vendor |
-| REQ-016 | App interest ≠ Connected | Integrations | Interests | Providers | connections | provider_connections | future | API | NOT STARTED | — | Launch providers |
-| REQ-017 | Real OAuth + capability verification | Integrations | Connect flows | Provider adapters | oauth/callback | provider_connections, tokens | future | contract | NOT STARTED | Provider API limits | Priority providers |
-| REQ-018 | Age gate 18+ initial launch | Legal | Age step | Identity | signup | users/consents | future | API | NOT STARTED | Minors deferred | Confirm legal copy |
-| REQ-019 | Versioned consents | Legal | Legal step | Consent | consents | consents | future | API | NOT STARTED | — | Terms/Privacy versions |
-| REQ-020 | Server-configurable subscription prices | Commercial | Paywall | Products | products/prices | products, product_prices | future | API | NOT STARTED | Store billing rules | Store vs web billing |
-| REQ-021 | Level 1–4 packages per spec | Commercial | Paywall/catalogue | Entitlements | entitlements | subscriptions, grants | future | domain | NOT STARTED | Edge commercial rules open | Downgrade/ownership rules |
-| REQ-022 | Central Entitlement Service | Commercial | Lock states | Entitlement | entitlements | entitlement_grants | future | unit/API | NOT STARTED | — | Capability final list |
-| REQ-023 | Feature flags separate from entitlements | Platform | — | Flags | flags | feature_flags | future | unit | NOT STARTED | — | — |
-| REQ-030 | Voxora Home digital home (not dashboard) | Home | Home | Home aggregate | home summary | multiple | future | E2E | NOT STARTED | Art not available | Art direction |
-| REQ-031 | Coming-alive sequence once per entry | Home | Home scene | Interaction Runtime | — | — | future client | unit | NOT STARTED | — | Approved welcome animations |
-| REQ-032 | Interaction Runtime mandatory | Runtime | — | Client runtime | events optional | — | future package | unit | NOT STARTED | — | Approve event list |
-| REQ-033 | Scene Engine layered rendering | Scene | Scene surfaces | Client + assets | asset APIs | assets, equipment | future | unit | NOT STARTED | Needs art pipeline | Rive approval |
-| REQ-040 | Living avatar system + clothing slots | Avatar | Wardrobe/Home | Avatar | avatar/* | avatar_* | future | unit/API | NOT STARTED | — | Launch catalogue |
-| REQ-041 | Lip sync / listen / talk states | Avatar/Voice | Scene | Voice+Runtime | — | animation_definitions | future | unit | NOT STARTED | Viseme provider-dependent | TTS vendor |
-| REQ-050 | Species-based living pets | Pet | Pet surfaces | Pet | pets/* | pet_* | future | unit/API | NOT STARTED | — | Launch species |
-| REQ-051 | Growth stages server-authoritative | Pet | Pet profile | Progression | pets/progress | pets | future | domain | NOT STARTED | Formulas undefined | XP/evolution rules |
-| REQ-052 | Pet interactions validate+persist | Pet | Pet actions | Pet | pets/actions | pets, inventory | future | API | NOT STARTED | Energy rules open | Energy rules |
-| REQ-053 | Species-specific playful reactions | Pet | Scene | Runtime | — | reaction defs | future | unit | NOT STARTED | — | Approve reaction set |
-| REQ-054 | Training separate from battle | Pet | Training | Training | training/* | pet_training_* | future | API | NOT STARTED | — | Categories/rewards |
-| REQ-060 | Modular games inside Voxora | Games | Game shell | Game Runtime | games/* | game_* | future | API | NOT STARTED | — | Launch games list |
-| REQ-061 | Server-validated scores/rewards | Games | Results | Reward | rewards | reward_ledger | future | domain | NOT STARTED | — | Reward values |
-| REQ-070 | Server-authoritative pet battles | Battles | Battle UI | Battle engine | battles/* | battles, battle_events | future | domain | NOT STARTED | Balance open | Balancing choice |
-| REQ-071 | Animation separated from calculation | Battles | Battle VFX | Client presenters | — | battle_events | future | unit | NOT STARTED | — | — |
-| REQ-072 | Subscription does not auto-win | Battles | — | Matchmaking/engine | — | — | future | domain | NOT STARTED | — | Fairness model |
-| REQ-080 | One Alpha service + tool permissions | Alpha | Bondfire + background | Alpha | alpha/* | tool_invocations | future | unit/API | NOT STARTED | Model vendor TBD | Model providers |
-| REQ-081 | Provider-independent model router | Alpha | — | AlphaModelRouter | — | — | future | unit | NOT STARTED | — | Routing policy |
-| REQ-082 | No success claim before confirmation | Alpha | Bondfire | Tool executor | tools | tool_invocations | future | unit | NOT STARTED | — | — |
-| REQ-083 | User-controlled memory subsystem | Alpha | Memory settings | Memory | memory/* | memory_items | future | API | NOT STARTED | Retention defaults open | Retention policy |
-| REQ-090 | Alpha Bondfire complete environment | Bondfire | Bondfire UI | Bondfire+Alpha | bondfire/* | threads, messages, quota | future | E2E | NOT STARTED | Quota rules open | Quota reset/counting |
-| REQ-091 | Streaming responses | Bondfire | Stream UI | Alpha | ws/sse | — | future | integration | NOT STARTED | — | — |
-| REQ-092 | Bondfire quotas server-enforced | Bondfire | Quota UX | Entitlement/Quota | — | bondfire_quota_usage | future | API | OWNER REVIEW REQUIRED | Counting rules unknown | Reset period & counting |
-| REQ-100 | Central notifications | Notifications | In-app/push | Notification | notifications/* | notification_requests | future | API | NOT STARTED | — | Channels at launch |
-| REQ-101 | Real reminder scheduling | Reminders | Reminder UI | Reminder engine | reminders/* | reminders | future | API | NOT STARTED | OS background limits | — |
-| REQ-110 | Calendar integration real | Integrations | Calendar | Calendar adapter | calendar/* | calendar_refs | future | contract | NOT STARTED | Provider limits | Launch calendars |
-| REQ-111 | Mail integration real | Integrations | Mail | Mail adapter | mail/* | mail_refs | future | contract | NOT STARTED | Provider limits | Launch mail |
-| REQ-112 | Contacts separate consent | Integrations | Contacts | Contacts adapter | contacts/* | — | future | API | NOT STARTED | Privacy risk | Launch necessity |
-| REQ-113 | No fake social integrations | Comms | Honest unavailable states | — | — | — | policy | review | NOT STARTED | Many networks lack APIs | Which providers ever |
-| REQ-120 | Offline honest pending states | Platform | Status labels | Sync | — | outbox | future | unit | NOT STARTED | — | Offline write allowlist |
-| REQ-121 | Provider failure isolation | Platform | Capability errors | Adapters | — | — | future | chaos/unit | NOT STARTED | — | — |
-| REQ-130 | Asset catalogue formal metadata | Assets | — | Asset service | assets/* | assets | future | API | NOT STARTED | — | CDN/storage vendor |
-| REQ-140 | Performance profiles + reduced motion | A11y/Perf | Settings | Runtime | — | profile prefs | future | unit | NOT STARTED | — | Defaults |
-| REQ-141 | Accessibility from first components | A11y | All | — | — | — | design system | a11y tests | NOT STARTED | — | Target standard |
-| REQ-150 | RBAC + audited admin/owner | Security | Admin later | AuthZ | admin/* | roles, audit | future | API | NOT STARTED | — | Bootstrap procedure |
-| REQ-151 | MFA readiness | Security | Later | Auth | — | mfa_factors (future) | future | — | NOT STARTED | Launch MFA TBD | MFA at launch? |
-| REQ-152 | Secure mobile token storage | Security | — | Mobile secure store | — | — | future | manual/sec | NOT STARTED | — | — |
-| REQ-160 | Audit logging critical events | Security | Admin | Audit | — | audit_events | future | API | NOT STARTED | — | Retention |
-| REQ-161 | Observability without private content | Ops | — | Logging/APM | — | — | future | — | NOT STARTED | — | Vendors |
-| REQ-170 | Localisation-ready architecture | i18n | UI strings | — | — | locale fields | future | i18n | NOT STARTED | — | Launch languages |
-| REQ-180 | Wellness module boundary (no diagnosis) | Wellness | Later | Alpha Wellness mode | — | TBD | future | — | BLOCKED | Detailed spec missing | Wellness spec + price |
-| REQ-190 | Support ticket readiness (not fake build now) | Support | Later | Support | — | support_tickets | future | — | NOT STARTED | Phase 0: design only | — |
-| REQ-200 | Vertical slice development after Phase 0 | Process | — | — | — | — | roadmap | — | OWNER REVIEW REQUIRED | Phase 1 not started | Approve Phase 0 → Phase 1 |
+| ID | Description | Status | Owner decision |
+|----|-------------|--------|----------------|
+| REQ-000 | Independent Android + iOS app (not WebView) | APPROVED (architecture) / NOT STARTED (impl) | Expo RN + TS APPROVED |
+| REQ-000a | Android min API 29; iOS min 16.4; phones launch-critical; tablets adaptive | APPROVED | 2026-08-10 |
+| REQ-000b | Stable Expo SDK only (scaffold: SDK 57) | APPROVED | 2026-08-10 |
+| REQ-000c | Rive primary characters + safeguards; PoC before mass assets | APPROVED | 2026-08-10 |
+| REQ-000d | NestJS + Postgres + Redis + BullMQ modular monolith | APPROVED | 2026-08-10 |
+| REQ-000e | One Alpha; Bondfire spelling; Bondfire not Phase 1 build | APPROVED | 2026-08-10 |
+| REQ-000f | StoreKit + Play Billing; server entitlement authority; no hard-coded ZAR access | APPROVED | 2026-08-10 |
+| REQ-000g | MFA-ready Phase 1; MFA mandatory privileged roles; user MFA final rule deferred | APPROVED / DEFERRED (user mandate) | 2026-08-10 |
+| REQ-000h | No continuous listening V1 | APPROVED | 2026-08-10 |
+| REQ-000i | Viseme preferred + amplitude fallback; architecture allows visemes | APPROVED | 2026-08-10 |
+| REQ-200 | Vertical slices; Phase 0 docs then Phase 1 separate PR | APPROVED | Phase 1 authorised after docs on main |
 
 ---
 
-## Summary counts (Phase 0)
+## Matrix (implementation tracking)
 
-| Status | Count (approx.) |
-|--------|-----------------|
-| NOT STARTED | Majority — greenfield |
-| OWNER REVIEW REQUIRED | Quota rules, commercial edges, stack approvals, Wellness |
-| BLOCKED | Wellness detailed behaviour (awaiting owner spec) |
-| IMPLEMENTED / TESTED | **0** |
+| ID | Description | Product area | Status | Limitation | Owner decision |
+|----|-------------|--------------|--------|------------|----------------|
+| REQ-001 | Official identity/tagline/copyright/support | Brand | IN PROGRESS (README) | — | — |
+| REQ-002 | Terminology Bondfire (not Bonfire) | Brand | APPROVED policy | — | — |
+| REQ-010 | Resumable onboarding steps 1–12 | Account | NOT STARTED | Phase 2 | — |
+| REQ-011 | Email verification architecture | Account | Phase 1 foundation / Phase 2 full UX | — | Email vendor deferred |
+| REQ-012 | Unique username server-side | Account | NOT STARTED | Phase 2 | — |
+| REQ-013 | Privacy defaults private | Privacy | NOT STARTED | Phase 2 | — |
+| REQ-014 | Region/locale/timezone/currency | Profile | NOT STARTED | Phase 2 | — |
+| REQ-015 | Phone OTP | Account | NOT STARTED | Phase 2 | OTP vendor deferred |
+| REQ-016 | App interest ≠ Connected | Integrations | NOT STARTED | later | — |
+| REQ-017 | Real OAuth + capability verification | Integrations | NOT STARTED | later | Providers deferred |
+| REQ-018 | Age gate 18+ | Legal | NOT STARTED | Phase 2 | — |
+| REQ-019 | Versioned consents | Legal | NOT STARTED | Phase 2 | — |
+| REQ-020 | Server-configurable subscription prices | Commercial | NOT STARTED | Phase 2 | Store mapping |
+| REQ-021 | Level 1–4 packages per spec | Commercial | DEFERRED edge rules | Phase 2+ | Downgrade etc. deferred |
+| REQ-022 | Central Entitlement Service | Commercial | NOT STARTED | Phase 2 | — |
+| REQ-023 | Feature flags separate from entitlements | Platform | Phase 1 foundation | — | — |
+| REQ-030 | Voxora Home | Home | NOT STARTED | later | — |
+| REQ-031 | Coming-alive sequence | Home | NOT STARTED | Phase 5 | — |
+| REQ-032 | Interaction Runtime | Runtime | NOT STARTED (Phase 1: no full impl) | Phase 5 | Confirmed mandatory |
+| REQ-033 | Scene Engine | Scene | NOT STARTED (Phase 1: no full impl) | Phase 3 | Rive+safeguards |
+| REQ-040 | Living avatar system | Avatar | NOT STARTED | Phase 3 | Catalogue deferred |
+| REQ-041 | Lip sync / listen / talk | Avatar/Voice | NOT STARTED | Phase 5 | Viseme arch required |
+| REQ-050 | Species-based living pets | Pet | NOT STARTED | Phase 4 | Catalogue deferred |
+| REQ-051 | Growth stages | Pet | DEFERRED formulas | Phase 4+ | XP/evolution deferred |
+| REQ-052 | Pet interactions | Pet | NOT STARTED | Phase 4 | Energy deferred |
+| REQ-053 | Species-specific reactions | Pet | NOT STARTED | Phase 5 | — |
+| REQ-054 | Training | Pet | NOT STARTED | Phase 12 | — |
+| REQ-060 | Modular games | Games | NOT STARTED | Phase 13 | Scoring deferred |
+| REQ-061 | Server-validated rewards | Games | NOT STARTED | Phase 13 | Rewards deferred |
+| REQ-070 | Server-authoritative battles | Battles | NOT STARTED | Phase 14 | Balance deferred |
+| REQ-071 | Animation ≠ calculation | Battles | APPROVED principle | Phase 14 | — |
+| REQ-072 | Subscription does not auto-win | Battles | APPROVED principle | Phase 14 | Fairness model deferred |
+| REQ-080 | One Alpha service | Alpha | APPROVED / NOT STARTED impl | Phase 6 | Vendor deferred |
+| REQ-081 | Provider-independent model router | Alpha | NOT STARTED | Phase 6 | — |
+| REQ-082 | No success before confirmation | Alpha | APPROVED policy | — | — |
+| REQ-083 | Memory subsystem | Alpha | NOT STARTED | Phase 6 | Retention deferred |
+| REQ-090 | Alpha Bondfire environment | Bondfire | NOT STARTED | Phase 7 | Not Phase 1 |
+| REQ-091 | Streaming responses | Bondfire | NOT STARTED | Phase 7 | — |
+| REQ-092 | Bondfire quotas | Bondfire | DEFERRED rules | Phase 7 | Counting/reset deferred |
+| REQ-100 | Central notifications | Notifications | Phase 1 interface only | Phase 8 | — |
+| REQ-101 | Real reminders | Reminders | NOT STARTED | Phase 8 | — |
+| REQ-110 | Calendar | Integrations | NOT STARTED | Phase 9 | Order deferred |
+| REQ-111 | Mail | Integrations | NOT STARTED | Phase 10 | Order deferred |
+| REQ-112 | Contacts | Integrations | NOT STARTED | Phase 10 | Necessity deferred |
+| REQ-113 | No fake social integrations | Comms | APPROVED policy | Phase 11 | Providers deferred |
+| REQ-120 | Offline honest pending | Platform | Phase 1 awareness foundation | — | — |
+| REQ-121 | Provider failure isolation | Platform | NOT STARTED | later | — |
+| REQ-130 | Asset catalogue | Assets | NOT STARTED | Phase 3+ | — |
+| REQ-140 | Performance profiles | A11y/Perf | NOT STARTED | later | — |
+| REQ-141 | Accessibility baseline | A11y | Phase 1 foundation | — | — |
+| REQ-150 | RBAC + audited owner | Security | Phase 1 foundation | — | Server bootstrap |
+| REQ-151 | MFA readiness | Security | Phase 1 foundation | User mandate deferred | Privileged MFA required |
+| REQ-152 | Secure mobile token storage | Security | Phase 1 | — | — |
+| REQ-160 | Audit logging | Security | Phase 1 foundation | — | — |
+| REQ-161 | Observability | Ops | Phase 1 foundation | — | Vendors deferred |
+| REQ-170 | Localisation-ready | i18n | Phase 1 awareness | — | Languages deferred |
+| REQ-180 | Wellness boundary | Wellness | DEFERRED content | Phase 16 | Spec+price deferred |
+| REQ-190 | Support ticket readiness | Support | NOT STARTED | later | Design only early |
+| REQ-P1 | Phase 1 core foundation delivery | Process | AUTHORISED after docs merge | Stop before Phase 2 | — |
 
 ---
 
-## Maintenance
+## Summary
 
-Update this matrix as implementation proceeds. Status changes require evidence (code location + tests), not screenshots alone.
+| Bucket | Notes |
+|--------|-------|
+| Architecture ADRs | Approved with amendments 2026-08-10 |
+| Deferred product formulas | Remain visible in `open-questions.md` — do not invent |
+| Phase 1 implementation | Separate branch after Phase 0 on `main` |
+| IMPLEMENTED / TESTED application features | Still 0 until Phase 1 lands |

@@ -10,11 +10,13 @@ Copyright: © Maryke Farrell. All rights reserved.
 
 ---
 
-## Phase 0 status
+## Architecture baseline status
 
-This repository is in **Phase 0** (inspect, analyse, architecture, documentation only).
+**Phase 0** architecture was reviewed and **approved with amendments** by Maryke Farrell (2026-08-10).
 
-**Do not begin Phase 1 implementation until owner review is complete.**
+Phase 0 documentation in [`conductor/`](./conductor/) is the architectural baseline.  
+Phase 1 (Core Foundation) proceeds on a **separate branch/PR** after this baseline is on `main`.  
+**Do not begin Phase 2 until Phase 1 owner review is complete.**
 
 Phase 0 documents live in [`conductor/`](./conductor/):
 

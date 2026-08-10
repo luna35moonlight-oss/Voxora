@@ -1,155 +1,159 @@
 # Voxora Open Questions — Phase 0
 
-**Document status:** OWNER REVIEW REQUIRED  
+**Document status:** OWNER REVIEW COMPLETE — deferred items remain visible  
 **Product owner:** Maryke Farrell  
-**Rule:** Cursor must not invent answers to these product/commercial rules.
+**Last updated:** 2026-08-10  
 
-Each item is marked **OWNER REVIEW REQUIRED**.
+**Policy:** Items marked **DEFERRED — OWNER DECISION REQUIRED BEFORE RELEVANT IMPLEMENTATION PHASE** do **not** block Phase 1. Cursor must build interfaces/extension points and must **not** invent answers.
 
----
-
-## A. Commercial & subscriptions
-
-| ID | Question | Why it blocks / matters |
-|----|----------|-------------------------|
-| OQ-COM-001 | Wellness final price? | Level 3 trial then paid Wellness entitlement |
-| OQ-COM-002 | Add-on pricing catalogue? | Entitlement grants beyond base levels |
-| OQ-COM-003 | Package pricing (avatar/pet packages)? | Catalogue ownership |
-| OQ-COM-004 | Avatar package ownership rules? | What “owns” means across tiers |
-| OQ-COM-005 | Pet package ownership rules? | Same for pets |
-| OQ-COM-006 | Cancellation rules? | Access end behaviour |
-| OQ-COM-007 | Failed payment rules? | Dunning, retries |
-| OQ-COM-008 | Grace periods? | Entitlement during grace |
-| OQ-COM-009 | Upgrade rules (proration, immediate entitlements)? | Billing + access |
-| OQ-COM-010 | Downgrade rules? | Immediate vs period-end |
-| OQ-COM-011 | Reactivation rules? | Returning subscribers |
-| OQ-COM-012 | Trial reset rules? | Wellness and any other trials |
-| OQ-COM-013 | Purchased cosmetics after downgrade? | Keep unequippable vs lose vs keep |
-| OQ-COM-014 | Pet ownership after downgrade? | Keep pet vs lock vs transfer |
-| OQ-COM-015 | Progression after downgrade? | Retain XP/level visibility vs freeze |
-| OQ-COM-016 | Promotional access rules? | Grants, expiry, stacking |
-| OQ-COM-017 | Refunds policy? | Ledger + store interactions |
-| OQ-COM-018 | Bondfire quota reset period? | Daily/monthly/billing-period? |
-| OQ-COM-019 | Apple IAP / Google Play Billing as mandatory path for digital entitlements? | Store compliance vs web ZAR pricing |
-| OQ-COM-020 | How are R15/R25/R99/R125 mapped across storefront currencies? | Product IDs + display |
+Items marked **RESOLVED** were decided in the 2026-08-10 owner review.
 
 ---
 
-## B. Bondfire quota counting
+## Resolved by owner (2026-08-10)
 
-| ID | Question |
+| ID | Decision |
 |----|----------|
-| OQ-BF-001 | Do failed Alpha requests count against quota? |
-| OQ-BF-002 | Do retries count? |
-| OQ-BF-003 | How do voice requests count (per utterance, per turn)? |
-| OQ-BF-004 | Do tool invocations count separately from user messages? |
-| OQ-BF-005 | How does streaming count (one message vs chunks)? |
-| OQ-BF-006 | Level 4 Bondfire quota / unlimited? (Do not invent) |
+| OQ-MOB-001 | Expo React Native + TypeScript APPROVED (dev builds/prebuild; stable SDK only) |
+| OQ-MOB-002 | Android minimum = API 29 (Android 10) |
+| OQ-MOB-003 | iOS minimum = **16.4** |
+| OQ-MOB-004 | Tablets supported/adaptive; not launch-blocking |
+| OQ-MOB-005 | Continuous listening / wake-word **not** in V1 |
+| OQ-AV-001 | Rive APPROVED as primary living-character runtime, with safeguards (not every visual system) |
+| OQ-AV-004 | Visemes preferred; amplitude fallback allowed; architecture must support visemes from the start |
+| OQ-BE-001 | NestJS + TS modular monolith + PostgreSQL + Redis + BullMQ APPROVED (not .NET by default) |
+| OQ-COM-019 | Apple IAP + Google Play Billing architecture APPROVED; server final entitlement authority; no prohibited web bypass |
+| OQ-COM-020 | ZAR commercial intention retained; do not hard-code R15/R25/R99/R125 into access logic; map via storefront config |
+| OQ-SEC-001 (partial) | MFA required for Owner/Admin/Moderator/Support at privileged production access; ordinary-user MFA capability required; final user mandate deferred |
+| OQ-SEC-003 | Owner bootstrap server-side only — never client email hard-code |
+| OQ-PROC-001 | Phase 0 approved with amendments; Phase 1 authorised after docs update |
+| OQ-PROC-002 | ADRs updated per `decisions.md` |
+| OQ-AL-001..002 (Phase 1) | Do **not** select permanent AI/STT/TTS vendors in Phase 1 — interfaces only |
 
 ---
 
-## C. Pets, training, battles, games
+## A. Commercial & subscriptions — DEFERRED
 
-| ID | Question |
-|----|----------|
-| OQ-PET-001 | Exact XP levels / thresholds? |
-| OQ-PET-002 | Exact evolution rules? |
-| OQ-PET-003 | Exact pet energy rules? |
-| OQ-PET-004 | Exact battle balancing formulas? |
-| OQ-PET-005 | Exact matchmaking rules? |
-| OQ-PET-006 | Which fairness option (see pet-battle-system.md §4) is approved? |
-| OQ-PET-007 | Exact game scores and rewards? |
-| OQ-PET-008 | Exact achievement list and reward values? |
-| OQ-PET-009 | Leaderboard rules? |
-| OQ-PET-010 | Marketplace rules (if any)? |
-| OQ-PET-011 | Launch species list and art priority? |
-| OQ-PET-012 | Is PvP required for first public launch or later? |
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-COM-001 | Wellness final price? | DEFERRED — OWNER DECISION REQUIRED BEFORE RELEVANT IMPLEMENTATION PHASE |
+| OQ-COM-002 | Add-on pricing catalogue? | DEFERRED |
+| OQ-COM-003 | Package pricing (avatar/pet packages)? | DEFERRED |
+| OQ-COM-004 | Avatar package ownership rules? | DEFERRED |
+| OQ-COM-005 | Pet package ownership rules? | DEFERRED |
+| OQ-COM-006 | Cancellation rules? | DEFERRED |
+| OQ-COM-007 | Failed payment rules? | DEFERRED |
+| OQ-COM-008 | Grace periods? | DEFERRED |
+| OQ-COM-009 | Upgrade rules? | DEFERRED |
+| OQ-COM-010 | Downgrade rules? | DEFERRED |
+| OQ-COM-011 | Reactivation rules? | DEFERRED |
+| OQ-COM-012 | Trial reset rules? | DEFERRED |
+| OQ-COM-013 | Purchased cosmetics after downgrade? | DEFERRED |
+| OQ-COM-014 | Pet ownership after downgrade? | DEFERRED |
+| OQ-COM-015 | Progression after downgrade? | DEFERRED |
+| OQ-COM-016 | Promotional access rules? | DEFERRED |
+| OQ-COM-017 | Refunds policy? | DEFERRED |
+| OQ-COM-018 | Bondfire quota reset period? | DEFERRED |
 
----
-
-## D. Avatar & art pipeline
-
-| ID | Question |
-|----|----------|
-| OQ-AV-001 | Approve Rive as character pipeline? |
-| OQ-AV-002 | Launch avatar bases and clothing package set? |
-| OQ-AV-003 | Who produces rigs/animations (internal/external)? |
-| OQ-AV-004 | Lip sync: required visemes at launch, or amplitude fallback acceptable initially? |
+Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Level 2 R25 / Level 3 R99 / Level 4 R125 per month.
 
 ---
 
-## E. Mobile & platform
+## B. Bondfire quota counting — DEFERRED
 
-| ID | Question |
-|----|----------|
-| OQ-MOB-001 | Approve Expo React Native shared codebase? |
-| OQ-MOB-002 | Minimum Android version (API 26 vs 29+)? |
-| OQ-MOB-003 | Minimum iOS version (proposed 16+)? |
-| OQ-MOB-004 | Are tablets launch-blocking or best-effort? |
-| OQ-MOB-005 | Continuous listening / wake-word in scope for v1? (Default recommendation: no) |
-
----
-
-## F. Backend & infrastructure
-
-| ID | Question |
-|----|----------|
-| OQ-BE-001 | Approve NestJS/TS modular monolith + Postgres + Redis? Or prefer .NET? |
-| OQ-BE-002 | Preferred cloud host / region / data residency? |
-| OQ-BE-003 | Object storage vendor? |
-| OQ-BE-004 | Email delivery vendor? |
-| OQ-BE-005 | SMS OTP vendor? |
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-BF-001 | Do failed Alpha requests count? | DEFERRED |
+| OQ-BF-002 | Do retries count? | DEFERRED |
+| OQ-BF-003 | How do voice requests count? | DEFERRED |
+| OQ-BF-004 | Do tool invocations count separately? | DEFERRED |
+| OQ-BF-005 | How does streaming count? | DEFERRED |
+| OQ-BF-006 | Level 4 Bondfire quota / unlimited? | DEFERRED |
 
 ---
 
-## G. Alpha & providers
+## C. Pets, training, battles, games — DEFERRED
 
-| ID | Question |
-|----|----------|
-| OQ-AL-001 | Initial AI model provider(s)? |
-| OQ-AL-002 | STT/TTS vendor vs OS speech APIs? |
-| OQ-AL-003 | Launch order for Google vs Microsoft mail/calendar? |
-| OQ-AL-004 | Are contacts launch-critical? |
-| OQ-AL-005 | Which messaging networks should be investigated first, knowing fakes are forbidden? |
-| OQ-AL-006 | Memory / transcript retention defaults? |
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-PET-001 | Exact XP levels / thresholds? | DEFERRED |
+| OQ-PET-002 | Exact evolution rules? | DEFERRED |
+| OQ-PET-003 | Exact pet energy rules? | DEFERRED |
+| OQ-PET-004 | Exact battle balancing formulas? | DEFERRED |
+| OQ-PET-005 | Exact matchmaking rules? | DEFERRED |
+| OQ-PET-006 | Which fairness option is approved? | DEFERRED |
+| OQ-PET-007 | Exact game scores and rewards? | DEFERRED |
+| OQ-PET-008 | Exact achievement list and reward values? | DEFERRED |
+| OQ-PET-009 | Leaderboard rules? | DEFERRED |
+| OQ-PET-010 | Marketplace rules (if any)? | DEFERRED |
+| OQ-PET-011 | Launch species list and art priority? | DEFERRED |
+| OQ-PET-012 | Is PvP required for first public launch? | DEFERRED |
 
----
-
-## H. Security, legal, Wellness
-
-| ID | Question |
-|----|----------|
-| OQ-SEC-001 | MFA required at launch? |
-| OQ-SEC-002 | Account deletion & retention policy details? |
-| OQ-SEC-003 | Owner bootstrap / break-glass procedure approval? |
-| OQ-LEG-001 | Final Terms / Privacy versions for recording? |
-| OQ-LEG-002 | Communications preference defaults? |
-| OQ-WEL-001 | Deliver detailed Wellness specification (content, crisis, device integrations, privacy)? |
-| OQ-WEL-002 | Wellness pricing (also OQ-COM-001) |
+**Related future gate (not Phase 1):** Art-pipeline PoC (avatar + layered outfit + pet + accessory + Idle/Listen/Think/Speak/Reaction) before mass asset production — see ADR-004.
 
 ---
 
-## I. Technical limitations already anticipated (closest valid implementation TBD)
+## D. Avatar & art pipeline — partially resolved
 
-These are not product inventions; they are likely constraints to confirm:
-
-| ID | Topic | Limitation type | Note |
-|----|-------|-----------------|------|
-| OQ-LIM-001 | Unified inbox for WhatsApp/Instagram/etc. | Provider / legal | Official APIs may not allow intended behaviour; must verify per provider before promising UI |
-| OQ-LIM-002 | Web payment for digital unlocks | Platform / store policy | May be restricted; IAP/Play Billing likely required |
-| OQ-LIM-003 | Background processing on iOS/Android | Platform | OS limits; server-side jobs + push, not unbounded device daemons |
-| OQ-LIM-004 | Perfect viseme lip sync | Provider | Depends on TTS timing APIs; amplitude fallback may be Phase 5 launch path |
-| OQ-LIM-005 | Always-on mic wake word | Privacy / platform | Requires explicit future approval; not default |
-
-When a limitation forces a difference from the master specification, Cursor will retain the original requirement, propose the closest valid implementation, and wait for approval before permanently changing the requirement.
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-AV-002 | Launch avatar bases and clothing package set? | DEFERRED |
+| OQ-AV-003 | Who produces rigs/animations? | DEFERRED |
 
 ---
 
-## J. Phase 0 process gate
+## E. Backend / ops — deferred where not decided
 
-| ID | Question |
-|----|----------|
-| OQ-PROC-001 | Does Maryke Farrell approve Phase 0 architecture & roadmap so Phase 1 may begin? |
-| OQ-PROC-002 | Which PROPOSED ADRs in `decisions.md` are approved, amended, or rejected? |
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-BE-002 | Preferred cloud host / region / data residency? | DEFERRED (Phase 1 needs env structure only) |
+| OQ-BE-003 | Object storage vendor? | DEFERRED |
+| OQ-BE-004 | Email delivery vendor? | DEFERRED (verification architecture in Phase 1; vendor later) |
+| OQ-BE-005 | SMS OTP vendor? | DEFERRED |
 
-**Until OQ-PROC-001 is answered affirmatively, Phase 1 must not start.**
+---
+
+## F. Alpha & providers — deferred vendor picks
+
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-AL-001 | Initial AI model provider(s)? | DEFERRED — interfaces only in foundation |
+| OQ-AL-002 | STT/TTS vendor vs OS speech APIs? | DEFERRED |
+| OQ-AL-003 | Launch order for Google vs Microsoft mail/calendar? | DEFERRED |
+| OQ-AL-004 | Are contacts launch-critical? | DEFERRED |
+| OQ-AL-005 | Which messaging networks to investigate first? | DEFERRED |
+| OQ-AL-006 | Memory / transcript retention defaults? | DEFERRED |
+
+---
+
+## G. Security, legal, Wellness — deferred remainder
+
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-SEC-001b | Final ordinary-user MFA mandatory vs optional at launch? | DEFERRED |
+| OQ-SEC-002 | Account deletion & retention policy details? | DEFERRED |
+| OQ-LEG-001 | Final Terms / Privacy versions for recording? | DEFERRED |
+| OQ-LEG-002 | Communications preference defaults? | DEFERRED |
+| OQ-WEL-001 | Detailed Wellness specification? | DEFERRED |
+| OQ-WEL-002 | Wellness pricing? | DEFERRED |
+
+---
+
+## H. Technical limitations (still anticipated)
+
+| ID | Topic | Note |
+|----|-------|------|
+| OQ-LIM-001 | Unified inbox for WhatsApp/Instagram/etc. | Provider/legal — verify before promising |
+| OQ-LIM-002 | Web payment for digital unlocks | Store policy — IAP/Play Billing path approved |
+| OQ-LIM-003 | Background processing on iOS/Android | OS limits; server jobs + push |
+| OQ-LIM-004 | Perfect viseme lip sync | Provider-dependent; architecture must allow visemes |
+| OQ-LIM-005 | Always-on mic wake word | Not V1; later approval only |
+
+---
+
+## I. Process
+
+| ID | Status |
+|----|--------|
+| OQ-PROC-001 | RESOLVED — Phase 0 approved; Phase 1 authorised after docs on baseline |
+| Phase 2 gate | OPEN — requires Phase 1 completion report + owner review |

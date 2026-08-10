@@ -1,8 +1,9 @@
 # Voxora Architecture — Phase 0
 
-**Document status:** OWNER REVIEW REQUIRED  
+**Document status:** OWNER APPROVED WITH AMENDMENTS (2026-08-10)  
 **Product:** Voxora — independent Android & iOS application  
-**Tagline:** Your Voice. Your Avatar. Your Companion. Your World. All in One.
+**Tagline:** Your Voice. Your Avatar. Your Companion. Your World. All in One.  
+**Baseline:** See `decisions.md` for authoritative ADR statuses.
 
 ---
 
@@ -36,14 +37,15 @@ External providers supply technology (AI models, mail, calendar, payments, push)
 │  │  User · Entitlements · Avatar · Pet · Presence        │  │
 │  └──────────────────────┬───────────────────────────────┘  │
 │  ┌──────────────────────▼───────────────────────────────┐  │
-│  │ Interaction Runtime  │  Scene Engine (Rive-based)     │  │
+│  │ Interaction Runtime  │  Scene Engine (Rive primary;   │  │
+│  │                      │  Skia/native may supplement)   │  │
 │  └──────────────────────┬───────────────────────────────┘  │
 │  Native bridges: mic, TTS/STT, secure store, push, files   │
 └──────────────────────────┬─────────────────────────────────┘
                            │ HTTPS + WebSocket
 ┌──────────────────────────▼─────────────────────────────────┐
 │                 Voxora API Platform (TypeScript)           │
-│  Modular monolith (NestJS recommended)                     │
+│  Modular monolith (NestJS — APPROVED)                      │
 │  Auth · Entitlements · Alpha · Bondfire · Pets · Avatars   │
 │  Battles · Games · Rewards · Providers · Notifications     │
 │  Reminders · Memory · Files · Wellness · Admin · Audit     │
@@ -59,25 +61,25 @@ External providers supply technology (AI models, mail, calendar, payments, push)
 
 | Option | Verdict | Reason |
 |--------|---------|--------|
-| Many microservices from day 1 | Reject for Phase 1 | Operational complexity before product existence |
-| Modular monolith with clear domain modules | **Recommend** | Matches pillar architecture; extract later if needed |
+| Many microservices from day 1 | **NOT APPROVED** | Owner: modular monolith first |
+| Modular monolith with clear domain modules | **APPROVED** | Extract later when scale genuinely requires it |
 | Serverless-only | Reject as sole approach | Long-lived battles, websockets, jobs, and provider webhooks need durable process model |
 
 ---
 
 ## 3. Backend architecture answers (Phase 0 §101)
 
-| Question | Recommendation | Owner review? |
-|----------|----------------|---------------|
-| Backend architecture | TypeScript modular monolith (NestJS) exposing versioned REST + WebSocket gateway | Yes — alternative: .NET given VS gitignore history |
-| Required services (logical modules) | Auth, Users/Profiles, Products/Subscriptions/Entitlements, Alpha, Bondfire, Memory, Avatar, Pet, Scene assets, Interaction events, Games, Battles, Rewards, Providers, Calendar/Mail/Contacts adapters, Notifications, Reminders, Files/Workspaces, Wellness, Admin/RBAC, Audit, Feature Flags, Support (later) | No (structure); Yes for Wellness scope |
-| Database | PostgreSQL 16+ as system of record | Yes if owner prefers managed alternative |
-| ORM / data layer | Prisma or Drizzle; recommend **Prisma** for migrations + typed client initially | Yes |
-| Migrations | Versioned SQL migrations via ORM migrate tool; no blind auto-sync in production | No |
-| Background jobs | Redis + BullMQ (or equivalent) with retry, idempotency keys, dead-letter | No |
-| Scheduled jobs | Same queue with cron producers (reminders, token refresh, cleanup, subscription reconcile) | No |
-| Real-time events | WebSocket gateway + Redis pub/sub fan-out; server pushes Alpha tokens, battle ticks, notifications, presence | No |
-| Provider webhooks | Dedicated verified ingress endpoints; signature validation; enqueue for async processing | No |
+| Question | Decision | Owner status |
+|----------|----------|--------------|
+| Backend architecture | TypeScript modular monolith (NestJS) exposing versioned REST + WebSocket gateway | **APPROVED** — .NET not selected; VS gitignore is not a reason |
+| Required services (logical modules) | Auth, Users/Profiles, Products/Subscriptions/Entitlements, Alpha, Bondfire, Memory, Avatar, Pet, Scene assets, Interaction events, Games, Battles, Rewards, Providers, Calendar/Mail/Contacts adapters, Notifications, Reminders, Files/Workspaces, Wellness, Admin/RBAC, Audit, Feature Flags, Support (later) | Structure approved; Wellness content deferred |
+| Database | PostgreSQL as system of record | **APPROVED** |
+| ORM / data layer | **Prisma** preferred initially; Drizzle only if material reason; migrations required | **APPROVED** |
+| Migrations | Versioned SQL migrations; never unsafe production auto-sync | **APPROVED** |
+| Background jobs | Redis + BullMQ (or equivalent) with retry, idempotency keys, dead-letter | **APPROVED** |
+| Scheduled jobs | Same queue with cron producers (reminders, token refresh, cleanup, subscription reconcile) | **APPROVED** |
+| Real-time events | WebSocket gateway + Redis pub/sub fan-out; server pushes Alpha tokens, battle ticks, notifications, presence | **APPROVED** |
+| Provider webhooks | Dedicated verified ingress endpoints; signature validation; enqueue for async processing | **APPROVED** |
 | Secrets | Cloud secret manager / env injected at runtime; never in client; never committed | No |
 | Env separation | `development` / `staging` / `production` projects, DBs, keys, bundle IDs, callback URLs | No |
 
@@ -127,7 +129,9 @@ Single coordinator for avatar/pet/Alpha/sound/effect responses to catalogue even
 
 ### 6.2 Scene Engine
 
-Reusable layered renderer for avatar + pet + environment. Details: `scene-engine.md`.
+Reusable layered renderer for avatar + pet + environment. **Rive is primary** for living characters; Skia/native may supplement effects/games. Battle calculation is never in Rive. Details: `scene-engine.md`.
+
+Art-pipeline PoC required before mass asset production (ADR-004).
 
 ### 6.3 Entitlement Engine
 
@@ -180,39 +184,39 @@ Honest states only:
 
 ---
 
-## 10. Proposed monorepo layout (Phase 1+, not created in Phase 0)
+## 10. Monorepo layout (APPROVED)
 
 ```text
 apps/
   mobile/                 # Expo React Native (Android + iOS)
   api/                    # NestJS modular monolith
-  admin-web/              # later; not primary product
-packages/
-  shared-contracts/       # Zod/OpenAPI types, event IDs, entitlement keys
-  scene-core/             # scene/interaction pure logic testable without UI
-  design-tokens/          # colours, type, spacing
+packages/                 # create only when Phase responsibility is real
+  contracts/
+  config/
+  domain/                 # foundation only as needed
+  design-system/
+  testing/
+  # later when real: interaction-runtime, scene-engine, auth, entitlements, …
 conductor/                # product & engineering docs (this folder)
-infra/                    # later: IaC, pipelines
 ```
 
-Phase 0 does **not** scaffold this tree into runnable code.
+Do **not** create an empty speculative package forest. `admin-web` is later and not the primary product.
 
 ---
 
-## 11. Blocking architectural risks
+## 11. Risks (updated after owner review)
 
-1. Character art pipeline (Rive/rigs) not yet defined by owner/art team.
-2. App Store / Play billing model may force store-mediated subscriptions.
-3. Some “unified communications” providers may lack official APIs for the desired behaviour.
-4. Wellness crisis/safety content not yet supplied.
-5. Commercial downgrade/ownership rules undefined.
+1. Character art pipeline — PoC gate before mass assets (ADR-004).  
+2. Store billing — IAP/Play Billing architecture **approved**; ZAR mapping via config.  
+3. Some unified-communications providers may lack official APIs.  
+4. Wellness content/crisis/price **deferred**.  
+5. Many commercial formulas **deferred** — do not invent; use extension points.
 
 ---
 
-## 12. What Phase 0 deliberately does not do
+## 12. Phase gate
 
-- Does not create production app code
-- Does not create fake Connected/Verified UI
-- Does not invent Wellness medical behaviour
-- Does not invent battle balance numbers
-- Does not begin Phase 1
+- Phase 0 architecture: **APPROVED WITH AMENDMENTS** (2026-08-10).  
+- Phase 1 Core Foundation: **authorised after this documentation baseline is on `main`**.  
+- Phase 1 must not invent deferred product behaviour or build Bondfire/pets/battles/Wellness.  
+- Phase 2: **not authorised** until Phase 1 owner review.

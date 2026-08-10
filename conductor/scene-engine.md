@@ -1,6 +1,6 @@
 # Voxora Scene Engine — Phase 0
 
-**Document status:** OWNER REVIEW REQUIRED  
+**Document status:** OWNER APPROVED WITH SAFEGUARDS (2026-08-10)  
 **Rule:** Avatars and pets must not be rendered with independent ad-hoc logic in every feature.
 
 ---
@@ -38,14 +38,16 @@ Changing an equipped item updates the character **throughout** Voxora via shared
 
 ## 3. Technology proposal
 
-| Concern | Proposal |
+| Concern | Decision |
 |---------|----------|
-| Character runtime | Rive |
-| Effects / particles (optional) | React Native Skia where Rive is insufficient |
+| Character runtime | **Rive primary** (avatars, pets, expressions, reactions, state machines, compatible clothing/equipment) |
+| Effects / particles / specialised games | Skia / native GPU / appropriate game runtime may supplement — Rive not mandated for every visual |
+| Battle calculation | **Never in Rive** — server-authoritative |
 | Orchestration | Interaction Runtime → Scene Engine commands |
-| Asset resolution | Asset catalogue IDs → downloaded/cached Rive/binaries |
+| Asset resolution | Asset catalogue IDs → downloaded/cached binaries |
+| Mass assets | Blocked until art-pipeline PoC (ADR-004) proves layered avatar+pet+states+persistence |
 
-Owner may approve an alternative (e.g. Spine, custom WebGL) if art pipeline requires it — record decision in `decisions.md` after review.
+Do not replace Rive without OWNER REVIEW. Do not force inappropriate game functionality into Rive merely because it is present.
 
 ---
 
