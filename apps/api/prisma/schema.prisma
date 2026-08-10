@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  USER
+  SUPPORT
+  MODERATOR
+  ADMIN
+  OWNER
+  SERVICE_ACCOUNT
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  PENDING_DELETION
+}
+
+model User {
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  emailVerifiedAt  DateTime?
+  passwordHash     String
+  status           UserStatus        @default(ACTIVE)
+  mfaEnabled       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  identities       AuthIdentity[]
+  sessions         Session[]
+  roleAssignments  RoleAssignment[]
+  verificationRecords VerificationRecord[]
+  auditEvents      AuditEvent[]      @relation("AuditActor")
+  mfaFactors       MfaFactor[]
+}
+
+model AuthIdentity {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  type       String
+  provider   String?
+  subject    String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  refreshTokenHash String
+  deviceLabel      String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        RoleName         @unique
+  description String?
+  assignments RoleAssignment[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model RoleAssignment {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  roleId     String    @db.Uuid
+  assignedBy String?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([userId, roleId])
+}
+
+model VerificationRecord {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  channel      String
+  purpose      String
+  tokenHash    String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  attemptCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([tokenHash])
+}
+
+model MfaFactor {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  type       String
+  secretEnc  String?
+  enabled    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  verifiedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  rulesJson   Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  subject   String?
+  payload   Json?
+  ipHash    String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([actorId])
+}
+
+/// Singleton durable record proving Owner bootstrap completed.
+/// Key is always "owner_bootstrap". Survives restarts; bootstrap cannot reuse env token after this exists.
+model OwnerBootstrapCompletion {
+  id          String   @id
+  ownerUserId String   @db.Uuid
+  completedAt DateTime
+  createdAt   DateTime @default(now())
+}

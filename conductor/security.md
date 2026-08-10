@@ -35,18 +35,22 @@
 
 ---
 
-## 3. MFA (OWNER DECISION 2026-08-10)
+## 3. MFA (OWNER DECISION 2026-08-10 + Phase 1 closeout)
 
 | Role | Policy |
 |------|--------|
 | Architecture | MFA-capable from **Phase 1** |
-| Owner | MFA **mandatory** before production privileged access |
-| Admin | MFA **mandatory** |
-| Moderator | MFA **mandatory** |
-| Support | MFA **mandatory** |
+| Phase 1 implementation status | **MFA-READY, NOT YET PRODUCTION-ENFORCED** |
+| Owner | MFA **mandatory** before production privileged access (**Phase 2 enforcement**) |
+| Admin | MFA **mandatory** (**Phase 2 enforcement**) |
+| Moderator | MFA **mandatory** (**Phase 2 enforcement**) |
+| Support | MFA **mandatory** (**Phase 2 enforcement**) |
 | Ordinary user | MFA **capability** required; final mandatory vs optional launch rule **DEFERRED** |
 
-Owner/bootstrap role elevation must be: server-side, auditable, restricted, revocable, protected.
+Phase 1 may audit privileged login without MFA and still issue a session. That is **not** full MFA enforcement.  
+Phase 2 must implement real enrollment, verification, and login challenge so privileged roles cannot simply warn/audit and continue.
+
+Owner/bootstrap role elevation must be: server-side, auditable, restricted, revocable, protected, and **genuinely one-time** (persisted completion + active-OWNER guard).
 
 Never:
 
@@ -130,7 +134,7 @@ Digital entitlements via Apple IAP / Google Play Billing with **server-side rece
 
 ---
 
-## 12. Phase 1 security minimums (authorised)
+## 12. Phase 1 security minimums (delivered)
 
 - modern password hashing  
 - email-verification architecture  
@@ -144,6 +148,17 @@ Digital entitlements via Apple IAP / Google Play Billing with **server-side rece
 - safe CORS  
 - audit logging  
 - secure mobile session storage abstraction  
-- MFA schema/capability foundation for privileged roles  
+- MFA schema/capability foundation for privileged roles (**ready, not production-enforced**)  
+- **one-time Owner bootstrap** with DB-persisted completion, active-OWNER rejection, constant-time secret compare, no secret leakage  
 
 Production secrets must never be committed.
+
+## 13. Phase 2 security requirement (privileged MFA)
+
+Before any privileged role is production-ready:
+
+- real MFA enrollment  
+- verification  
+- login challenge enforcement  
+
+for OWNER, ADMIN, MODERATOR, SUPPORT. No privileged production login may only warn/audit and then continue.

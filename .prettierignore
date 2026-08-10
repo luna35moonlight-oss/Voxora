@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+coverage
+pnpm-lock.yaml
+pnpm-workspace.yaml
+*.png
+*.jpg
+*.riv
+apps/mobile/assets
+conductor
+.gitignore
+LICENSE
+README.md

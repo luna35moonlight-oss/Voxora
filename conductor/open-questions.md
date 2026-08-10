@@ -25,7 +25,7 @@ Items marked **RESOLVED** were decided in the 2026-08-10 owner review.
 | OQ-COM-019 | Apple IAP + Google Play Billing architecture APPROVED; server final entitlement authority; no prohibited web bypass |
 | OQ-COM-020 | ZAR commercial intention retained; do not hard-code R15/R25/R99/R125 into access logic; map via storefront config |
 | OQ-SEC-001 (partial) | MFA required for Owner/Admin/Moderator/Support at privileged production access; ordinary-user MFA capability required; final user mandate deferred |
-| OQ-SEC-003 | Owner bootstrap server-side only — never client email hard-code |
+| OQ-SEC-003 | Owner bootstrap server-side only — never client email hard-code; Phase 1 closeout makes bootstrap genuinely one-time |
 | OQ-PROC-001 | Phase 0 approved with amendments; Phase 1 authorised after docs update |
 | OQ-PROC-002 | ADRs updated per `decisions.md` |
 | OQ-AL-001..002 (Phase 1) | Do **not** select permanent AI/STT/TTS vendors in Phase 1 — interfaces only |
@@ -132,8 +132,10 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 |----|----------|--------|
 | OQ-SEC-001b | Final ordinary-user MFA mandatory vs optional at launch? | DEFERRED |
 | OQ-SEC-002 | Account deletion & retention policy details? | DEFERRED |
+| OQ-SEC-004 | Phase 2 privileged MFA must be production-enforced (TOTP enrollment/challenge) | **REQUIRED IN PHASE 2** (not inventable as optional for privileged roles) |
 | OQ-LEG-001 | Final Terms / Privacy versions for recording? | DEFERRED |
 | OQ-LEG-002 | Communications preference defaults? | DEFERRED |
+| OQ-LEG-003 | Public open-source licence grant for Voxora-owned code (if any)? | **OWNER / LEGAL DECISION REQUIRED** — do not invent MIT/Apache/etc. for Voxora product source |
 | OQ-WEL-001 | Detailed Wellness specification? | DEFERRED |
 | OQ-WEL-002 | Wellness pricing? | DEFERRED |
 

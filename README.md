@@ -8,15 +8,19 @@ Primary platforms: **Android** and **Apple iOS** (independent installed applicat
 Website: [voxora.co.za](https://voxora.co.za) · Support: support@voxora.co.za  
 Copyright: © Maryke Farrell. All rights reserved.
 
+See [`NOTICE.md`](./NOTICE.md) for the distinction between **Voxora-owned** materials and **third-party/open-source** dependencies.  
+Expo template attribution (not a Voxora MIT grant) lives at [`apps/mobile/THIRD_PARTY_NOTICES.md`](./apps/mobile/THIRD_PARTY_NOTICES.md).  
+**OWNER / LEGAL DECISION REQUIRED** before publishing any open-source licence for Voxora-owned code.
+
 ---
 
 ## Architecture baseline status
 
-**Phase 0** architecture was reviewed and **approved with amendments** by Maryke Farrell (2026-08-10).
+**Phase 0** architecture was reviewed and **approved with amendments** by Maryke Farrell (2026-08-10) and merged to `main`.
 
-Phase 0 documentation in [`conductor/`](./conductor/) is the architectural baseline.  
-Phase 1 (Core Foundation) proceeds on a **separate branch/PR** after this baseline is on `main`.  
-**Do not begin Phase 2 until Phase 1 owner review is complete.**
+**Phase 1** (Core Foundation) closeout is on PR #2 pending owner merge review.
+
+**Do not begin Phase 2 until Phase 1 is merged and explicitly authorised.**
 
 Phase 0 documents live in [`conductor/`](./conductor/):
 

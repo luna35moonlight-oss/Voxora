@@ -1,0 +1,41 @@
+{
+  "name": "voxora",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Voxora — Your Voice. Your Avatar. Your Companion. Your World. All in One.",
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter=!@voxora/mobile run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "api:dev": "pnpm --filter @voxora/api start:dev",
+    "api:build": "pnpm --filter @voxora/api build",
+    "api:test": "pnpm --filter @voxora/api test",
+    "mobile:start": "pnpm --filter @voxora/mobile start",
+    "mobile:typecheck": "pnpm --filter @voxora/mobile typecheck",
+    "db:generate": "pnpm --filter @voxora/api prisma:generate",
+    "db:migrate": "pnpm --filter @voxora/api prisma:migrate",
+    "db:migrate:deploy": "pnpm --filter @voxora/api prisma:migrate:deploy"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "msgpackr-extract",
+      "@swc/core"
+    ]
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}
