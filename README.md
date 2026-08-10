@@ -18,11 +18,13 @@ Expo template attribution (not a Voxora MIT grant) lives at [`apps/mobile/THIRD_
 
 **Phase 0** architecture was reviewed and **approved with amendments** by Maryke Farrell (2026-08-10) and merged to `main`.
 
-**Phase 1** (Core Foundation) closeout is on PR #2 pending owner merge review.
+**Phase 1** (Core Foundation) was merged to `main` (PR #2).
 
-**Do not begin Phase 2 until Phase 1 is merged and explicitly authorised.**
+**Phase 2** (Account & Commercial Foundation) is implemented for owner review. See [`conductor/phase-2-notes.md`](./conductor/phase-2-notes.md).
 
-Phase 0 documents live in [`conductor/`](./conductor/):
+**Do not begin Phase 3 until Phase 2 is explicitly approved.**
+
+Phase documents live in [`conductor/`](./conductor/):
 
 | Document | Purpose |
 |----------|---------|

@@ -31,9 +31,10 @@ export function SignInScreen() {
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
-      <Text style={styles.subtitle}>Phase 1 foundation sign-in</Text>
+      <Text style={styles.subtitle}>Enter Voxora</Text>
       <Text style={styles.note}>
-        Email is not marked Verified until verification succeeds. No fake success states.
+        Create a real account to begin resumable onboarding. Email and phone are never Verified
+        until verification succeeds. No fake success states.
       </Text>
 
       <TextInput

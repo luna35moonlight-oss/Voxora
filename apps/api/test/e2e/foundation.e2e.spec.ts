@@ -32,6 +32,9 @@ describe('Voxora API foundation (e2e)', () => {
     process.env.JWT_REFRESH_TTL = '30d';
     process.env.OWNER_BOOTSTRAP_EMAIL = ownerEmail;
     process.env.OWNER_BOOTSTRAP_TOKEN = bootstrapToken;
+    process.env.EMAIL_PROVIDER = 'dev';
+    process.env.PHONE_PROVIDER = 'dev';
+    process.env.MFA_ENCRYPTION_KEY = 'test-mfa-encryption-key-min-32-chars!!';
 
     await prisma.$connect();
 
@@ -54,7 +57,18 @@ describe('Voxora API foundation (e2e)', () => {
     await prisma.auditEvent.deleteMany();
     await prisma.session.deleteMany();
     await prisma.verificationRecord.deleteMany();
+    await prisma.mfaChallenge.deleteMany();
     await prisma.mfaFactor.deleteMany();
+    await prisma.devDeliveryArtifact.deleteMany();
+    await prisma.providerInterest.deleteMany();
+    await prisma.consentRecord.deleteMany();
+    await prisma.purchaseReference.deleteMany();
+    await prisma.subscriptionEvent.deleteMany();
+    await prisma.subscription.deleteMany();
+    await prisma.userEntitlement.deleteMany();
+    await prisma.trialGrant.deleteMany();
+    await prisma.onboardingState.deleteMany();
+    await prisma.userProfile.deleteMany();
     await prisma.roleAssignment.deleteMany();
     await prisma.authIdentity.deleteMany();
     await prisma.ownerBootstrapCompletion.deleteMany();
@@ -88,6 +102,7 @@ describe('Voxora API foundation (e2e)', () => {
       .send({ email, password })
       .expect(201);
 
+    expect(register.body.status).toBe('authenticated');
     expect(register.body.user.email).toBe(email);
     expect(register.body.user.roles).toContain('USER');
     expect(register.body.tokens.accessToken).toBeTruthy();
@@ -137,7 +152,10 @@ describe('Voxora API foundation (e2e)', () => {
         .post('/v1/auth/login')
         .send({ email: ownerEmail, password: ownerPassword })
         .expect(200);
-      expect(login.body.user.roles).toContain('OWNER');
+      // Phase 2: privileged roles cannot receive a full session before MFA.
+      expect(login.body.status).toBe('mfa_enrollment_required');
+      expect(login.body.enrollmentToken).toBeTruthy();
+      expect(login.body.tokens).toBeUndefined();
       expect(JSON.stringify(login.body)).not.toContain(bootstrapToken);
     });
 

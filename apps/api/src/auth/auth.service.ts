@@ -1,20 +1,23 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash, randomBytes } from 'crypto';
-import { RoleName } from '@prisma/client';
+import { RoleName, Visibility } from '@prisma/client';
 import type { ApiEnv } from '@voxora/config';
-import { isPrivilegedRole, type RoleName as ContractRole } from '@voxora/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { RbacService } from '../rbac/rbac.service';
 import { AuditService } from '../audit/audit.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
 import { OWNER_BOOTSTRAP_COMPLETION_ID, safeEqualSecret } from './crypto.util';
+import { MfaService } from '../mfa/mfa.service';
+import { VerificationService } from '../verification/verification.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
 
 @Injectable()
 export class AuthService {
@@ -25,12 +28,16 @@ export class AuthService {
     private readonly rbac: RbacService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<ApiEnv, true>,
+    @Inject(forwardRef(() => MfaService)) private readonly mfa: MfaService,
+    private readonly verification: VerificationService,
+    @Inject(forwardRef(() => OnboardingService)) private readonly onboarding: OnboardingService,
   ) {}
 
   async register(email: string, password: string) {
     const normalized = email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email: normalized } });
     if (existing) {
+      // Keep Conflict for explicit duplicate registration attempts; rate-limited at controller.
       throw new ConflictException('Account already exists for this email');
     }
 
@@ -42,19 +49,34 @@ export class AuthService {
         identities: {
           create: { type: 'password', provider: 'local', subject: normalized },
         },
+        profile: {
+          create: {
+            emailVisibility: Visibility.PRIVATE,
+            phoneVisibility: Visibility.PRIVATE,
+          },
+        },
       },
     });
 
     await this.rbac.assignRole({ userId: user.id, role: RoleName.USER });
-    await this.createEmailVerification(user.id);
+    await this.onboarding.ensureStarted(user.id);
+    const delivery = await this.verification.requestEmailVerification(user.id);
     await this.audit.record({
       actorId: user.id,
       action: 'auth.register',
       subject: user.id,
-      payload: { email: normalized },
+      payload: { email: normalized, emailDeliveryStatus: delivery.deliveryStatus },
     });
 
-    return this.issueSession(user.id);
+    const session = await this.issueSessionForUser(user.id);
+    return {
+      status: 'authenticated' as const,
+      ...session,
+      emailDeliveryStatus: delivery.deliveryStatus,
+      ...(delivery.deliveryStatus === 'DEV_CAPTURED' && 'devVerificationToken' in delivery
+        ? { devVerificationToken: delivery.devVerificationToken }
+        : {}),
+    };
   }
 
   async login(email: string, password: string) {
@@ -73,18 +95,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const roles = await this.rbac.getUserRoles(user.id);
-    const privileged = roles.some((r) => isPrivilegedRole(r as ContractRole));
-    if (privileged && !user.mfaEnabled) {
-      // PHASE 1 STATUS: MFA-READY, NOT YET PRODUCTION-ENFORCED.
-      // Privileged login without MFA is audited but still issues a session in Phase 1.
-      // Phase 2 must enforce real MFA enrollment/challenge before privileged production access.
-      await this.audit.record({
-        actorId: user.id,
-        action: 'auth.privileged_login_without_mfa',
-        subject: user.id,
-        payload: { roles, mfaStatus: 'ready_not_enforced' },
-      });
+    const gate = await this.mfa.beginPrivilegedLoginGate(user.id);
+    if (gate.gate === 'enrollment') {
+      return {
+        status: 'mfa_enrollment_required' as const,
+        enrollmentToken: gate.enrollmentToken,
+        expiresInSeconds: gate.expiresInSeconds,
+      };
+    }
+    if (gate.gate === 'challenge') {
+      return {
+        status: 'mfa_required' as const,
+        challengeToken: gate.challengeToken,
+        expiresInSeconds: gate.expiresInSeconds,
+      };
     }
 
     await this.audit.record({
@@ -93,7 +117,8 @@ export class AuthService {
       subject: user.id,
     });
 
-    return this.issueSession(user.id);
+    const session = await this.issueSessionForUser(user.id);
+    return { status: 'authenticated' as const, ...session };
   }
 
   async refresh(refreshToken: string) {
@@ -110,7 +135,8 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    return this.issueSession(session.userId);
+    const next = await this.issueSessionForUser(session.userId);
+    return { status: 'authenticated' as const, ...next };
   }
 
   async logout(refreshToken: string) {
@@ -133,35 +159,7 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    const hash = this.hashOpaque(token);
-    const record = await this.prisma.verificationRecord.findFirst({
-      where: { tokenHash: hash, purpose: 'email_verification', usedAt: null },
-    });
-    if (!record || record.expiresAt.getTime() < Date.now()) {
-      throw new BadRequestException('Invalid or expired verification token');
-    }
-    if (record.attemptCount >= 5) {
-      throw new BadRequestException('Verification attempts exceeded');
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.verificationRecord.update({
-        where: { id: record.id },
-        data: { usedAt: new Date(), attemptCount: { increment: 1 } },
-      }),
-      this.prisma.user.update({
-        where: { id: record.userId },
-        data: { emailVerifiedAt: new Date() },
-      }),
-    ]);
-
-    await this.audit.record({
-      actorId: record.userId,
-      action: 'auth.email_verified',
-      subject: record.userId,
-    });
-
-    return { status: 'verified' as const };
+    return this.verification.confirmEmailVerificationPublic(token);
   }
 
   /**
@@ -201,7 +199,6 @@ export class AuthService {
     const emailMatches = safeEqualSecret(normalizedEmail, configuredEmail.trim().toLowerCase());
     const tokenMatches = safeEqualSecret(bootstrapToken, configuredToken);
 
-    // Both identity and secret required — never elevate on either alone.
     if (!emailMatches || !tokenMatches) {
       await this.audit.record({
         action: 'owner.bootstrap_rejected',
@@ -272,27 +269,7 @@ export class AuthService {
     return count > 0;
   }
 
-  private async createEmailVerification(userId: string) {
-    const token = randomBytes(32).toString('base64url');
-    const tokenHash = this.hashOpaque(token);
-    await this.prisma.verificationRecord.create({
-      data: {
-        userId,
-        channel: 'email',
-        purpose: 'email_verification',
-        tokenHash,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
-    // Phase 1: token stored hashed. Delivery vendor is deferred — do not claim email Sent.
-    return token;
-  }
-
-  private hashOpaque(token: string) {
-    return createHash('sha256').update(token).digest('hex');
-  }
-
-  private async issueSession(userId: string) {
+  async issueSessionForUser(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const roles = await this.rbac.getUserRoles(userId);
     const accessToken = await this.tokens.signAccessToken({

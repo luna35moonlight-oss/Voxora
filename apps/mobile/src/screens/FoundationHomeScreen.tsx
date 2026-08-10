@@ -6,10 +6,17 @@ import { apiClient } from '../services/apiClient';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { notificationArchitecture } from '../services/notificationArchitecture';
 
-export function FoundationHomeScreen({ connectivity }: { connectivity: ConnectivityState }) {
+export function FoundationHomeScreen({
+  connectivity,
+  onOpenSettings,
+}: {
+  connectivity: ConnectivityState;
+  onOpenSettings: () => void;
+}) {
   const { user, signOut } = useAuth();
   const [health, setHealth] = useState<string>('checking…');
   const [flags, setFlags] = useState<string>('loading…');
+  const [subscription, setSubscription] = useState<string>('loading…');
 
   useEffect(() => {
     void (async () => {
@@ -25,6 +32,23 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
       } catch {
         setFlags('unavailable');
       }
+      try {
+        const products = (await apiClient.catalogue()) as Array<{
+          code: string;
+          pricing: { amountMinor: number; currency: string } | null;
+        }>;
+        setSubscription(
+          products
+            .map((p) =>
+              p.pricing
+                ? `${p.code} ${p.pricing.currency} ${(p.pricing.amountMinor / 100).toFixed(0)}`
+                : p.code,
+            )
+            .join(' · '),
+        );
+      } catch {
+        setSubscription('catalogue unavailable');
+      }
     })();
   }, []);
 
@@ -33,12 +57,13 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
-      <Text style={styles.title}>Core foundation shell</Text>
+      <Text style={styles.title}>Account foundation ready</Text>
       <Text style={styles.body}>
-        Phase 1 only — no Bondfire, pets, battles, games, or fake provider connections.
+        Phase 2 complete for this account path — avatar/pet systems belong to a later phase. No
+        Bondfire conversations, pets, or fake Connected providers here.
       </Text>
 
-      <View style={styles.card}>
+      <View style={styles.panel}>
         <Text style={styles.label}>Signed in as</Text>
         <Text style={styles.value}>{user?.email}</Text>
         <Text style={styles.meta}>
@@ -47,17 +72,25 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
         </Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={styles.panel}>
         <Text style={styles.label}>API health</Text>
         <Text style={styles.value}>{health}</Text>
         <Text style={styles.meta}>Connectivity: {connectivity}</Text>
         <Text style={styles.meta}>Feature flags: {flags}</Text>
+        <Text style={styles.meta}>Catalogue: {subscription}</Text>
         <Text style={styles.meta}>
           Notifications interface: {notificationArchitecture.describe()}
         </Text>
       </View>
 
-      <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.button}>
+      <Pressable accessibilityRole="button" onPress={onOpenSettings} style={styles.button}>
+        <Text style={styles.buttonText}>Open settings</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void signOut()}
+        style={[styles.button, styles.secondary]}
+      >
         <Text style={styles.buttonText}>Sign out</Text>
       </Pressable>
     </View>
@@ -86,7 +119,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.lg,
   },
-  card: {
+  panel: {
     backgroundColor: colors.background.elevated,
     borderRadius: radius.lg,
     padding: spacing.md,
@@ -106,6 +139,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  secondary: {
+    backgroundColor: colors.background.soft,
+    borderWidth: 1,
+    borderColor: colors.border.strong,
   },
   buttonText: { color: colors.text.primary, fontWeight: typography.weight.semibold },
 });

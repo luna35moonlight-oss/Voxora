@@ -1,15 +1,15 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PasswordService } from './password.service';
-import { TokenService } from './token.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
+import { MfaModule } from '../mfa/mfa.module';
+import { VerificationModule } from '../verification/verification.module';
+import { OnboardingModule } from '../onboarding/onboarding.module';
 
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [VerificationModule, forwardRef(() => MfaModule), forwardRef(() => OnboardingModule)],
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, TokenService, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard, TokenService],
+  providers: [AuthService, PasswordService],
+  exports: [AuthService],
 })
 export class AuthModule {}

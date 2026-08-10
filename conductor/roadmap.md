@@ -16,41 +16,42 @@ Documentation update incorporates those decisions.
 
 ---
 
-## Phase 1 — Core foundation — READY FOR OWNER MERGE REVIEW
+## Phase 1 — Core foundation — MERGED
 
-Delivered (including closeout):
+Delivered and merged to `main` (PR #2):
 
 - monorepo foundation (`apps/mobile`, `apps/api`, real `packages/*`)
 - Expo SDK 57 skeleton (Android API 29 / iOS 16.4)
 - NestJS + PostgreSQL + Prisma + Redis/BullMQ foundation
 - auth / RBAC / audit / feature flags / health / CI
 - **one-time Owner bootstrap** (DB-persisted completion)
-- MFA schema + **MFA-READY, NOT YET PRODUCTION-ENFORCED** documentation
+- MFA schema readiness (enforcement completed in Phase 2)
 - copyright vs third-party licence notices
-
-**Explicitly out of Phase 1 (confirmed):** Bondfire, Alpha providers, avatars/pets/Scene/Interaction production, games, battles, Wellness, mail/calendar, fake social/billing success.
-
-# PHASE 1 READY FOR OWNER MERGE REVIEW
 
 ---
 
-## Phase 2 — Account and commercial foundation
+## Phase 2 — Account and commercial foundation — READY FOR OWNER REVIEW
 
-**Not authorised until Phase 1 is merged and Phase 2 is explicitly authorised.**
+Authorised by Maryke Farrell after Phase 1 merge. Implemented on `cursor/phase-2-account-commercial-9cb3`.
 
-Must include (when authorised):
+Delivered:
 
-- Resumable onboarding  
-- Email verification (full product flows)  
-- Phone OTP  
-- Settings + privacy defaults  
-- Products, prices (server)  
-- Subscriptions + Apple/Google receipt validation  
-- Entitlements engine  
-- Trials structure (Wellness trial wiring later)  
-- **Full privileged MFA enrollment/challenge enforcement** (OWNER/ADMIN/MODERATOR/SUPPORT) — no audit-only bypass
+- Resumable server-authoritative onboarding state machine  
+- Email verification via `EmailDeliveryProvider`  
+- Phone OTP via `PhoneVerificationProvider`  
+- Username / privacy defaults / region-locale  
+- Versioned consents + 18+ age gate  
+- Product catalogue + subscription intent entities  
+- Apple/Google store adapters (`NOT_CONFIGURED` until credentials)  
+- Central Entitlement Service (flags kept separate)  
+- Wellness trial **architecture only**  
+- **Privileged MFA TOTP enrollment/challenge enforcement**  
+- Settings + mobile onboarding surfaces  
+- Avatar/pet **handoff only** (no fake owned avatars/pets)
 
-**Exit criteria:** User can register, verify, subscribe (sandbox), receive entitlements; prices not hard-coded in UI; privileged MFA enforced.
+**Explicitly out of Phase 2:** Scene Engine, living avatars/pets, Bondfire conversations, Wellness product, games/battles, mail/calendar/contacts, fake Paid/Active billing.
+
+# PHASE 2 READY FOR OWNER REVIEW — DO NOT BEGIN PHASE 3 WITHOUT APPROVAL
 
 ---
 
