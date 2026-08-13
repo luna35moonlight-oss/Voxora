@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../services/apiClient';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { notificationArchitecture } from '../services/notificationArchitecture';
+import { WhiteWolfMoonDashCard } from '../games/WhiteWolfMoonDashCard';
 
 export function FoundationHomeScreen({ connectivity }: { connectivity: ConnectivityState }) {
   const { user, signOut } = useAuth();
@@ -29,14 +30,17 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
-      <Text style={styles.title}>Core foundation shell</Text>
+      <Text style={styles.title}>White Wolf Moon Dash</Text>
       <Text style={styles.body}>
-        Phase 1 only — no Bondfire, pets, battles, games, or fake provider connections.
+        Help Lumi, a cute white wolf, collect moon crystals while the foundation services stay
+        honest about what is connected.
       </Text>
+
+      <WhiteWolfMoonDashCard />
 
       <View style={styles.card}>
         <Text style={styles.label}>Signed in as</Text>
@@ -60,16 +64,19 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.button}>
         <Text style={styles.buttonText}>Sign out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
     backgroundColor: colors.background.base,
+  },
+  container: {
+    flexGrow: 1,
     padding: spacing.lg,
-    justifyContent: 'center',
+    paddingBottom: spacing.xl,
   },
   brand: {
     color: colors.brand.blue,
