@@ -218,10 +218,23 @@ export class AvatarsService implements OnModuleInit {
     }
 
     for (const item of phase3Items) {
+      const itemData = {
+        id: item.id,
+        displayName: item.displayName,
+        slot: item.slot,
+        rarity: item.rarity,
+        rigFamily: item.rigFamily,
+        assetRef: item.assetRef,
+        thumbnailRef: item.thumbnailRef,
+        active: item.active,
+        version: item.version,
+        performanceProfile: item.performanceProfile,
+        conflictsJson: item.conflictsWith,
+      };
       await this.prisma.avatarItem.upsert({
         where: { id: item.id },
-        create: { ...item, conflictsJson: item.conflictsWith },
-        update: { ...item, conflictsJson: item.conflictsWith },
+        create: itemData,
+        update: itemData,
       });
       await this.prisma.avatarAsset.upsert({
         where: { id: `${item.id}-layer-rive` },
