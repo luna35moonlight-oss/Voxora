@@ -67,7 +67,7 @@ export class AvatarsService implements OnModuleInit {
     const currentAvatarRow =
       selectedAvatarId === null
         ? null
-        : catalogueRows.find((avatar) => avatar.id === selectedAvatarId) ?? null;
+        : (catalogueRows.find((avatar) => avatar.id === selectedAvatarId) ?? null);
     const equipmentRows =
       selectedAvatarId === null
         ? []
@@ -125,13 +125,21 @@ export class AvatarsService implements OnModuleInit {
     return this.getCurrent(userId);
   }
 
-  async equipItem(userId: string, avatarId: string, itemId: string): Promise<CurrentAvatarResponse> {
+  async equipItem(
+    userId: string,
+    avatarId: string,
+    itemId: string,
+  ): Promise<CurrentAvatarResponse> {
     await this.ensureStarterOwnership(userId);
     const [avatar, item, avatarOwnership, itemOwnership] = await Promise.all([
       this.prisma.avatarCatalogue.findUnique({ where: { id: avatarId } }),
       this.prisma.avatarItem.findUnique({ where: { id: itemId } }),
-      this.prisma.userAvatarOwnership.findUnique({ where: { userId_avatarId: { userId, avatarId } } }),
-      this.prisma.userAvatarItemOwnership.findUnique({ where: { userId_itemId: { userId, itemId } } }),
+      this.prisma.userAvatarOwnership.findUnique({
+        where: { userId_avatarId: { userId, avatarId } },
+      }),
+      this.prisma.userAvatarItemOwnership.findUnique({
+        where: { userId_itemId: { userId, itemId } },
+      }),
     ]);
 
     if (!avatar?.active || !item?.active) {
@@ -283,7 +291,8 @@ function toAvatarCatalogueItem(
     ...avatar,
     tier: avatar.tier as AvatarCatalogueItem['tier'],
     rarity: avatar.rarity as AvatarCatalogueItem['rarity'],
-    entitlementCapability: avatar.entitlementCapability as AvatarCatalogueItem['entitlementCapability'],
+    entitlementCapability:
+      avatar.entitlementCapability as AvatarCatalogueItem['entitlementCapability'],
     packageKey: avatar.packageKey ?? undefined,
     performanceProfile: avatar.performanceProfile as AvatarCatalogueItem['performanceProfile'],
     owned,
@@ -323,5 +332,7 @@ function toInventoryItem(
 }
 
 function parseConflicts(value: unknown): AvatarEquipmentSlot[] {
-  return Array.isArray(value) ? (value.filter((slot) => typeof slot === 'string') as AvatarEquipmentSlot[]) : [];
+  return Array.isArray(value)
+    ? (value.filter((slot) => typeof slot === 'string') as AvatarEquipmentSlot[])
+    : [];
 }

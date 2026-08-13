@@ -35,7 +35,10 @@ export function AvatarFoundationCard() {
         states. Pet selection remains Phase 4.
       </Text>
 
-      <View style={styles.scene} accessibilityLabel={sceneLabel(currentAvatar?.displayName, runtimeState)}>
+      <View
+        style={styles.scene}
+        accessibilityLabel={sceneLabel(currentAvatar?.displayName, runtimeState)}
+      >
         <View style={styles.avatarBase}>
           <View style={styles.hairLayer} />
           <View style={styles.face}>
@@ -112,8 +115,8 @@ export function AvatarFoundationCard() {
       ) : null}
 
       <Text style={styles.finePrint}>
-        Listening and Speaking are avatar states only here. No microphone capture or Alpha provider is
-        active in Phase 3.
+        Listening and Speaking are avatar states only here. No microphone capture or Alpha provider
+        is active in Phase 3.
       </Text>
     </View>
   );
@@ -150,7 +153,9 @@ export function AvatarFoundationCard() {
     setError(null);
     try {
       const token = await requireAccessToken();
-      setAvatarState(await apiClient.equipAvatarItem(token, { avatarId: currentAvatar.id, itemId }));
+      setAvatarState(
+        await apiClient.equipAvatarItem(token, { avatarId: currentAvatar.id, itemId }),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not equip item');
     } finally {
@@ -164,10 +169,12 @@ export function AvatarFoundationCard() {
     setError(null);
     try {
       const token = await requireAccessToken();
-      setAvatarState(await apiClient.unequipAvatarItem(token, {
-        avatarId: currentAvatar.id,
-        slot,
-      }));
+      setAvatarState(
+        await apiClient.unequipAvatarItem(token, {
+          avatarId: currentAvatar.id,
+          slot,
+        }),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not unequip item');
     } finally {
