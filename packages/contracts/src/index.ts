@@ -193,11 +193,18 @@ export type WhiteWolfAttemptOutcome = z.infer<typeof WhiteWolfAttemptOutcomeSche
 export const CompleteWhiteWolfAttemptRequestSchema = z.object({
   score: z.number().int().min(0).max(WhiteWolfMoonDashMaxAcceptedScore),
   outcome: WhiteWolfAttemptOutcomeSchema,
-  durationMs: z.number().int().min(0).max(15 * 60 * 1000).optional(),
+  durationMs: z
+    .number()
+    .int()
+    .min(0)
+    .max(15 * 60 * 1000)
+    .optional(),
 });
 export type CompleteWhiteWolfAttemptRequest = z.infer<typeof CompleteWhiteWolfAttemptRequestSchema>;
 
 export const CompleteWhiteWolfAttemptResponseSchema = z.object({
   status: WhiteWolfGameStatusResponseSchema,
 });
-export type CompleteWhiteWolfAttemptResponse = z.infer<typeof CompleteWhiteWolfAttemptResponseSchema>;
+export type CompleteWhiteWolfAttemptResponse = z.infer<
+  typeof CompleteWhiteWolfAttemptResponseSchema
+>;

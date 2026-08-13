@@ -118,7 +118,11 @@ function getStatus(score: number, energy: number): WhiteWolfGameStatus {
   return 'playing';
 }
 
-function getMoveMessage(move: WhiteWolfMove, status: WhiteWolfGameStatus, scoreGained: number): string {
+function getMoveMessage(
+  move: WhiteWolfMove,
+  status: WhiteWolfGameStatus,
+  scoreGained: number,
+): string {
   if (status === 'won') {
     return `Lumi bounds into the moon den with ${scoreGained} fresh crystals. You win!`;
   }

@@ -80,7 +80,15 @@ export function WhiteWolfMoonDashCard() {
 
     setSubmittedAttemptId(attemptId);
     void completeAttempt(attemptId, game.score, finalOutcome ?? getOutcomeFromStatus(game.status));
-  }, [activeAttempt, attemptId, finalOutcome, game.score, game.status, gameOver, submittedAttemptId]);
+  }, [
+    activeAttempt,
+    attemptId,
+    finalOutcome,
+    game.score,
+    game.status,
+    gameOver,
+    submittedAttemptId,
+  ]);
 
   const onMove = (move: WhiteWolfMove) => {
     setGame((current) => applyWhiteWolfMove(current, move));
@@ -88,7 +96,11 @@ export function WhiteWolfMoonDashCard() {
 
   const onPrimaryAction = () => {
     if (pendingSubmission && attemptId) {
-      void completeAttempt(attemptId, game.score, finalOutcome ?? getOutcomeFromStatus(game.status));
+      void completeAttempt(
+        attemptId,
+        game.score,
+        finalOutcome ?? getOutcomeFromStatus(game.status),
+      );
       return;
     }
 
@@ -117,7 +129,10 @@ export function WhiteWolfMoonDashCard() {
         </View>
       </View>
 
-      <View style={styles.wolfStage} accessibilityLabel="Cute white wolf Lumi in a snowy moonlit scene">
+      <View
+        style={styles.wolfStage}
+        accessibilityLabel="Cute white wolf Lumi in a snowy moonlit scene"
+      >
         <View style={styles.moon} />
         <View style={[styles.star, styles.starOne]} />
         <View style={[styles.star, styles.starTwo]} />
