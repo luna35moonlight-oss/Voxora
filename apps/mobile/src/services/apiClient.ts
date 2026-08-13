@@ -1,5 +1,11 @@
 import Constants from 'expo-constants';
-import type { AuthResponse } from '@voxora/contracts';
+import type {
+  AuthResponse,
+  CompleteWhiteWolfAttemptRequest,
+  CompleteWhiteWolfAttemptResponse,
+  StartWhiteWolfAttemptResponse,
+  WhiteWolfGameStatusResponse,
+} from '@voxora/contracts';
 
 const apiUrl =
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
@@ -54,4 +60,26 @@ export const apiClient = {
       headers: { Authorization: `Bearer ${accessToken}` },
     }),
   featureFlags: () => request<Array<{ key: string; enabled: boolean }>>('/feature-flags'),
+  whiteWolfStatus: (accessToken: string) =>
+    request<WhiteWolfGameStatusResponse>('/games/white-wolf-moon-dash/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  startWhiteWolfAttempt: (accessToken: string) =>
+    request<StartWhiteWolfAttemptResponse>('/games/white-wolf-moon-dash/attempts/start', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  completeWhiteWolfAttempt: (
+    accessToken: string,
+    attemptId: string,
+    body: CompleteWhiteWolfAttemptRequest,
+  ) =>
+    request<CompleteWhiteWolfAttemptResponse>(
+      `/games/white-wolf-moon-dash/attempts/${attemptId}/complete`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(body),
+      },
+    ),
 };

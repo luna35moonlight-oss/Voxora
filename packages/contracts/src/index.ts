@@ -129,3 +129,58 @@ export const ApiErrorSchema = z.object({
   correlationId: z.string().optional(),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+export const WhiteWolfMoonDashGameId = z.literal('white-wolf-moon-dash');
+export type WhiteWolfMoonDashGameId = z.infer<typeof WhiteWolfMoonDashGameId>;
+
+export const WhiteWolfMoonDashDailyLimit = 10;
+export const WhiteWolfMoonDashPrizeRanks = 2;
+export const WhiteWolfMoonDashMaxAcceptedScore = 40;
+
+export const WhiteWolfLeaderboardEntrySchema = z.object({
+  rank: z.number().int().positive(),
+  playerLabel: z.string().min(1),
+  score: z.number().int().nonnegative(),
+  prizeEligible: z.boolean(),
+});
+export type WhiteWolfLeaderboardEntry = z.infer<typeof WhiteWolfLeaderboardEntrySchema>;
+
+export const WhiteWolfRewardStatusSchema = z.enum([
+  'not_ranked',
+  'not_in_prize_position',
+  'eligible_pending_team_code',
+]);
+export type WhiteWolfRewardStatus = z.infer<typeof WhiteWolfRewardStatusSchema>;
+
+export const WhiteWolfGameStatusResponseSchema = z.object({
+  gameId: WhiteWolfMoonDashGameId,
+  dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dailyAttemptLimit: z.literal(WhiteWolfMoonDashDailyLimit),
+  attemptsUsedToday: z.number().int().min(0).max(WhiteWolfMoonDashDailyLimit),
+  attemptsRemainingToday: z.number().int().min(0).max(WhiteWolfMoonDashDailyLimit),
+  bestScore: z.number().int().nonnegative(),
+  bestRank: z.number().int().positive().nullable(),
+  prizeRanks: z.literal(WhiteWolfMoonDashPrizeRanks),
+  rewardStatus: WhiteWolfRewardStatusSchema,
+  rewardNote: z.string().min(1),
+  leaderboard: z.array(WhiteWolfLeaderboardEntrySchema).max(WhiteWolfMoonDashPrizeRanks),
+  serverTime: z.string(),
+});
+export type WhiteWolfGameStatusResponse = z.infer<typeof WhiteWolfGameStatusResponseSchema>;
+
+export const StartWhiteWolfAttemptResponseSchema = z.object({
+  attemptId: z.string().uuid(),
+  status: WhiteWolfGameStatusResponseSchema,
+});
+export type StartWhiteWolfAttemptResponse = z.infer<typeof StartWhiteWolfAttemptResponseSchema>;
+
+export const CompleteWhiteWolfAttemptRequestSchema = z.object({
+  score: z.number().int().min(0).max(WhiteWolfMoonDashMaxAcceptedScore),
+  durationMs: z.number().int().min(0).max(15 * 60 * 1000).optional(),
+});
+export type CompleteWhiteWolfAttemptRequest = z.infer<typeof CompleteWhiteWolfAttemptRequestSchema>;
+
+export const CompleteWhiteWolfAttemptResponseSchema = z.object({
+  status: WhiteWolfGameStatusResponseSchema,
+});
+export type CompleteWhiteWolfAttemptResponse = z.infer<typeof CompleteWhiteWolfAttemptResponseSchema>;

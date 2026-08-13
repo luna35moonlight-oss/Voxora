@@ -37,6 +37,8 @@ model User {
   verificationRecords VerificationRecord[]
   auditEvents      AuditEvent[]      @relation("AuditActor")
   mfaFactors       MfaFactor[]
+  gameAttempts     GameAttempt[]
+  gameDailyCounters GameDailyCounter[]
 }
 
 model AuthIdentity {
@@ -154,6 +156,39 @@ model AuditEvent {
 
   @@index([action, createdAt])
   @@index([actorId])
+}
+
+model GameAttempt {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  gameId      String
+  dayKey      DateTime
+  status      String    @default("STARTED")
+  score       Int?
+  durationMs  Int?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, gameId, dayKey])
+  @@index([gameId, status, score])
+  @@index([createdAt])
+}
+
+model GameDailyCounter {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  gameId       String
+  dayKey       DateTime
+  attemptCount Int      @default(0)
+  highScore    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId, dayKey])
+  @@index([gameId, dayKey])
 }
 
 /// Singleton durable record proving Owner bootstrap completed.

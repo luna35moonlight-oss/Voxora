@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
+import type { WhiteWolfGameStatusResponse } from '@voxora/contracts';
+import { apiClient } from '../services/apiClient';
+import { secureSessionStore } from '../services/secureSessionStore';
 import {
   applyWhiteWolfMove,
   createInitialWhiteWolfGame,
@@ -22,13 +25,82 @@ const moves: Array<{
 
 export function WhiteWolfMoonDashCard() {
   const [game, setGame] = useState(createInitialWhiteWolfGame);
+  const [remoteStatus, setRemoteStatus] = useState<WhiteWolfGameStatusResponse | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [submittedAttemptId, setSubmittedAttemptId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
   const progress = Math.min(game.score / WHITE_WOLF_TARGET_SCORE, 1);
   const moonlight = Math.min(game.energy / WHITE_WOLF_MAX_ENERGY, 1);
-  const prompt = getWhiteWolfPrompt(game);
+  const pendingSubmission = attemptId !== null && submittedAttemptId === attemptId;
+  const activeAttempt = attemptId !== null && !pendingSubmission;
+  const prompt = activeAttempt
+    ? getWhiteWolfPrompt(game)
+    : 'Start a daily try when you are ready to guide Lumi.';
   const gameOver = game.status !== 'playing';
+  const attemptsRemaining = remoteStatus?.attemptsRemainingToday ?? 0;
+  const primaryDisabled =
+    syncing ||
+    remoteStatus === null ||
+    (attemptsRemaining <= 0 && !pendingSubmission && !activeAttempt);
+  const primaryActionLabel = useMemo(() => {
+    if (syncing) {
+      return 'Syncing...';
+    }
+
+    if (pendingSubmission) {
+      return 'Retry score submit';
+    }
+
+    if (activeAttempt && !gameOver) {
+      return 'Forfeit and submit score';
+    }
+
+    if (remoteStatus === null) {
+      return 'Load daily tries';
+    }
+
+    if (attemptsRemaining <= 0) {
+      return 'Daily limit reached';
+    }
+
+    return gameOver ? 'Start next daily try' : 'Start daily try';
+  }, [activeAttempt, attemptsRemaining, gameOver, pendingSubmission, remoteStatus, syncing]);
+
+  useEffect(() => {
+    void refreshStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!activeAttempt || !gameOver || !attemptId || submittedAttemptId === attemptId) {
+      return;
+    }
+
+    setSubmittedAttemptId(attemptId);
+    void completeAttempt(attemptId, game.score);
+  }, [activeAttempt, attemptId, game.score, gameOver, submittedAttemptId]);
 
   const onMove = (move: WhiteWolfMove) => {
     setGame((current) => applyWhiteWolfMove(current, move));
+  };
+
+  const onPrimaryAction = () => {
+    if (pendingSubmission && attemptId) {
+      void completeAttempt(attemptId, game.score);
+      return;
+    }
+
+    if (activeAttempt && !gameOver) {
+      setGame((current) => ({
+        ...current,
+        status: 'resting',
+        lastMessage: 'Lumi trots home and banks this try with the crystals she found.',
+      }));
+      return;
+    }
+
+    void startAttempt();
   };
 
   return (
@@ -39,7 +111,7 @@ export function WhiteWolfMoonDashCard() {
           <Text style={styles.title}>White Wolf Moon Dash</Text>
         </View>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>Local prototype</Text>
+          <Text style={styles.badgeText}>10 tries/day</Text>
         </View>
       </View>
 
@@ -56,6 +128,38 @@ export function WhiteWolfMoonDashCard() {
         {game.lastMessage}
       </Text>
 
+      <View style={styles.ruleBox}>
+        <Text style={styles.ruleTitle}>Daily challenge rules</Text>
+        <Text style={styles.ruleText}>
+          Tries today: {remoteStatus?.attemptsUsedToday ?? 0}/
+          {remoteStatus?.dailyAttemptLimit ?? 10}. Best score: {remoteStatus?.bestScore ?? 0}.
+        </Text>
+        <Text style={styles.ruleText}>
+          Prize: First and Second place can receive a legendary avatar redeem code issued by the
+          Voxora team after review.
+        </Text>
+        <Text style={styles.ruleText}>
+          Your rank: {formatRank(remoteStatus?.bestRank)} ({formatReward(remoteStatus)})
+        </Text>
+      </View>
+
+      {remoteStatus?.leaderboard.length ? (
+        <View style={styles.leaderboard}>
+          <Text style={styles.ruleTitle}>Prize positions</Text>
+          {remoteStatus.leaderboard.map((entry) => (
+            <Text key={`${entry.rank}-${entry.playerLabel}`} style={styles.ruleText}>
+              #{entry.rank} {entry.playerLabel}: {entry.score} crystals
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      {remoteError ? (
+        <Text style={styles.error} accessibilityRole="alert">
+          {remoteError}
+        </Text>
+      ) : null}
+
       <View style={styles.statsRow}>
         <Stat label="Crystals" value={`${game.score}/${WHITE_WOLF_TARGET_SCORE}`} />
         <Stat label="Moonlight" value={`${game.energy}/${WHITE_WOLF_MAX_ENERGY}`} />
@@ -68,7 +172,8 @@ export function WhiteWolfMoonDashCard() {
 
       <View style={styles.movesRow}>
         {moves.map((move) => {
-          const disabled = gameOver || (move.id === 'pounce' && game.energy < 2);
+          const disabled =
+            !activeAttempt || gameOver || syncing || (move.id === 'pounce' && game.energy < 2);
 
           return (
             <Pressable
@@ -88,18 +193,101 @@ export function WhiteWolfMoonDashCard() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => setGame(createInitialWhiteWolfGame())}
-        style={[styles.resetButton, game.status === 'won' && styles.winButton]}
+        accessibilityState={{ disabled: primaryDisabled }}
+        disabled={primaryDisabled}
+        onPress={onPrimaryAction}
+        style={[
+          styles.resetButton,
+          game.status === 'won' && styles.winButton,
+          primaryDisabled && styles.disabledButton,
+        ]}
       >
-        <Text style={styles.resetText}>{gameOver ? 'Play again' : 'Restart run'}</Text>
+        <Text style={styles.resetText}>{primaryActionLabel}</Text>
       </Pressable>
 
       <Text style={styles.finePrint}>
-        Scores stay on-device for this prototype. Rewards and leaderboards still require server
-        validation.
+        Scores submit to Voxora for validation. Redeem codes are never auto-issued by the app.
       </Text>
     </View>
   );
+
+  async function refreshStatus() {
+    setSyncing(true);
+    setRemoteError(null);
+    try {
+      const token = await requireAccessToken();
+      setRemoteStatus(await apiClient.whiteWolfStatus(token));
+    } catch (err) {
+      setRemoteError(err instanceof Error ? err.message : 'Could not load daily game status');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function startAttempt() {
+    setSyncing(true);
+    setRemoteError(null);
+    try {
+      const token = await requireAccessToken();
+      const response = await apiClient.startWhiteWolfAttempt(token);
+      setRemoteStatus(response.status);
+      setAttemptId(response.attemptId);
+      setSubmittedAttemptId(null);
+      setStartedAt(Date.now());
+      setGame(createInitialWhiteWolfGame());
+    } catch (err) {
+      setRemoteError(err instanceof Error ? err.message : 'Could not start daily try');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function completeAttempt(completedAttemptId: string, score: number) {
+    setSyncing(true);
+    setRemoteError(null);
+    try {
+      const token = await requireAccessToken();
+      const response = await apiClient.completeWhiteWolfAttempt(token, completedAttemptId, {
+        score,
+        durationMs: startedAt ? Date.now() - startedAt : undefined,
+      });
+      setRemoteStatus(response.status);
+      setAttemptId(null);
+      setStartedAt(null);
+    } catch (err) {
+      setRemoteError(err instanceof Error ? err.message : 'Could not submit score');
+    } finally {
+      setSyncing(false);
+    }
+  }
+}
+
+async function requireAccessToken(): Promise<string> {
+  const token = await secureSessionStore.getAccessToken();
+  if (!token) {
+    throw new Error('Sign in again to play the daily challenge');
+  }
+
+  return token;
+}
+
+function formatRank(rank: number | null | undefined): string {
+  return rank ? `#${rank}` : 'not ranked yet';
+}
+
+function formatReward(status: WhiteWolfGameStatusResponse | null): string {
+  if (!status) {
+    return 'loading prize status';
+  }
+
+  switch (status.rewardStatus) {
+    case 'eligible_pending_team_code':
+      return 'legendary avatar code pending team review';
+    case 'not_in_prize_position':
+      return 'outside First/Second place';
+    case 'not_ranked':
+      return 'submit a score to enter';
+  }
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -369,6 +557,38 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: typography.size.sm,
     marginTop: spacing.xs,
+  },
+  ruleBox: {
+    backgroundColor: colors.background.soft,
+    borderColor: colors.border.subtle,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    padding: spacing.sm,
+  },
+  leaderboard: {
+    backgroundColor: '#201735',
+    borderColor: colors.border.subtle,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+  },
+  ruleTitle: {
+    color: colors.text.primary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+    marginBottom: spacing.xxs,
+  },
+  ruleText: {
+    color: colors.text.secondary,
+    fontSize: typography.size.xs,
+    marginTop: spacing.xxs,
+  },
+  error: {
+    color: colors.state.error,
+    fontSize: typography.size.sm,
+    marginTop: spacing.sm,
   },
   statsRow: {
     flexDirection: 'row',
