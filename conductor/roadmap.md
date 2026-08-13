@@ -36,7 +36,7 @@ Delivered (including closeout):
 
 ## Phase 2 — Account and commercial foundation
 
-**Not authorised until Phase 1 is merged and Phase 2 is explicitly authorised.**
+**Complete per 2026-08-13 owner instruction.**
 
 Must include (when authorised):
 
@@ -54,11 +54,34 @@ Must include (when authorised):
 
 ---
 
-## Phase 3 — Scene and avatar
+## Phase 2.5 — White Wolf Moon Dash early game vertical slice — APPROVED / FROZEN
+
+White Wolf Moon Dash is a controlled early gameplay vertical slice:
+
+mobile gameplay -> API -> server-owned attempt reservation -> result submission -> persistence -> leaderboard position -> manual promotional prize handling.
+
+Rules:
+
+- 10 tries per user per UTC day.
+- Server reserves attempts before gameplay.
+- Server owns daily attempt count, high score, leaderboard position, and prize status.
+- Tie rule: highest verified score first; tied score ranks by earliest server completion timestamp.
+- First and Second positions are provisional prize positions, not automatically verified winners.
+- Legendary Avatar redeem codes are manually issued by the Voxora team after Owner review.
+- Full Games Platform remains **Phase 13**.
+
+See `moon-dash.md`.
+
+---
+
+## Phase 3 — Scene Engine and living avatar foundation — AUTHORISED
 
 - Scene Engine (Rive primary; Skia/native may supplement)  
 - Art-pipeline PoC gate before mass assets (ADR-004)  
 - Avatar catalogue + instance + clothing + state machine  
+- Avatar ownership, inventory, equipment, persistence, compatibility rules, reduced motion, and Legendary Moon Dash prize compatibility  
+
+Do not start pets, Alpha, Phase 4, or the full Games Platform.
 
 ---
 

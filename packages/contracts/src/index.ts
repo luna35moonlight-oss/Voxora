@@ -142,13 +142,25 @@ export const WhiteWolfLeaderboardEntrySchema = z.object({
   playerLabel: z.string().min(1),
   score: z.number().int().nonnegative(),
   prizeEligible: z.boolean(),
+  prizeStatus: z.enum([
+    'CURRENT_LEADER',
+    'PROVISIONAL_WINNER',
+    'VERIFIED_WINNER',
+    'PRIZE_ISSUED',
+    'PRIZE_REDEEMED',
+    'NOT_IN_PRIZE_POSITION',
+  ]),
 });
 export type WhiteWolfLeaderboardEntry = z.infer<typeof WhiteWolfLeaderboardEntrySchema>;
 
 export const WhiteWolfRewardStatusSchema = z.enum([
-  'not_ranked',
-  'not_in_prize_position',
-  'eligible_pending_team_code',
+  'NOT_RANKED',
+  'NOT_IN_PRIZE_POSITION',
+  'CURRENT_LEADER',
+  'PROVISIONAL_WINNER',
+  'VERIFIED_WINNER',
+  'PRIZE_ISSUED',
+  'PRIZE_REDEEMED',
 ]);
 export type WhiteWolfRewardStatus = z.infer<typeof WhiteWolfRewardStatusSchema>;
 
@@ -170,12 +182,17 @@ export type WhiteWolfGameStatusResponse = z.infer<typeof WhiteWolfGameStatusResp
 
 export const StartWhiteWolfAttemptResponseSchema = z.object({
   attemptId: z.string().uuid(),
+  attemptNumber: z.number().int().min(1).max(WhiteWolfMoonDashDailyLimit),
   status: WhiteWolfGameStatusResponseSchema,
 });
 export type StartWhiteWolfAttemptResponse = z.infer<typeof StartWhiteWolfAttemptResponseSchema>;
 
+export const WhiteWolfAttemptOutcomeSchema = z.enum(['won', 'resting', 'forfeited']);
+export type WhiteWolfAttemptOutcome = z.infer<typeof WhiteWolfAttemptOutcomeSchema>;
+
 export const CompleteWhiteWolfAttemptRequestSchema = z.object({
   score: z.number().int().min(0).max(WhiteWolfMoonDashMaxAcceptedScore),
+  outcome: WhiteWolfAttemptOutcomeSchema,
   durationMs: z.number().int().min(0).max(15 * 60 * 1000).optional(),
 });
 export type CompleteWhiteWolfAttemptRequest = z.infer<typeof CompleteWhiteWolfAttemptRequestSchema>;

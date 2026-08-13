@@ -39,6 +39,8 @@ model User {
   mfaFactors       MfaFactor[]
   gameAttempts     GameAttempt[]
   gameDailyCounters GameDailyCounter[]
+  gamePrizeAwards  GamePrizeAward[]  @relation("GamePrizeUser")
+  issuedGamePrizeAwards GamePrizeAward[] @relation("GamePrizeIssuer")
 }
 
 model AuthIdentity {
@@ -159,20 +161,29 @@ model AuditEvent {
 }
 
 model GameAttempt {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
-  gameId      String
-  dayKey      DateTime
-  status      String    @default("STARTED")
-  score       Int?
-  durationMs  Int?
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  gameId           String
+  dayKey           DateTime
+  attemptNumber    Int
+  status           String    @default("RESERVED")
+  startState       Json?
+  completionState  String?
+  validationStatus String    @default("RESERVED")
+  score            Int?
+  durationMs       Int?
+  reservedAt       DateTime  @default(now())
+  expiresAt        DateTime?
+  submittedAt      DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prizeAwards      GamePrizeAward[]
 
   @@index([userId, gameId, dayKey])
   @@index([gameId, status, score])
+  @@unique([userId, gameId, dayKey, attemptNumber])
   @@index([createdAt])
 }
 
@@ -189,6 +200,34 @@ model GameDailyCounter {
 
   @@unique([userId, gameId, dayKey])
   @@index([gameId, dayKey])
+}
+
+model GamePrizeAward {
+  id                    String    @id @default(uuid()) @db.Uuid
+  gameId                String
+  competitionId         String
+  userId                String    @db.Uuid
+  leaderboardPosition   Int
+  qualifyingRunId       String    @db.Uuid
+  qualifyingScore       Int
+  verificationStatus    String    @default("PROVISIONAL_WINNER")
+  prizeType             String
+  prizeCatalogueRef     String?
+  issuanceStatus        String    @default("NOT_ISSUED")
+  issuedBy              String?   @db.Uuid
+  issuedAt              DateTime?
+  redemptionStatus      String    @default("NOT_REDEEMED")
+  redeemedAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation("GamePrizeUser", fields: [userId], references: [id], onDelete: Cascade)
+  qualifyingRun         GameAttempt @relation(fields: [qualifyingRunId], references: [id], onDelete: Restrict)
+  issuer                User?     @relation("GamePrizeIssuer", fields: [issuedBy], references: [id], onDelete: SetNull)
+
+  @@index([gameId, competitionId])
+  @@index([userId])
+  @@index([verificationStatus, issuanceStatus])
+  @@unique([gameId, competitionId, leaderboardPosition])
 }
 
 /// Singleton durable record proving Owner bootstrap completed.

@@ -1,5 +1,12 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  WhiteWolfMoonDashMaxAcceptedScore,
   WhiteWolfMoonDashDailyLimit,
   WhiteWolfMoonDashPrizeRanks,
   type CompleteWhiteWolfAttemptRequest,
@@ -9,13 +16,19 @@ import {
 } from '@voxora/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  WHITE_WOLF_ATTEMPT_EXPIRED,
+  WHITE_WOLF_ATTEMPT_FORFEITED,
   WHITE_WOLF_ATTEMPT_COMPLETED,
-  WHITE_WOLF_ATTEMPT_STARTED,
+  WHITE_WOLF_ATTEMPT_RESERVED,
+  WHITE_WOLF_RUN_TTL_MS,
+  WHITE_WOLF_VALIDATION_ACCEPTED,
+  WHITE_WOLF_VALIDATION_RESERVED,
   WHITE_WOLF_GAME_ID,
 } from './games.constants';
 
 const rewardNote =
-  'First and Second place qualify for Voxora team review and manual legendary avatar redeem-code issue.';
+  'First and Second place are provisional only until OWNER review; legendary avatar redeem codes are manually issued by the Voxora team.';
+const whiteWolfTargetScore = 24;
 
 @Injectable()
 export class GamesService {
@@ -50,6 +63,7 @@ export class GamesService {
     const dayKey = getUtcDayStart();
 
     const attempt = await this.prisma.$transaction(async (tx) => {
+      const now = new Date();
       const counter = await tx.gameDailyCounter.upsert({
         where: {
           userId_gameId_dayKey: {
@@ -68,13 +82,17 @@ export class GamesService {
         update: {},
       });
 
-      if (counter.attemptCount >= WhiteWolfMoonDashDailyLimit) {
+      const reserved = await tx.gameDailyCounter.updateMany({
+        where: { id: counter.id, attemptCount: { lt: WhiteWolfMoonDashDailyLimit } },
+        data: { attemptCount: { increment: 1 } },
+      });
+
+      if (reserved.count !== 1) {
         throw new ConflictException('Daily White Wolf Moon Dash limit reached');
       }
 
-      await tx.gameDailyCounter.update({
+      const updatedCounter = await tx.gameDailyCounter.findUniqueOrThrow({
         where: { id: counter.id },
-        data: { attemptCount: { increment: 1 } },
       });
 
       return tx.gameAttempt.create({
@@ -82,13 +100,23 @@ export class GamesService {
           userId,
           gameId: WHITE_WOLF_GAME_ID,
           dayKey,
-          status: WHITE_WOLF_ATTEMPT_STARTED,
+          attemptNumber: updatedCounter.attemptCount,
+          status: WHITE_WOLF_ATTEMPT_RESERVED,
+          validationStatus: WHITE_WOLF_VALIDATION_RESERVED,
+          startState: {
+            rulesVersion: 'phase-2.5',
+            targetScore: whiteWolfTargetScore,
+            maxAcceptedScore: WhiteWolfMoonDashMaxAcceptedScore,
+          },
+          reservedAt: now,
+          expiresAt: new Date(now.getTime() + WHITE_WOLF_RUN_TTL_MS),
         },
       });
     });
 
     return {
       attemptId: attempt.id,
+      attemptNumber: attempt.attemptNumber,
       status: await this.getWhiteWolfStatus(userId),
     };
   }
@@ -108,20 +136,46 @@ export class GamesService {
       throw new ForbiddenException('White Wolf Moon Dash attempt does not belong to this user');
     }
 
-    if (attempt.status !== WHITE_WOLF_ATTEMPT_STARTED) {
-      throw new ConflictException('White Wolf Moon Dash attempt has already been completed');
+    if (attempt.status !== WHITE_WOLF_ATTEMPT_RESERVED) {
+      throw new ConflictException('White Wolf Moon Dash attempt has already been finalized');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.gameAttempt.update({
+    if (attempt.expiresAt && attempt.expiresAt.getTime() < Date.now()) {
+      await this.prisma.gameAttempt.update({
         where: { id: attemptId },
         data: {
-          status: WHITE_WOLF_ATTEMPT_COMPLETED,
+          status: WHITE_WOLF_ATTEMPT_EXPIRED,
+          validationStatus: WHITE_WOLF_ATTEMPT_EXPIRED,
+        },
+      });
+      throw new ConflictException('White Wolf Moon Dash attempt has expired');
+    }
+
+    validateCompletedAttempt(input);
+
+    await this.prisma.$transaction(async (tx) => {
+      const finalStatus =
+        input.outcome === 'forfeited' ? WHITE_WOLF_ATTEMPT_FORFEITED : WHITE_WOLF_ATTEMPT_COMPLETED;
+      const finalized = await tx.gameAttempt.updateMany({
+        where: { id: attemptId, status: WHITE_WOLF_ATTEMPT_RESERVED },
+        data: {
+          status: finalStatus,
+          completionState: input.outcome,
+          validationStatus: WHITE_WOLF_VALIDATION_ACCEPTED,
           score: input.score,
           durationMs: input.durationMs,
+          submittedAt: new Date(),
           completedAt: new Date(),
         },
       });
+
+      if (finalized.count !== 1) {
+        throw new ConflictException('White Wolf Moon Dash attempt has already been finalized');
+      }
+
+      if (finalStatus !== WHITE_WOLF_ATTEMPT_COMPLETED) {
+        return;
+      }
 
       const counter = await tx.gameDailyCounter.findUnique({
         where: {
@@ -170,29 +224,75 @@ export class GamesService {
       select: {
         userId: true,
         score: true,
+        completedAt: true,
       },
       take: 250,
     });
 
-    const seen = new Set<string>();
-    const leaderboard: WhiteWolfLeaderboardEntry[] = [];
+    return rankWhiteWolfScores(
+      userId,
+      attempts.flatMap((attempt) =>
+        attempt.score === null || attempt.completedAt === null
+          ? []
+          : [{ userId: attempt.userId, score: attempt.score, completedAt: attempt.completedAt }],
+      ),
+    );
+  }
+}
 
-    for (const attempt of attempts) {
-      if (seen.has(attempt.userId) || attempt.score === null) {
-        continue;
-      }
+export type WhiteWolfCompletedScore = {
+  userId: string;
+  score: number;
+  completedAt: Date;
+};
 
-      seen.add(attempt.userId);
-      const rank = leaderboard.length + 1;
-      leaderboard.push({
-        rank,
-        playerLabel: attempt.userId === userId ? 'You' : `Voxora player #${rank}`,
-        score: attempt.score,
-        prizeEligible: rank <= WhiteWolfMoonDashPrizeRanks,
-      });
+export function rankWhiteWolfScores(
+  userId: string,
+  attempts: WhiteWolfCompletedScore[],
+): WhiteWolfLeaderboardEntry[] {
+  const seen = new Set<string>();
+  const leaderboard: WhiteWolfLeaderboardEntry[] = [];
+
+  const ordered = [...attempts].sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
     }
 
-    return leaderboard;
+    return a.completedAt.getTime() - b.completedAt.getTime();
+  });
+
+  for (const attempt of ordered) {
+    if (seen.has(attempt.userId)) {
+      continue;
+    }
+
+    seen.add(attempt.userId);
+    const rank = leaderboard.length + 1;
+    const prizeEligible = rank <= WhiteWolfMoonDashPrizeRanks;
+    leaderboard.push({
+      rank,
+      playerLabel: attempt.userId === userId ? 'You' : `Voxora player #${rank}`,
+      score: attempt.score,
+      prizeEligible,
+      prizeStatus:
+        rank === 1
+          ? 'CURRENT_LEADER'
+          : prizeEligible
+            ? 'PROVISIONAL_WINNER'
+            : 'NOT_IN_PRIZE_POSITION',
+    });
+  }
+
+  return leaderboard;
+}
+
+function validateCompletedAttempt(input: CompleteWhiteWolfAttemptRequest) {
+  if (input.outcome === 'won' && input.score < whiteWolfTargetScore) {
+    throw new BadRequestException('Winning Moon Dash score is below the target score');
+  }
+
+  if (input.durationMs !== undefined && input.score > 0 && input.durationMs < 500) {
+    throw new BadRequestException('Moon Dash run duration is not plausible for a scoring run');
   }
 }
 
@@ -223,14 +323,14 @@ function buildStatus(input: {
 
 function getRewardStatus(bestRank: number | null): WhiteWolfRewardStatus {
   if (bestRank === null) {
-    return 'not_ranked';
+    return 'NOT_RANKED';
   }
 
   if (bestRank <= WhiteWolfMoonDashPrizeRanks) {
-    return 'eligible_pending_team_code';
+    return bestRank === 1 ? 'CURRENT_LEADER' : 'PROVISIONAL_WINNER';
   }
 
-  return 'not_in_prize_position';
+  return 'NOT_IN_PRIZE_POSITION';
 }
 
 function getUtcDayStart(date = new Date()): Date {

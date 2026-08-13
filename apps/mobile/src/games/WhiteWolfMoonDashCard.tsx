@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
-import type { WhiteWolfGameStatusResponse } from '@voxora/contracts';
+import type { WhiteWolfAttemptOutcome, WhiteWolfGameStatusResponse } from '@voxora/contracts';
 import { apiClient } from '../services/apiClient';
 import { secureSessionStore } from '../services/secureSessionStore';
 import {
@@ -29,6 +29,7 @@ export function WhiteWolfMoonDashCard() {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [submittedAttemptId, setSubmittedAttemptId] = useState<string | null>(null);
+  const [finalOutcome, setFinalOutcome] = useState<WhiteWolfAttemptOutcome | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const progress = Math.min(game.score / WHITE_WOLF_TARGET_SCORE, 1);
@@ -78,8 +79,8 @@ export function WhiteWolfMoonDashCard() {
     }
 
     setSubmittedAttemptId(attemptId);
-    void completeAttempt(attemptId, game.score);
-  }, [activeAttempt, attemptId, game.score, gameOver, submittedAttemptId]);
+    void completeAttempt(attemptId, game.score, finalOutcome ?? getOutcomeFromStatus(game.status));
+  }, [activeAttempt, attemptId, finalOutcome, game.score, game.status, gameOver, submittedAttemptId]);
 
   const onMove = (move: WhiteWolfMove) => {
     setGame((current) => applyWhiteWolfMove(current, move));
@@ -87,15 +88,16 @@ export function WhiteWolfMoonDashCard() {
 
   const onPrimaryAction = () => {
     if (pendingSubmission && attemptId) {
-      void completeAttempt(attemptId, game.score);
+      void completeAttempt(attemptId, game.score, finalOutcome ?? getOutcomeFromStatus(game.status));
       return;
     }
 
     if (activeAttempt && !gameOver) {
+      setFinalOutcome('forfeited');
       setGame((current) => ({
         ...current,
         status: 'resting',
-        lastMessage: 'Lumi trots home and banks this try with the crystals she found.',
+        lastMessage: 'Lumi trots home. This reserved try is forfeited and will not win a prize.',
       }));
       return;
     }
@@ -234,6 +236,7 @@ export function WhiteWolfMoonDashCard() {
       setAttemptId(response.attemptId);
       setSubmittedAttemptId(null);
       setStartedAt(Date.now());
+      setFinalOutcome(null);
       setGame(createInitialWhiteWolfGame());
     } catch (err) {
       setRemoteError(err instanceof Error ? err.message : 'Could not start daily try');
@@ -242,18 +245,24 @@ export function WhiteWolfMoonDashCard() {
     }
   }
 
-  async function completeAttempt(completedAttemptId: string, score: number) {
+  async function completeAttempt(
+    completedAttemptId: string,
+    score: number,
+    outcome: WhiteWolfAttemptOutcome,
+  ) {
     setSyncing(true);
     setRemoteError(null);
     try {
       const token = await requireAccessToken();
       const response = await apiClient.completeWhiteWolfAttempt(token, completedAttemptId, {
         score,
+        outcome,
         durationMs: startedAt ? Date.now() - startedAt : undefined,
       });
       setRemoteStatus(response.status);
       setAttemptId(null);
       setStartedAt(null);
+      setFinalOutcome(null);
     } catch (err) {
       setRemoteError(err instanceof Error ? err.message : 'Could not submit score');
     } finally {
@@ -281,13 +290,29 @@ function formatReward(status: WhiteWolfGameStatusResponse | null): string {
   }
 
   switch (status.rewardStatus) {
-    case 'eligible_pending_team_code':
-      return 'legendary avatar code pending team review';
-    case 'not_in_prize_position':
+    case 'CURRENT_LEADER':
+      return 'current leader, not a verified prize winner';
+    case 'PROVISIONAL_WINNER':
+      return 'provisional prize position pending owner review';
+    case 'VERIFIED_WINNER':
+      return 'verified winner awaiting code issue';
+    case 'PRIZE_ISSUED':
+      return 'legendary avatar code issued';
+    case 'PRIZE_REDEEMED':
+      return 'legendary avatar code redeemed';
+    case 'NOT_IN_PRIZE_POSITION':
       return 'outside First/Second place';
-    case 'not_ranked':
+    case 'NOT_RANKED':
       return 'submit a score to enter';
   }
+}
+
+function getOutcomeFromStatus(status: 'playing' | 'won' | 'resting'): WhiteWolfAttemptOutcome {
+  if (status === 'won') {
+    return 'won';
+  }
+
+  return 'resting';
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
