@@ -1,5 +1,11 @@
 import Constants from 'expo-constants';
-import type { AuthResponse } from '@voxora/contracts';
+import type {
+  AuthResponse,
+  CurrentAvatarResponse,
+  EquipAvatarItemRequest,
+  SelectAvatarRequest,
+  UnequipAvatarItemRequest,
+} from '@voxora/contracts';
 
 const apiUrl =
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
@@ -54,4 +60,26 @@ export const apiClient = {
       headers: { Authorization: `Bearer ${accessToken}` },
     }),
   featureFlags: () => request<Array<{ key: string; enabled: boolean }>>('/feature-flags'),
+  avatarMe: (accessToken: string) =>
+    request<CurrentAvatarResponse>('/avatars/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  selectAvatar: (accessToken: string, body: SelectAvatarRequest) =>
+    request<CurrentAvatarResponse>('/avatars/select', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(body),
+    }),
+  equipAvatarItem: (accessToken: string, body: EquipAvatarItemRequest) =>
+    request<CurrentAvatarResponse>('/avatars/equip', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(body),
+    }),
+  unequipAvatarItem: (accessToken: string, body: UnequipAvatarItemRequest) =>
+    request<CurrentAvatarResponse>('/avatars/unequip', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(body),
+    }),
 };

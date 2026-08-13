@@ -37,6 +37,10 @@ model User {
   verificationRecords VerificationRecord[]
   auditEvents      AuditEvent[]      @relation("AuditActor")
   mfaFactors       MfaFactor[]
+  avatarOwnerships UserAvatarOwnership[]
+  avatarItemOwnerships UserAvatarItemOwnership[]
+  avatarSelections UserAvatarSelection[]
+  avatarEquipment  UserAvatarEquipment[]
 }
 
 model AuthIdentity {
@@ -154,6 +158,133 @@ model AuditEvent {
 
   @@index([action, createdAt])
   @@index([actorId])
+}
+
+model AvatarCatalogue {
+  id                    String   @id
+  displayName           String
+  tier                  String
+  rarity                String
+  rigFamily             String
+  riveAssetRef          String
+  thumbnailRef          String
+  entitlementCapability String?
+  packageKey            String?
+  active                Boolean  @default(true)
+  version               Int      @default(1)
+  performanceProfile    String   @default("STANDARD")
+  fallbackAvatarId      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  ownerships            UserAvatarOwnership[]
+  selections            UserAvatarSelection[]
+  equipment             UserAvatarEquipment[]
+
+  @@index([active, tier])
+  @@index([rigFamily])
+}
+
+model AvatarAsset {
+  id                 String   @id
+  assetType          String
+  version            Int      @default(1)
+  rigFamily          String
+  avatarId           String?
+  itemId             String?
+  slot               String?
+  storageRef         String
+  thumbnailRef       String?
+  performanceProfile String   @default("STANDARD")
+  fallbackAssetId    String?
+  metadataJson       Json?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([assetType, active])
+  @@index([rigFamily])
+}
+
+model AvatarItem {
+  id                    String   @id
+  displayName           String
+  slot                  String
+  rarity                String
+  rigFamily             String
+  assetRef              String
+  thumbnailRef          String
+  entitlementCapability String?
+  packageKey            String?
+  conflictsJson         Json?
+  active                Boolean  @default(true)
+  version               Int      @default(1)
+  performanceProfile    String   @default("STANDARD")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  ownerships            UserAvatarItemOwnership[]
+  equipment             UserAvatarEquipment[]
+
+  @@index([slot, active])
+  @@index([rigFamily])
+}
+
+model UserAvatarOwnership {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  avatarId    String
+  source      String
+  sourceRef   String?
+  grantedBy   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar      AvatarCatalogue @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, avatarId])
+  @@index([source])
+}
+
+model UserAvatarItemOwnership {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  itemId      String
+  source      String
+  sourceRef   String?
+  grantedBy   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item        AvatarItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, itemId])
+  @@index([source])
+}
+
+model UserAvatarSelection {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  avatarId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar    AvatarCatalogue @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+
+  @@unique([userId])
+  @@index([avatarId])
+}
+
+model UserAvatarEquipment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  avatarId  String
+  itemId    String
+  slot      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar    AvatarCatalogue @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+  item      AvatarItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, avatarId, slot])
+  @@index([itemId])
 }
 
 /// Singleton durable record proving Owner bootstrap completed.

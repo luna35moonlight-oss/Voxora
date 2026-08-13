@@ -36,3 +36,20 @@
 | REQ-032/033 | Interaction Runtime / Scene Engine production | NOT STARTED (correct) | — |
 
 Deferred commercial/product formulas remain in `open-questions.md`.
+
+---
+
+## Phase 3 — Scene Engine and living avatar foundation
+
+| ID | Requirement | UI | Service/API | Database | Tests | Status |
+|----|-------------|----|-------------|----------|-------|--------|
+| REQ-P3-001 | Avatar Catalogue | Avatar Foundation card catalogue list | `GET /v1/avatars/me` | `AvatarCatalogue`, `AvatarAsset` | Contracts + API typecheck | IMPLEMENTED FOR REVIEW |
+| REQ-P3-002 | Avatar ownership | Locked/owned labels | Ownership validation in `AvatarsService` | `UserAvatarOwnership` | Contracts locked Legendary test | IMPLEMENTED FOR REVIEW |
+| REQ-P3-003 | Avatar inventory | Wardrobe proof list | Inventory validation in `AvatarsService` | `AvatarItem`, `UserAvatarItemOwnership` | Contracts equipment test | IMPLEMENTED FOR REVIEW |
+| REQ-P3-004 | Equip/unequip persistence | Equip/unequip controls | `POST /avatars/equip`, `POST /avatars/unequip` | `UserAvatarEquipment` | API typecheck, mobile typecheck | IMPLEMENTED FOR REVIEW |
+| REQ-P3-005 | Compatibility rules | Locked/incompatible errors | Rig/ownership/conflict checks | Item rig + conflict metadata | API typecheck | IMPLEMENTED FOR REVIEW |
+| REQ-P3-006 | Runtime state model | Idle/Listen/Think/Speak/Smile controls | Client runtime foundation | — | `avatarRuntime.test.ts` | IMPLEMENTED FOR REVIEW |
+| REQ-P3-007 | Reduced motion | Toggle in avatar card | Client runtime fallback | — | Reduced-motion runtime test | IMPLEMENTED FOR REVIEW |
+| REQ-P3-008 | Rive primary runtime metadata | Rive reference shown | Catalogue stores Rive refs | `riveAssetRef`, `AvatarAsset.storageRef` | Documentation | IMPLEMENTED WITH PLACEHOLDER RENDERER |
+| REQ-P3-009 | Moon Dash Legendary prize compatibility | Locked Legendary avatar reference | Future ownership grant path uses same ownership model | `UserAvatarOwnership` | Contract locked Legendary test | IMPLEMENTED FOUNDATION |
+| REQ-P3-010 | No pets / no Alpha / no additional games | Honest mobile copy | No pet/Alpha/game APIs added | — | Documentation review | IMPLEMENTED |

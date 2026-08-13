@@ -129,3 +129,119 @@ export const ApiErrorSchema = z.object({
   correlationId: z.string().optional(),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+export const AvatarTierSchema = z.enum(['BASIC', 'ELITE', 'LEGENDARY']);
+export type AvatarTier = z.infer<typeof AvatarTierSchema>;
+
+export const AvatarRaritySchema = z.enum(['COMMON', 'RARE', 'EPIC', 'LEGENDARY']);
+export type AvatarRarity = z.infer<typeof AvatarRaritySchema>;
+
+export const AvatarPerformanceProfileSchema = z.enum(['HIGH', 'STANDARD', 'LOW']);
+export type AvatarPerformanceProfile = z.infer<typeof AvatarPerformanceProfileSchema>;
+
+export const AvatarEquipmentSlotSchema = z.enum([
+  'HAIR',
+  'HEADWEAR',
+  'FACE_ACCESSORY',
+  'TOP',
+  'BOTTOM',
+  'FULL_OUTFIT',
+  'OUTERWEAR',
+  'HANDS',
+  'SHOES',
+  'JEWELLERY',
+  'BACK_ACCESSORY',
+  'HELD_ITEM',
+  'SPECIAL_EFFECT',
+]);
+export type AvatarEquipmentSlot = z.infer<typeof AvatarEquipmentSlotSchema>;
+
+export const AvatarRuntimeStateSchema = z.enum([
+  'IDLE',
+  'BLINK',
+  'LOOK_LEFT',
+  'LOOK_RIGHT',
+  'LISTEN',
+  'THINK',
+  'SPEAK',
+  'SMILE',
+  'HAPPY',
+  'EXCITED',
+  'SURPRISED',
+  'CONCERNED',
+  'CONFUSED',
+  'CELEBRATE',
+  'WAVE',
+  'RETURN_TO_IDLE',
+]);
+export type AvatarRuntimeState = z.infer<typeof AvatarRuntimeStateSchema>;
+
+export const AvatarCatalogueItemSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  tier: AvatarTierSchema,
+  rarity: AvatarRaritySchema,
+  rigFamily: z.string().min(1),
+  riveAssetRef: z.string().min(1),
+  thumbnailRef: z.string().min(1),
+  entitlementCapability: EntitlementCapability.optional(),
+  packageKey: z.string().min(1).optional(),
+  active: z.boolean(),
+  version: z.number().int().positive(),
+  performanceProfile: AvatarPerformanceProfileSchema,
+  fallbackAvatarId: z.string().min(1).nullable(),
+  owned: z.boolean(),
+  lockedReason: z.string().nullable(),
+});
+export type AvatarCatalogueItem = z.infer<typeof AvatarCatalogueItemSchema>;
+
+export const AvatarInventoryItemSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  slot: AvatarEquipmentSlotSchema,
+  rarity: AvatarRaritySchema,
+  rigFamily: z.string().min(1),
+  assetRef: z.string().min(1),
+  thumbnailRef: z.string().min(1),
+  performanceProfile: AvatarPerformanceProfileSchema,
+  conflictsWith: z.array(AvatarEquipmentSlotSchema),
+  active: z.boolean(),
+  owned: z.boolean(),
+  lockedReason: z.string().nullable(),
+});
+export type AvatarInventoryItem = z.infer<typeof AvatarInventoryItemSchema>;
+
+export const EquippedAvatarItemSchema = z.object({
+  slot: AvatarEquipmentSlotSchema,
+  item: AvatarInventoryItemSchema,
+});
+export type EquippedAvatarItem = z.infer<typeof EquippedAvatarItemSchema>;
+
+export const CurrentAvatarResponseSchema = z.object({
+  currentAvatar: AvatarCatalogueItemSchema.nullable(),
+  catalogue: z.array(AvatarCatalogueItemSchema),
+  inventory: z.array(AvatarInventoryItemSchema),
+  equipment: z.array(EquippedAvatarItemSchema),
+  runtimeStates: z.array(AvatarRuntimeStateSchema),
+  performanceProfiles: z.array(AvatarPerformanceProfileSchema),
+  reducedMotionSupported: z.literal(true),
+  moonDashLegendaryPrizeCompatible: z.literal(true),
+});
+export type CurrentAvatarResponse = z.infer<typeof CurrentAvatarResponseSchema>;
+
+export const SelectAvatarRequestSchema = z.object({
+  avatarId: z.string().min(1),
+});
+export type SelectAvatarRequest = z.infer<typeof SelectAvatarRequestSchema>;
+
+export const EquipAvatarItemRequestSchema = z.object({
+  avatarId: z.string().min(1),
+  itemId: z.string().min(1),
+});
+export type EquipAvatarItemRequest = z.infer<typeof EquipAvatarItemRequestSchema>;
+
+export const UnequipAvatarItemRequestSchema = z.object({
+  avatarId: z.string().min(1),
+  slot: AvatarEquipmentSlotSchema,
+});
+export type UnequipAvatarItemRequest = z.infer<typeof UnequipAvatarItemRequestSchema>;

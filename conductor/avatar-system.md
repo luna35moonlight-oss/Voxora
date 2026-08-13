@@ -79,3 +79,40 @@ See `data-model.md`: `avatar_bases`, `avatar_items`, `user_avatars`, `avatar_inv
 - Which Elite/Legendary items ship first  
 - Downgrade behaviour for owned cosmetics (see commercial open questions)  
 - Whether colour customisation ships in early phases  
+
+---
+
+## 8. Phase 3 implementation status
+
+Phase 3 implements a minimal real avatar foundation:
+
+- `AvatarCatalogue` — server catalogue templates, tier, rarity, rig, Rive reference, entitlement capability, performance profile, fallback.
+- `AvatarAsset` — formal asset metadata for Rive base/layer references.
+- `AvatarItem` — wardrobe item metadata, slot, rig compatibility, conflicts, performance profile.
+- `UserAvatarOwnership` — server-side avatar ownership grants.
+- `UserAvatarItemOwnership` — server-side wardrobe ownership grants.
+- `UserAvatarSelection` — persistent current avatar.
+- `UserAvatarEquipment` — persistent equipped item per avatar/slot.
+
+API:
+
+- `GET /v1/avatars/me`
+- `POST /v1/avatars/select`
+- `POST /v1/avatars/equip`
+- `POST /v1/avatars/unequip`
+
+The API rejects unowned avatar selection, unowned item equip, and incompatible rig equip. The mobile app previews locked Legendary content honestly and does not grant ownership from local state.
+
+## 9. Phase 3 proof catalogue
+
+Minimal seed content only:
+
+- Basic avatar: `Voxora Guide`
+- Locked Legendary avatar reference: `Moon Dash Legendary`
+- Starter wardrobe: hair, top, jewellery accessory
+
+This proves the pipeline. It is not mass art production.
+
+## 10. Known limitation
+
+Production Rive files are not present yet. Phase 3 stores Rive references and uses a React Native placeholder scene to prove data flow, layering, state, persistence, and reduced-motion behaviour. Final Rive art/runtime integration requires supplied `.riv` assets.

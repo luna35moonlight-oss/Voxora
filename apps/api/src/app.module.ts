@@ -10,6 +10,7 @@ import { AuditModule } from './audit/audit.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { JobsModule } from './jobs/jobs.module';
 import { UsersModule } from './users/users.module';
+import { AvatarsModule } from './avatars/avatars.module';
 import { validateEnv } from './config/validate-env';
 
 @Module({
@@ -34,6 +35,7 @@ import { validateEnv } from './config/validate-env';
     RbacModule,
     AuthModule,
     UsersModule,
+    AvatarsModule,
     FeatureFlagsModule,
     HealthModule,
   ],

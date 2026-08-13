@@ -196,6 +196,13 @@
 - **Decision:** Voxora product copyright © Maryke Farrell. All rights reserved. Expo template MIT preserved only as third-party attribution (`apps/mobile/THIRD_PARTY_NOTICES.md`). Do not present Voxora as MIT. Public OSS licence for Voxora-owned code requires **OWNER / LEGAL DECISION**.
 - **Owner review:** Complete
 
+### ADR-023 — Phase 3 Avatar Catalogue and ownership foundation
+- **Status:** IMPLEMENTED FOR OWNER REVIEW (2026-08-13)
+- **Decision:** Avatar is modelled as catalogue template + server ownership + inventory + equipped layers + runtime state. It is not a flat profile image.
+- **Rive:** Rive remains the primary runtime target. Phase 3 stores Rive asset references; placeholder mobile layers are temporary until production `.riv` files are supplied.
+- **Legendary prizes:** Future Moon Dash Legendary prizes must grant through the same avatar ownership system. No separate MoonDashAvatarSystem is approved.
+- **Boundary:** No pets, no Alpha, no Phase 4, no additional games.
+
 ---
 
 ## Process gate
@@ -205,4 +212,5 @@
 | Phase 0 architecture approved with amendments | **YES** (2026-08-10) |
 | Phase 0 on `main` | **YES** |
 | Phase 1 Core Foundation + closeout | **READY FOR OWNER MERGE REVIEW** (PR #2) |
-| Phase 2 | **NOT authorised** until Phase 1 merged + explicit Phase 2 authorisation |
+| Phase 2 | Complete per owner instruction (2026-08-13) |
+| Phase 3 | **IMPLEMENTED FOR OWNER REVIEW** — do not start Phase 4 |

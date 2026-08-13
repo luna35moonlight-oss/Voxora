@@ -54,11 +54,14 @@ Must include (when authorised):
 
 ---
 
-## Phase 3 — Scene and avatar
+## Phase 3 — Scene and avatar — IMPLEMENTED FOR OWNER REVIEW
 
 - Scene Engine (Rive primary; Skia/native may supplement)  
 - Art-pipeline PoC gate before mass assets (ADR-004)  
 - Avatar catalogue + instance + clothing + state machine  
+- Server ownership, inventory, equipment, persistence, compatibility, reduced motion, and Moon Dash Legendary prize compatibility foundation
+
+Do not start Phase 4 until owner review is complete.
 
 ---
 
