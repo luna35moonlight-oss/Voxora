@@ -1,7 +1,8 @@
 # White Wolf Moon Dash — Phase 2.5 Early Game Vertical Slice
 
-**Document status:** APPROVED PHASE 2.5 VERTICAL SLICE  
+**Document status:** INTEGRATED into Phase 3 final-integration working branch  
 **Product owner:** Maryke Farrell  
+**ADR:** ADR-025 (renumbered from Moon Dash branch ADR-023 to avoid collision with Phase 2 ADRs)  
 **Scope boundary:** This does **not** authorise the full Voxora Games Platform. Full Games remains Phase 13.
 
 ---

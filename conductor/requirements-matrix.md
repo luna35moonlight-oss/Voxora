@@ -1,7 +1,7 @@
-# Voxora Requirements Matrix — Phase 2
+# Voxora Requirements Matrix
 
-**Document status:** Phase 2 implemented — OWNER REVIEW REQUIRED BEFORE PHASE 3  
-**Last updated:** 2026-08-10
+**Document status:** Phase 2 + Phase 2.5 integrated — Phase 3 integration in progress  
+**Last updated:** 2026-08-14
 
 ---
 
