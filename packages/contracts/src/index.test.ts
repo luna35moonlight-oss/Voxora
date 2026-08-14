@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AvatarCatalogueItemSchema,
+  AvatarInventoryItemSchema,
   CompleteWhiteWolfAttemptRequestSchema,
   isPrivilegedRole,
   PRIVILEGED_ROLES,
@@ -71,5 +73,48 @@ describe('white wolf moon dash contracts', () => {
     expect(parsed.dailyAttemptLimit).toBe(10);
     expect(parsed.prizeRanks).toBe(2);
     expect(parsed.rewardStatus).toBe('PROVISIONAL_WINNER');
+  });
+});
+
+describe('avatar foundation contracts', () => {
+  it('represents locked legendary avatars without granting ownership', () => {
+    const avatar = AvatarCatalogueItemSchema.parse({
+      id: 'legendary-moon-dash',
+      displayName: 'Moon Dash Legendary',
+      tier: 'LEGENDARY',
+      rarity: 'LEGENDARY',
+      rigFamily: 'humanoid_v1',
+      riveAssetRef: 'rive://avatars/moon-dash-legendary-v1',
+      thumbnailRef: 'asset://avatars/moon-dash-legendary-thumb',
+      entitlementCapability: 'avatar.legendary',
+      active: true,
+      version: 1,
+      performanceProfile: 'STANDARD',
+      fallbackAvatarId: 'voxora-guide',
+      owned: false,
+      lockedReason: 'Legendary avatar requires entitlement or explicit ownership grant',
+    });
+
+    expect(avatar.owned).toBe(false);
+    expect(avatar.tier).toBe('LEGENDARY');
+  });
+
+  it('describes layered equipment compatibility metadata', () => {
+    const item = AvatarInventoryItemSchema.parse({
+      id: 'nebula-jacket',
+      displayName: 'Nebula Jacket',
+      slot: 'TOP',
+      rarity: 'COMMON',
+      rigFamily: 'humanoid_v1',
+      assetRef: 'rive://items/nebula-jacket-v1',
+      thumbnailRef: 'asset://items/nebula-jacket-thumb',
+      performanceProfile: 'STANDARD',
+      conflictsWith: ['FULL_OUTFIT'],
+      active: true,
+      owned: true,
+      lockedReason: null,
+    });
+
+    expect(item.conflictsWith).toContain('FULL_OUTFIT');
   });
 });

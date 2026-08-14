@@ -20,6 +20,7 @@ import { StoreModule } from './store/store.module';
 import { MfaModule } from './mfa/mfa.module';
 import { SettingsModule } from './settings/settings.module';
 import { GamesModule } from './games/games.module';
+import { AvatarsModule } from './avatars/avatars.module';
 import { validateEnv } from './config/validate-env';
 
 @Module({
@@ -51,6 +52,7 @@ import { validateEnv } from './config/validate-env';
     StoreModule,
     SettingsModule,
     GamesModule,
+    AvatarsModule,
     FeatureFlagsModule,
     HealthModule,
   ],

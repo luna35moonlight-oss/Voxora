@@ -3,8 +3,12 @@ import type {
   AuthResponse,
   CompleteWhiteWolfAttemptRequest,
   CompleteWhiteWolfAttemptResponse,
+  CurrentAvatarResponse,
+  EquipAvatarItemRequest,
   LoginResponse,
+  SelectAvatarRequest,
   StartWhiteWolfAttemptResponse,
+  UnequipAvatarItemRequest,
   WhiteWolfGameStatusResponse,
 } from '@voxora/contracts';
 
@@ -200,4 +204,26 @@ export const apiClient = {
         body: JSON.stringify(body),
       },
     ),
+  avatarMe: (accessToken: string) =>
+    request<CurrentAvatarResponse>('/avatars/me', {
+      headers: auth(accessToken),
+    }),
+  selectAvatar: (accessToken: string, body: SelectAvatarRequest) =>
+    request<CurrentAvatarResponse>('/avatars/select', {
+      method: 'POST',
+      headers: auth(accessToken),
+      body: JSON.stringify(body),
+    }),
+  equipAvatarItem: (accessToken: string, body: EquipAvatarItemRequest) =>
+    request<CurrentAvatarResponse>('/avatars/equip', {
+      method: 'POST',
+      headers: auth(accessToken),
+      body: JSON.stringify(body),
+    }),
+  unequipAvatarItem: (accessToken: string, body: UnequipAvatarItemRequest) =>
+    request<CurrentAvatarResponse>('/avatars/unequip', {
+      method: 'POST',
+      headers: auth(accessToken),
+      body: JSON.stringify(body),
+    }),
 };

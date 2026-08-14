@@ -229,6 +229,14 @@
 - **Integration note:** Originally numbered ADR-023 on the Moon Dash branch; renumbered to ADR-025 on integration to preserve Phase 2 ADR-023/024 numbering.
 - **Owner review:** Complete for Phase 2.5 slice; public promotional terms still require owner/legal review.
 
+### ADR-026 — Phase 3 Avatar Catalogue and ownership foundation
+- **Status:** INTEGRATED FOR OWNER REVIEW (2026-08-14)
+- **Decision:** Avatar is modelled as catalogue template + server ownership + inventory + equipped layers + runtime state. It is not a flat profile image.
+- **Rive:** Rive remains the primary runtime target. Phase 3 stores Rive asset references; placeholder mobile layers are temporary until production `.riv` files and real runtime validation are completed on the final-integration branch.
+- **Legendary prizes:** Future Moon Dash Legendary prizes must grant through the same avatar ownership system. No separate MoonDashAvatarSystem is approved.
+- **Boundary:** No pets, no Alpha, no Phase 4, no additional games beyond Moon Dash.
+- **Integration note:** Originally numbered ADR-023 on the Phase 3 branch; renumbered to ADR-026 on integration.
+
 ---
 
 ## Process gate
@@ -238,6 +246,6 @@
 | Phase 0 architecture approved with amendments | **YES** (2026-08-10) |
 | Phase 0 on `main` | **YES** |
 | Phase 1 Core Foundation + closeout | **MERGED** (PR #2) |
-| Phase 2 | **INTEGRATED** into Phase 3 final-integration working branch (source PR #3) |
+| Phase 2 | **INTEGRATED** (source PR #3) |
 | Phase 2.5 White Wolf Moon Dash vertical slice | **INTEGRATED** (source PR #4) — full Games still Phase 13 |
-| Phase 3 Scene Engine and living avatar foundation | **IN PROGRESS** on final-integration branch — do not start Phase 4 |
+| Phase 3 Scene Engine and living avatar foundation | **INTEGRATED** (source PR #5) — Rive native validation + final Owner review pending; do not start Phase 4 |

@@ -6,6 +6,7 @@ import { apiClient } from '../services/apiClient';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { notificationArchitecture } from '../services/notificationArchitecture';
 import { WhiteWolfMoonDashCard } from '../games/WhiteWolfMoonDashCard';
+import { AvatarFoundationCard } from '../components/AvatarFoundationCard';
 
 export function FoundationHomeScreen({
   connectivity,
@@ -58,12 +59,13 @@ export function FoundationHomeScreen({
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
-      <Text style={styles.title}>Account foundation ready</Text>
+      <Text style={styles.title}>Scene Engine and living avatar foundation</Text>
       <Text style={styles.body}>
-        Phase 2 account path plus White Wolf Moon Dash. Avatar/pet systems belong to later phases.
-        No Bondfire conversations, pets, or fake Connected providers here.
+        Phase 2 account path, White Wolf Moon Dash, and Phase 3 avatar ownership are integrated.
+        Pets and Alpha remain later phases. No Bondfire conversations or fake Connected providers.
       </Text>
 
+      <AvatarFoundationCard />
       <WhiteWolfMoonDashCard />
 
       <View style={styles.panel}>

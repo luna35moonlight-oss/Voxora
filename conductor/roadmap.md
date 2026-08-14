@@ -75,14 +75,15 @@ See `moon-dash.md`.
 
 ---
 
-## Phase 3 — Scene Engine and living avatar foundation — AUTHORISED
+## Phase 3 — Scene Engine and living avatar foundation — INTEGRATED FOR OWNER REVIEW
 
 - Scene Engine (Rive primary; Skia/native may supplement)  
 - Art-pipeline PoC gate before mass assets (ADR-004)  
 - Avatar catalogue + instance + clothing + state machine  
-- Avatar ownership, inventory, equipment, persistence, compatibility rules, reduced motion, and Legendary Moon Dash prize compatibility  
+- Avatar ownership, inventory, equipment, persistence, compatibility rules, reduced motion, and Legendary Moon Dash prize compatibility foundation
+- Real Rive runtime validation outstanding on final-integration branch
 
-Do not start pets, Alpha, Phase 4, or the full Games Platform.
+Do not start pets, Alpha, Phase 4, or the full Games Platform until owner review authorises the next phase.
 
 ---
 

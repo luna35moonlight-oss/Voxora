@@ -102,6 +102,9 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 |----|----------|--------|
 | OQ-AV-002 | Launch avatar bases and clothing package set? | DEFERRED |
 | OQ-AV-003 | Who produces rigs/animations? | DEFERRED |
+| OQ-AV-004b | Production `.riv` files for the Phase 3 proof avatar and layers? | OWNER / ART PIPELINE REQUIRED |
+| OQ-AV-005 | Final Legendary Moon Dash avatar art and catalogue reference? | OWNER / ART PIPELINE REQUIRED BEFORE PUBLIC PRIZE REDEMPTION |
+| OQ-AV-006 | Downgrade behavior for explicitly owned avatar cosmetics? | OWNER DECISION REQUIRED BEFORE COMMERCIAL ENFORCEMENT |
 
 ---
 

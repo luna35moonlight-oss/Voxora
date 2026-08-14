@@ -109,8 +109,27 @@ type SceneDescriptor = {
 
 ---
 
-## 8. Non-goals for Phase 0
+## 8. Phase 3 implementation status
+
+Phase 3 establishes the first coded Scene Engine foundation:
+
+- mobile proof scene reads avatar/equipment state from the server-backed Avatar API;
+- logical avatar layers are represented separately (base, hair, clothing, accessory);
+- runtime state transitions are typed and priority-aware;
+- reduced motion keeps the character visible while calming reactions;
+- Rive asset references live in catalogue metadata, not scattered through React components;
+- current equipment persists server-side and restores on reload.
+
+The current renderer is a React Native placeholder proof because production `.riv` files are not present in the repository. Rive remains the primary runtime target.
+
+Future pet layers remain represented in the logical layer model, but Phase 3 does not implement pet catalogue, ownership, equipment, or rendering.
+
+---
+
+## 9. Non-goals for Phase 3
 
 - Shipping final art files  
-- Implementing the engine in code  
+- Mass avatar art generation  
+- Pet implementation  
+- Alpha / microphone / voice integration  
 - Selecting final artist tooling contracts without owner approval  

@@ -48,7 +48,7 @@
 | REQ-P2-SET | Settings surfaces | IMPLEMENTED | `/v1/settings` + mobile |
 | REQ-P2-HANDOFF | Avatar/pet handoff without fake ownership | IMPLEMENTED / TESTED | AVATAR_PET_HANDOFF |
 | REQ-090 | Alpha Bondfire conversations | NOT STARTED (correct) | — |
-| REQ-032/033 | Scene Engine / Interaction Runtime production | PENDING Phase 3 integration | — |
+| REQ-032/033 | Scene Engine / Interaction Runtime production | INTEGRATED foundation (Phase 3) | Scene Engine docs + avatar runtime |
 
 Deferred commercial formulas remain in `open-questions.md`.
 
@@ -74,8 +74,13 @@ Deferred commercial formulas remain in `open-questions.md`.
 
 | ID | Requirement | UI | Service/API | Database | Tests | Status |
 |----|-------------|----|-------------|----------|-------|--------|
-| REQ-P3-001 | Scene Engine foundation | Pending Phase 3 merge | Pending | Pending | Pending | AUTHORISED / INTEGRATION IN PROGRESS |
-| REQ-P3-002 | Avatar Catalogue | Pending Phase 3 merge | Pending | Pending | Pending | AUTHORISED / INTEGRATION IN PROGRESS |
-| REQ-P3-003 | Avatar Ownership / Inventory / Equipment | Pending Phase 3 merge | Pending | Pending | Pending | AUTHORISED / INTEGRATION IN PROGRESS |
-| REQ-P3-004 | Rive primary runtime proof | Pending Phase 3 merge | Pending | Pending | Pending | AUTHORISED / INTEGRATION IN PROGRESS |
-| REQ-P3-005 | Moon Dash Legendary prize compatibility with real avatar ownership | Pending Phase 3 merge | Pending | Pending | Pending | AUTHORISED / INTEGRATION IN PROGRESS |
+| REQ-P3-001 | Avatar Catalogue | Avatar Foundation card catalogue list | `GET /v1/avatars/me` | `AvatarCatalogue`, `AvatarAsset` | Contracts + API typecheck | INTEGRATED |
+| REQ-P3-002 | Avatar ownership | Locked/owned labels | Ownership validation in `AvatarsService` | `UserAvatarOwnership` | Contracts locked Legendary test | INTEGRATED |
+| REQ-P3-003 | Avatar inventory | Wardrobe proof list | Inventory validation in `AvatarsService` | `AvatarItem`, `UserAvatarItemOwnership` | Contracts equipment test | INTEGRATED |
+| REQ-P3-004 | Equip/unequip persistence | Equip/unequip controls | `POST /avatars/equip`, `POST /avatars/unequip` | `UserAvatarEquipment` | API typecheck, mobile typecheck | INTEGRATED |
+| REQ-P3-005 | Compatibility rules | Locked/incompatible errors | Rig/ownership/conflict checks | Item rig + conflict metadata | API typecheck | INTEGRATED |
+| REQ-P3-006 | Runtime state model | Idle/Listen/Think/Speak/Smile controls | Client runtime foundation | — | `avatarRuntime.test.ts` | INTEGRATED |
+| REQ-P3-007 | Reduced motion | Toggle in avatar card | Client runtime fallback | — | Reduced-motion runtime test | INTEGRATED |
+| REQ-P3-008 | Rive primary runtime metadata | Rive reference shown | Catalogue stores Rive refs | `riveAssetRef`, `AvatarAsset.storageRef` | Documentation | INTEGRATED — real Rive validation pending on this branch |
+| REQ-P3-009 | Moon Dash Legendary prize compatibility | Locked Legendary avatar reference | Future ownership grant path uses same ownership model | `UserAvatarOwnership` | Contract locked Legendary test | INTEGRATED FOUNDATION |
+| REQ-P3-010 | No pets / no Alpha / no additional games beyond Moon Dash | Honest mobile copy | Moon Dash only; no pet/Alpha APIs | — | Documentation review | INTEGRATED |
