@@ -26,9 +26,7 @@ const RESET_MOOD: RiveInputCommand[] = [
   { kind: 'boolean', name: 'isSad', value: false },
 ];
 
-export function mapVoxoraStateToDevAssetCommands(
-  state: AvatarRuntimeState,
-): RiveStateMapping {
+export function mapVoxoraStateToDevAssetCommands(state: AvatarRuntimeState): RiveStateMapping {
   switch (state) {
     case 'IDLE':
     case 'RETURN_TO_IDLE':

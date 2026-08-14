@@ -48,7 +48,9 @@ export function AvatarFoundationCard() {
 
       <Text style={styles.meta}>Current: {currentAvatar?.displayName ?? 'loading avatar...'}</Text>
       <Text style={styles.meta}>Runtime state: {runtimeState}</Text>
-      <Text style={styles.meta}>Catalogue Rive ref: {currentAvatar?.riveAssetRef ?? 'pending'}</Text>
+      <Text style={styles.meta}>
+        Catalogue Rive ref: {currentAvatar?.riveAssetRef ?? 'pending'}
+      </Text>
       <Text style={styles.meta}>{describeDevAssetAdapter()}</Text>
       <Text style={styles.meta}>{RIVE_DEV_TEST_ASSET.marker}</Text>
 

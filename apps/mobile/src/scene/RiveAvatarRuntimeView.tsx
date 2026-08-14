@@ -80,7 +80,7 @@ function RiveAvatarRuntimeNative({
   useEffect(() => {
     if (reducedMotion) {
       setAppliedNote('Reduced motion: Rive mood inputs cleared; static presence retained.');
-      applyCommandsToNativeView(riveViewRef, [
+      applyCommandsToNativeView(riveViewRef ?? null, [
         { kind: 'boolean', name: 'isHappy', value: false },
         { kind: 'boolean', name: 'isSad', value: false },
       ]);
@@ -88,7 +88,7 @@ function RiveAvatarRuntimeNative({
     }
 
     const mapping = mapVoxoraStateToDevAssetCommands(runtimeState);
-    const result = applyCommandsToNativeView(riveViewRef, mapping.commands);
+    const result = applyCommandsToNativeView(riveViewRef ?? null, mapping.commands);
     setAppliedNote(
       `${mapping.notes} Applied=[${result.applied.join('; ') || 'none'}] Skipped=[${
         result.skipped.join('; ') || 'none'
@@ -122,7 +122,7 @@ function RiveAvatarRuntimeNative({
       <RiveView
         // Stable remount key: parent React re-renders must not continuously restart animation.
         key={`rive-stable-${remountKeyRef.current}`}
-        ref={setHybridRef}
+        hybridRef={setHybridRef}
         autoPlay
         file={riveFile}
         artboardName={RIVE_DEV_TEST_ASSET.artboardName}

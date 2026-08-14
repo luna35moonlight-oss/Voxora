@@ -10,8 +10,7 @@ export const RIVE_DEV_TEST_ASSET = {
   marker: 'DEVELOPMENT TEST ASSET — NOT VOXORA PRODUCTION ART' as const,
   assetName: 'Avatar Pack Use Case',
   originalSource: 'Rive Community / official React Native runtime documentation example',
-  sourceUrl:
-    'https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv',
+  sourceUrl: 'https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv',
   communityFileId: '2195-4346',
   creatorOrOwner: 'Rive community example (not Voxora-owned)',
   licenceOrUsage:
@@ -19,8 +18,7 @@ export const RIVE_DEV_TEST_ASSET = {
     'Not redistributed in this repository. Not represented as Voxora production artwork. ' +
     'Replace with licensed Voxora-owned `.riv` assets before production release.',
   redistributionInRepositoryPermitted: false,
-  repositoryLocation:
-    'Metadata only: apps/mobile/src/scene/riveDevAsset.ts (binary not committed)',
+  repositoryLocation: 'Metadata only: apps/mobile/src/scene/riveDevAsset.ts (binary not committed)',
   whySafeForDevelopmentValidation:
     'Loaded from Rive’s public community runtime CDN for documented runtime examples; ' +
     'no third-party binary is copied into the Voxora repository; clearly marked non-production.',
