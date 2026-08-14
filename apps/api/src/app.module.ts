@@ -19,6 +19,7 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
 import { StoreModule } from './store/store.module';
 import { MfaModule } from './mfa/mfa.module';
 import { SettingsModule } from './settings/settings.module';
+import { GamesModule } from './games/games.module';
 import { validateEnv } from './config/validate-env';
 
 @Module({
@@ -49,6 +50,7 @@ import { validateEnv } from './config/validate-env';
     EntitlementsModule,
     StoreModule,
     SettingsModule,
+    GamesModule,
     FeatureFlagsModule,
     HealthModule,
   ],

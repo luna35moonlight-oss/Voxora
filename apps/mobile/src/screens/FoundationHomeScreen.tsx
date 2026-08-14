@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../services/apiClient';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { notificationArchitecture } from '../services/notificationArchitecture';
+import { WhiteWolfMoonDashCard } from '../games/WhiteWolfMoonDashCard';
 
 export function FoundationHomeScreen({
   connectivity,
@@ -53,15 +54,17 @@ export function FoundationHomeScreen({
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
       <Text style={styles.title}>Account foundation ready</Text>
       <Text style={styles.body}>
-        Phase 2 complete for this account path — avatar/pet systems belong to a later phase. No
-        Bondfire conversations, pets, or fake Connected providers here.
+        Phase 2 account path plus White Wolf Moon Dash. Avatar/pet systems belong to later phases.
+        No Bondfire conversations, pets, or fake Connected providers here.
       </Text>
+
+      <WhiteWolfMoonDashCard />
 
       <View style={styles.panel}>
         <Text style={styles.label}>Signed in as</Text>
@@ -93,16 +96,19 @@ export function FoundationHomeScreen({
       >
         <Text style={styles.buttonText}>Sign out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
     backgroundColor: colors.background.base,
+  },
+  container: {
+    flexGrow: 1,
     padding: spacing.lg,
-    justifyContent: 'center',
+    paddingBottom: spacing.xl,
   },
   brand: {
     color: colors.brand.blue,

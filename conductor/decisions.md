@@ -219,6 +219,16 @@
   - Client-provided MFA flags are never trusted
 - **Owner review:** Complete
 
+### ADR-025 — White Wolf Moon Dash Phase 2.5 vertical slice
+- **Status:** APPROVED (Maryke Farrell, 2026-08-13)
+- **Decision:** White Wolf Moon Dash is formally recorded as **Phase 2.5 — Early Game Vertical Slice** inside Voxora.
+- **Scope boundary:** This is not authorisation for the full Voxora Games Platform. Full Games remains Phase 13; do not build additional games from this approval.
+- **Rules locked:** 10 tries per user per UTC day; server-created attempt reservation before gameplay; server-owned daily attempt count, high score, leaderboard position, and prize states; tied scores rank by earliest authoritative server completion timestamp.
+- **Prize posture:** First and Second leaderboard positions are provisional until Owner review. Legendary Avatar redeem codes are manually issued by the Voxora team and must ultimately grant ownership through the real Avatar Catalogue / Avatar Ownership system, not a Moon Dash-specific avatar system.
+- **Security posture:** The server validates reservation, ownership, single-use finalization, score bounds, plausible duration, and replay/duplicate submission. Complete deterministic server replay is not yet implemented and must not be represented as cheat-proof.
+- **Integration note:** Originally numbered ADR-023 on the Moon Dash branch; renumbered to ADR-025 on integration to preserve Phase 2 ADR-023/024 numbering.
+- **Owner review:** Complete for Phase 2.5 slice; public promotional terms still require owner/legal review.
+
 ---
 
 ## Process gate
@@ -228,5 +238,6 @@
 | Phase 0 architecture approved with amendments | **YES** (2026-08-10) |
 | Phase 0 on `main` | **YES** |
 | Phase 1 Core Foundation + closeout | **MERGED** (PR #2) |
-| Phase 2 | **READY FOR OWNER MERGE REVIEW** (PR #3) after session-assurance closeout |
-| Phase 3 | **NOT started** — requires Phase 2 merge + explicit authorisation |
+| Phase 2 | **INTEGRATED** into Phase 3 final-integration working branch (source PR #3) |
+| Phase 2.5 White Wolf Moon Dash vertical slice | **INTEGRATED** (source PR #4) — full Games still Phase 13 |
+| Phase 3 Scene Engine and living avatar foundation | **IN PROGRESS** on final-integration branch — do not start Phase 4 |

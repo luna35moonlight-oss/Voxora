@@ -84,10 +84,13 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 | OQ-PET-006 | Which fairness option is approved? | DEFERRED |
 | OQ-PET-007 | Exact game scores and rewards? | DEFERRED |
 | OQ-PET-008 | Exact achievement list and reward values? | DEFERRED |
-| OQ-PET-009 | Leaderboard rules? | DEFERRED |
+| OQ-PET-009 | General leaderboard rules? | DEFERRED — Moon Dash Phase 2.5 tie rule is resolved only for that slice |
 | OQ-PET-010 | Marketplace rules (if any)? | DEFERRED |
 | OQ-PET-011 | Launch species list and art priority? | DEFERRED |
 | OQ-PET-012 | Is PvP required for first public launch? | DEFERRED |
+| OQ-GAME-025 | Moon Dash exceptional technical-failure refund policy? | OWNER DECISION REQUIRED |
+| OQ-GAME-026 | Moon Dash complete server replay / signed move telemetry requirements? | OWNER DECISION REQUIRED BEFORE PUBLIC COMPETITIVE LAUNCH |
+| OQ-GAME-027 | Moon Dash promotion start/end dates, eligibility, territory, and public rules version? | PROMOTIONAL COMPETITION TERMS — OWNER / LEGAL REVIEW REQUIRED BEFORE PUBLIC LAUNCH |
 
 **Related future gate (not Phase 1):** Art-pipeline PoC (avatar + layered outfit + pet + accessory + Idle/Listen/Think/Speak/Reaction) before mass asset production — see ADR-004.
 
