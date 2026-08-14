@@ -116,3 +116,29 @@ This proves the pipeline. It is not mass art production.
 ## 10. Known limitation
 
 Production Rive files are not present yet. Phase 3 stores Rive references and uses a React Native placeholder scene to prove data flow, layering, state, persistence, and reduced-motion behaviour. Final Rive art/runtime integration requires supplied `.riv` assets.
+
+---
+
+## 11. Redeem codes and future Spinning Wheel Avatar Skins
+
+**Owner-approved Games & Rewards Addendum:**
+
+- Moon Dash Legendary Avatar redeem codes and future Spinning Wheel Avatar Skin redeem codes must use a **shared redeem-code architecture** capable of uniqueness, reward reference, issuance state, optional expiry, eligible user, single-use redemption, redemption timestamp, ownership grant, and audit.
+- Redemption must grant through the normal Phase 3 Avatar Catalogue / ownership / inventory path.
+- Do **not** create a separate `WheelAvatarSystem` or `MoonDashAvatarSystem`.
+- Do **not** grant skins by modifying local mobile state.
+- Do **not** automatically issue Moon Dash competition codes merely because shared redeem architecture exists.
+- Exact expiry / promotional rules remain **OWNER DECISION REQUIRED** where not defined.
+
+Conceptual future Spinning Wheel skin flow:
+
+```text
+server-approved wheel outcome
+→ redeem entitlement/code allocated per approved rules
+→ valid redemption
+→ authoritative avatar skin/item ownership grant
+→ Avatar Inventory updated
+→ audit / Reward Ledger updated
+```
+
+The actual skin must be an approved Avatar Catalogue / Asset item.

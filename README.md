@@ -20,9 +20,9 @@ Expo template attribution (not a Voxora MIT grant) lives at [`apps/mobile/THIRD_
 
 **Phase 1** (Core Foundation) was merged to `main` (PR #2).
 
-**Phase 2** (Account & Commercial Foundation) is implemented for owner review. See [`conductor/phase-2-notes.md`](./conductor/phase-2-notes.md).
+**Phase 2**, **Phase 2.5 (Moon Dash)**, **Phase 3 Avatar Foundation**, and the **Games & Rewards documentation addendum** are integrated on the Phase 3 final-integration working branch for Owner review. See [`conductor/`](./conductor/).
 
-**Do not begin Phase 3 until Phase 2 is explicitly approved.**
+**Do not begin Phase 4 until the Product Owner explicitly authorises it.**
 
 Phase documents live in [`conductor/`](./conductor/):
 
@@ -39,7 +39,8 @@ Phase documents live in [`conductor/`](./conductor/):
 | [avatar-system.md](./conductor/avatar-system.md) | Living avatars |
 | [pet-system.md](./conductor/pet-system.md) | Living species-based pets |
 | [pet-battle-system.md](./conductor/pet-battle-system.md) | Server-authoritative battles |
-| [game-system.md](./conductor/game-system.md) | Modular games |
+| [game-system.md](./conductor/game-system.md) | Modular games & rewards architecture |
+| [moon-dash.md](./conductor/moon-dash.md) | White Wolf Moon Dash Phase 2.5 vertical slice |
 | [alpha-architecture.md](./conductor/alpha-architecture.md) | One Alpha intelligence |
 | [bondfire.md](./conductor/bondfire.md) | Alpha Bondfire |
 | [integrations.md](./conductor/integrations.md) | Provider adapters |

@@ -80,12 +80,18 @@ Distinct from entitlements.
 - `notification_requests` — recipient, type, source, priority, content, channel, schedule, expiry, deep_link, dedupe_key, status  
 
 ### 2.11 Games / battles / rewards
-- `game_definitions` — metadata contract fields  
+- `game_definitions` — metadata contract fields (must support Moon Dash / RPS / Wheel differences — not score-only)  
 - `game_sessions`, `game_results`  
+- `play_limit_policies` / attempt counters — reusable UTC-day policies where appropriate (configurable per game; do not assume every game is 10/day)  
 - `battles` — players, pets, seed, start_stats, winner, status  
 - `battle_events` — append-only action/damage/effect log  
-- `reward_ledger` — tx id, user, pet?, source, source_event_id, reward_type, amount, reason, idempotency_key UNIQUE  
+- `reward_ledger` — tx id, user, pet?, source, source_event_id, reward_type, amount, reason, idempotency_key UNIQUE, status, audit  
+- Reward types include (at least): progression points, Pet Skill-Up Shards, Voxora Coins, Voxora Diamonds, redeem-code references — **separate types**; Coins ≠ Diamonds  
+- `currency_balances` / ledger postings for Coins and Diamonds (future; commercial rules OWNER DECISION REQUIRED)  
+- `redeem_codes` — shared architecture for Moon Dash prizes, Wheel Avatar Skins, promotions (uniqueness, reward ref, issuance, optional expiry, eligible user, single-use, redemption timestamp, ownership grant, audit)  
 - `achievements`, `user_achievements`  
+
+Do not invent prices, exchange rates, Wheel probabilities, or RPS→skill conversion formulas in schema seeds.  
 
 ### 2.12 Files / workspaces
 - `files` — owner_id, storage_key, mime, size, hash, visibility  
@@ -107,12 +113,13 @@ Distinct from entitlements.
 
 - pet ID, owner ID, species, variant/breed, pet name  
 - growth stage, level, XP, bond, energy  
-- training summary, skills  
+- training summary, skills (distinct from XP / shards / game scores)  
+- skill-up shard inventory / consumption hooks (future; economy deferred)  
 - equipment, cosmetics, appearance refs  
 - battle statistics, achievements, evolution markers  
 - last interaction, timestamps  
 
-Growth/evolution **server-authoritative**.
+Growth/evolution **server-authoritative**. Do not merge game score, reward points, XP, skill progression, shards, level, and bond into one generic field.
 
 ---
 

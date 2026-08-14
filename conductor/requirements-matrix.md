@@ -1,6 +1,6 @@
-# Voxora Requirements Matrix
+# Voxora Requirements Matrix — Phase 3 final integration
 
-**Document status:** Phase 2 + Phase 2.5 integrated — Phase 3 integration in progress  
+**Document status:** Phase 2 + 2.5 + 3 integrated; Games & Rewards Addendum **recorded** (not implemented); Rive native validation pending  
 **Last updated:** 2026-08-14
 
 ---
@@ -84,3 +84,8 @@ Deferred commercial formulas remain in `open-questions.md`.
 | REQ-P3-008 | Rive primary runtime metadata | Rive reference shown | Catalogue stores Rive refs | `riveAssetRef`, `AvatarAsset.storageRef` | Documentation | INTEGRATED — real Rive validation pending on this branch |
 | REQ-P3-009 | Moon Dash Legendary prize compatibility | Locked Legendary avatar reference | Future ownership grant path uses same ownership model | `UserAvatarOwnership` | Contract locked Legendary test | INTEGRATED FOUNDATION |
 | REQ-P3-010 | No pets / no Alpha / no additional games beyond Moon Dash | Honest mobile copy | Moon Dash only; no pet/Alpha APIs | — | Documentation review | INTEGRATED |
+| REQ-P3-011 | Games & Rewards Addendum recorded (RPS, Wheel, ledger, currencies) | — | Docs only — no premature game build | — | `game-system.md` + ADR-027 | RECORDED — NOT IMPLEMENTED |
+| REQ-GAME-RPS | Rock Paper Scissors — 10/UTC day; pet skill progression points | Future Phase 13 | Server-authoritative | Future | — | CONFIRMED FUTURE — NOT STARTED |
+| REQ-GAME-WHEEL | Spinning Wheel — Shards / Diamonds / Coins / Avatar Skin code | Future Phase 13 | Server-authoritative outcome | Future | — | CONFIRMED FUTURE — NOT STARTED |
+| REQ-RWD-LEDGER | Central Reward Ledger for games/rewards | Future | Reward Service | `reward_ledger` (planned) | — | ARCHITECTURE REQUIRED — NOT IMPLEMENTED |
+| REQ-CUR-SPLIT | Voxora Coins ≠ Diamonds | Future | Ledger-backed separate types | Future balances | — | CONFIRMED — commercial rules deferred |

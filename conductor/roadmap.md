@@ -93,6 +93,9 @@ Do not start pets, Alpha, Phase 4, or the full Games Platform until owner review
 - Clothing/equipment  
 - Growth plumbing  
 - Basic interactions  
+- Leave extension points for future pet skills, skill progression, Skill-Up Shards, and game/reward consumption (`pet-system.md`)  
+
+Do **not** build Rock Paper Scissors, Spinning Wheel, Coins, Diamonds, or shard economies in Phase 4 unless specifically authorised.
 
 ---
 
@@ -148,6 +151,17 @@ Official APIs only; no fakes.
 
 ## Phase 13 — Games
 
+Full modular Games Platform. Must be capable of hosting at least:
+
+1. White Wolf Moon Dash (already the Phase 2.5 early vertical slice — not redesigned here)  
+2. Rock Paper Scissors (confirmed; 10 tries/user/UTC day; server-approved pet skill progression points)  
+3. Spinning Wheel (confirmed reward mechanic; attempt rules and probabilities **OWNER DECISION REQUIRED**)  
+4. Future Voxora games  
+
+Central Reward Service / Reward Ledger; reusable UTC play-limit policy where appropriate; game contracts that are not score-only. See `game-system.md`.
+
+Rock Paper Scissors and Spinning Wheel do **not** authorise skipping earlier phases.
+
 ---
 
 ## Phase 14 — Pet battles
@@ -179,4 +193,6 @@ Android/iOS hardening, performance, store requirements, monitoring, security/a11
 2. Store billing architecture approved; full product wiring in commercial phases.  
 3. Deferred formulas must not be invented early.  
 4. Provider API eligibility gates integrations phases.  
-5. Wellness blocked on separate specification.
+5. Wellness blocked on separate specification.  
+6. Games & Rewards Addendum recorded: RPS + Spinning Wheel are confirmed future requirements; Phase 13 remains the Games Platform; do not implement them in Phase 3/4.  
+7. White Wolf Moon Dash remains the approved early exception/vertical slice (`moon-dash.md`).

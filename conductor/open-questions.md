@@ -91,6 +91,12 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 | OQ-GAME-025 | Moon Dash exceptional technical-failure refund policy? | OWNER DECISION REQUIRED |
 | OQ-GAME-026 | Moon Dash complete server replay / signed move telemetry requirements? | OWNER DECISION REQUIRED BEFORE PUBLIC COMPETITIVE LAUNCH |
 | OQ-GAME-027 | Moon Dash promotion start/end dates, eligibility, territory, and public rules version? | PROMOTIONAL COMPETITION TERMS — OWNER / LEGAL REVIEW REQUIRED BEFORE PUBLIC LAUNCH |
+| OQ-PET-013 | RPS points per win/draw/loss toward pet skills? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
+| OQ-PET-014 | Pet skill level thresholds / maxima / species multipliers? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
+| OQ-PET-015 | Pet Skill-Up Shard rarity / shards-per-level / upgrade probability? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
+| OQ-GAME-WHEEL-001 | Spinning Wheel spins, reset rules, probabilities, quantities? | OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
+
+**Confirmed (not inventable):** Rock Paper Scissors is a future game (10 tries/user/UTC day) that contributes server-approved progression points toward pet skill development. Pet Skill-Up Shards are a confirmed reward type. Exact formulas remain deferred. See `game-system.md` / ADR-027. Do not implement RPS, Wheel, Coins, Diamonds, or shard economies in Phase 3.
 
 **Related future gate (not Phase 1):** Art-pipeline PoC (avatar + layered outfit + pet + accessory + Idle/Listen/Think/Speak/Reaction) before mass asset production — see ADR-004.
 
@@ -159,9 +165,31 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 
 ---
 
-## I. Process
+## I. Games, rewards, currencies — confirmed vs deferred
+
+| ID | Question | Status |
+|----|----------|--------|
+| OQ-GAME-001 | Confirmed game set includes Moon Dash, Rock Paper Scissors, Spinning Wheel? | **RESOLVED** — yes (see ADR-027 / `game-system.md`) |
+| OQ-GAME-002 | RPS daily attempts? | **RESOLVED** — 10 tries/user/UTC day (server UTC day) |
+| OQ-GAME-003 | Moon Dash daily attempts? | **RESOLVED** — 10 tries/user/UTC day (unchanged) |
+| OQ-GAME-004 | Spinning Wheel spin count / free-spin frequency / UTC reset / earned or purchased spins? | DEFERRED — **OWNER DECISION REQUIRED BEFORE SPINNING WHEEL IMPLEMENTATION** |
+| OQ-GAME-005 | Spinning Wheel reward probabilities (Coins / Diamonds / Shards / Avatar Skin)? | DEFERRED — OWNER DECISION REQUIRED |
+| OQ-GAME-006 | Spinning Wheel reward quantities? | DEFERRED — OWNER DECISION REQUIRED |
+| OQ-CUR-001 | Voxora Coins and Diamonds are separate ledger-backed currencies? | **RESOLVED** — yes; do not collapse |
+| OQ-CUR-002 | Coin/Diamond purchase price, exchange rate, expiration, transfer, gifting, cash value, withdrawal, marketplace, max balances? | DEFERRED — OWNER DECISION REQUIRED |
+| OQ-RWD-001 | Central Reward Ledger for all games? | **RESOLVED** — required architecture |
+| OQ-RWD-002 | Shared redeem-code architecture across Moon Dash / Wheel / promotions? | **RESOLVED** — required; no parallel incompatible systems |
+| OQ-RWD-003 | Redeem-code expiry rules? | DEFERRED — do not invent unless defined |
+
+Do **not** implement Rock Paper Scissors, Spinning Wheel, Coins, Diamonds, or shard economies during Phase 3/4 merely because requirements are recorded.
+
+---
+
+## J. Process
 
 | ID | Status |
 |----|--------|
 | OQ-PROC-001 | RESOLVED — Phase 0 approved; Phase 1 authorised after docs on baseline |
-| Phase 2 gate | OPEN — requires Phase 1 completion report + owner review |
+| Phase 2 gate | Per owner instruction (2026-08-13) |
+| Phase 3 gate | IMPLEMENTED FOR OWNER REVIEW + Games & Rewards addendum recorded |
+| Phase 13 | Full Games Platform — RPS + Wheel belong here, not Phase 3/4 |

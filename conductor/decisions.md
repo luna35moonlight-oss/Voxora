@@ -237,6 +237,24 @@
 - **Boundary:** No pets, no Alpha, no Phase 4, no additional games beyond Moon Dash.
 - **Integration note:** Originally numbered ADR-023 on the Phase 3 branch; renumbered to ADR-026 on integration.
 
+### ADR-027 — Authoritative Games & Rewards Addendum
+- **Status:** APPROVED REQUIREMENTS RECORDED (Maryke Farrell) — documentation only; do not implement prematurely
+- **Integration note:** Originally numbered ADR-024 on the Games & Rewards addendum branch; renumbered to ADR-027 on integration to preserve Phase 2 ADR-024.
+- **Decision:**
+  - Confirmed future games/mechanics: **Rock Paper Scissors** (10 tries/user/UTC day; server UTC day) and **Spinning Wheel** (server-authoritative outcomes)
+  - White Wolf Moon Dash remains the approved Phase 2.5 vertical slice; do not redesign it for this addendum
+  - Full modular Games Platform remains **Phase 13**; RPS/Wheel do not authorise skipping phases
+  - Rock Paper Scissors contributes **server-approved** progression points toward pet skill development (client never mutates skills/awards)
+  - Spinning Wheel may award: Pet Skill-Up Shards; Voxora Diamonds; Voxora Coins; Avatar Skin redeem code — as separate reward types
+  - Coins and Diamonds remain separate ledger-backed currencies; no invented commercial rules
+  - Central Reward Service / Reward Ledger is mandatory for games/rewards; prevent duplicate grants
+  - Shared redeem-code architecture for Moon Dash prizes, Wheel skins, promotions — no parallel incompatible systems; no separate WheelAvatarSystem
+  - Prefer reusable UTC play-limit/attempt policy component where appropriate; do not assume every game is 10/day
+  - Spinning Wheel attempt/probability/quantity rules are **OWNER DECISION REQUIRED BEFORE SPINNING WHEEL IMPLEMENTATION**
+  - Phase 3/4 must only record requirements and avoid architectural dead ends — do not build RPS, Wheel, currencies, or shard economies now
+- **Documents:** `game-system.md`, `moon-dash.md`, `pet-system.md`, `avatar-system.md`, `open-questions.md`
+- **Owner review:** Requirements approved for recording
+
 ---
 
 ## Process gate
@@ -248,4 +266,5 @@
 | Phase 1 Core Foundation + closeout | **MERGED** (PR #2) |
 | Phase 2 | **INTEGRATED** (source PR #3) |
 | Phase 2.5 White Wolf Moon Dash vertical slice | **INTEGRATED** (source PR #4) — full Games still Phase 13 |
-| Phase 3 Scene Engine and living avatar foundation | **INTEGRATED** (source PR #5) — Rive native validation + final Owner review pending; do not start Phase 4 |
+| Phase 3 Scene Engine and living avatar foundation | **INTEGRATED** (source PR #5) — Rive native validation + final Owner review pending |
+| Games & Rewards Addendum | **INTEGRATED / DOCUMENTED ONLY** (source PR #6 / ADR-027) — RPS, Wheel, currencies NOT implemented; do not start Phase 4 |

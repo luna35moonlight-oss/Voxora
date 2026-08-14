@@ -5,6 +5,8 @@
 **ADR:** ADR-025 (renumbered from Moon Dash branch ADR-023 to avoid collision with Phase 2 ADRs)  
 **Scope boundary:** This does **not** authorise the full Voxora Games Platform. Full Games remains Phase 13.
 
+**Related addendum:** Authoritative Games & Rewards requirements in `game-system.md` / ADR-027 (Rock Paper Scissors, Spinning Wheel, Reward Ledger, currencies). Do **not** redesign Moon Dash because of that addendum. Do **not** implement RPS or Wheel during Phase 3.
+
 ---
 
 ## 1. Purpose
@@ -36,6 +38,8 @@ No additional games, game store, multiplayer platform, pet games, or full Games 
 
 The mobile device is never authoritative for attempt count, leaderboard position, winner verification, prize issuance, or avatar ownership.
 
+UTC day principle (shared with future Rock Paper Scissors): the **server** determines the UTC day. Device date/clock, user time zone, and local midnight are never authoritative. Changing the phone clock must never create additional attempts.
+
 ---
 
 ## 3. Run security model
@@ -57,6 +61,8 @@ Every score-eligible run uses a server-created attempt record. The record suppor
 Run IDs are user-bound and single-use for score submission. Duplicate or foreign-user submissions are rejected.
 
 Attempt reservation uses server-side transaction protection with a conditional daily counter increment. Two simultaneous start requests must not reserve more than the 10 permitted daily attempts.
+
+Future Games Platform work should prefer a reusable server-authoritative play-limit / attempt-policy component where appropriate, without forcing every game to use 10/day.
 
 ---
 
@@ -80,7 +86,7 @@ Full move-log replay, signed telemetry, competition rules, and exceptional techn
 
 ---
 
-## 5. Prize lifecycle
+## 5. Prize lifecycle and shared redeem architecture
 
 Moon Dash prize type: **LEGENDARY AVATAR REDEEM CODE**.
 
@@ -88,8 +94,18 @@ Approved conceptual flow:
 
 Leaderboard result -> provisional status -> Owner verification -> prize approved -> redeem code/reference issued -> valid redemption -> authoritative avatar ownership grant.
 
-Phase 3 must route any future Legendary Avatar prize redemption through the same Avatar Catalogue / Avatar Ownership system as all other legitimate Voxora avatars. Do not create a separate MoonDashAvatarSystem or hard-code a special avatar directly into a user profile.
+Phase 3 (and later) must route any Legendary Avatar prize redemption through the same Avatar Catalogue / Avatar Ownership / inventory system as all other legitimate Voxora avatars. Do not create a separate MoonDashAvatarSystem or hard-code a special avatar directly into a user profile.
+
+Future Spinning Wheel Avatar Skin redeem codes must use the **same family of redeem-code architecture** (uniqueness, reward reference, issuance, single-use, audit) without creating incompatible parallel systems. Shared architecture must **not** automatically issue Moon Dash competition codes.
 
 Promotional competition terms are not invented in Phase 2.5.
 
 **PROMOTIONAL COMPETITION TERMS — OWNER / LEGAL REVIEW REQUIRED BEFORE PUBLIC LAUNCH**
+
+---
+
+## 6. Reward Ledger alignment
+
+Moon Dash rewards and prizes must ultimately align with Voxora’s central server-authoritative Reward Service / Reward Ledger (`game-system.md`): idempotent source-event keys, auditability, and no client-side balance mutation.
+
+Do not expand Moon Dash into Rock Paper Scissors, Spinning Wheel, Coins, Diamonds, or pet skill economies under this vertical slice.

@@ -1,7 +1,9 @@
-# Voxora Pet System — Phase 0
+# Voxora Pet System — Phase 0 / Future Integration Notes
 
-**Document status:** OWNER REVIEW REQUIRED  
+**Document status:** OWNER REVIEW + Games & Rewards Addendum recorded  
 **Definition:** A pet is a persistent living digital companion — not an image swap.
+
+**Phase 4** remains Pet Foundation only. Do **not** build Rock Paper Scissors, Spinning Wheel, or final skill/shard economies during Phase 4 unless specifically authorised.
 
 ---
 
@@ -77,13 +79,57 @@ Compatibility: species, rig, growth stage, subscription, ownership, package, bat
 
 Separate from battle. Potential categories: agility, strength, speed, defence, focus, bond, species ability, special skill.
 
-May include mini-games. Client submits performance; server approves progression/rewards via Reward Ledger.
+May include mini-game. Client submits performance; server approves progression/rewards via Reward Ledger.
 
 Exact formulas → owner-defined later.
 
 ---
 
-## 8. Species-specific playful reactions
+## 8. Progression concepts (must remain distinct)
+
+Do **not** merge all progression into one generic number merely because that is easier to code.
+
+Architecture must be able to distinguish appropriately between:
+
+- game score  
+- game reward points  
+- pet XP  
+- pet skill progression  
+- pet skill-up shards  
+- general pet level  
+- bond  
+- future species-specific progression  
+
+### Confirmed future relationship — Rock Paper Scissors
+
+Rock Paper Scissors (Phase 13 / future Games) contributes **server-approved progression points** toward pet skill development:
+
+```text
+validated game result → Reward Ledger / progression transaction → pet skill system
+```
+
+Mobile clients must never directly mutate pet skill values or decide award amounts.
+
+Exact formulas remain **OWNER DECISION REQUIRED BEFORE IMPLEMENTATION**.
+
+### Confirmed reward type — Pet Skill-Up Shards
+
+Spinning Wheel (future) may award Pet Skill-Up Shards. Phase 4 Pet Foundation must leave clean extension points for:
+
+- pet skills  
+- skill progression  
+- skill resources  
+- skill-up shards  
+- user/pet shard inventory  
+- shard consumption  
+- skill upgrades  
+
+Do **not** implement the final shard economy in Phase 4 unless specifically authorised.  
+Do **not** invent shard rarity, shards-per-level, skill-up probability, species restrictions, or conversion formulas.
+
+---
+
+## 9. Species-specific playful reactions
 
 Examples intended:
 
@@ -95,7 +141,7 @@ Must not realistically injure people or simulate graphic harm.
 
 ---
 
-## 9. Entitlement mapping (product)
+## 10. Entitlement mapping (product)
 
 - Level 1: one Basic pet  
 - Level 2: eligible Basic + Elite pets  
@@ -103,3 +149,9 @@ Must not realistically injure people or simulate graphic harm.
 - Battles/training gated by capabilities + flags  
 
 Downgrade ownership rules unresolved — see `open-questions.md`.
+
+---
+
+## 11. Phase 4 boundary
+
+When Phase 4 begins, Pet Foundation must anticipate later integration with pet skills, Rock Paper Scissors reward points, Skill-Up Shards, training, games, rewards, and achievements — **without** building those games or economies prematurely.
