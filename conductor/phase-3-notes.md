@@ -43,12 +43,28 @@ Confirmed future (not implemented here):
 
 **Do not** build Rock Paper Scissors, Spinning Wheel, Coins, Diamonds, shard economies, or Phase 13 during this Phase 3 closeout. Do not invent unresolved formulas or Wheel probabilities.
 
-## Explicitly not started
+## Local CI-equivalent regression (2026-08-14)
 
-- Phase 4 pets  
-- Rock Paper Scissors, Spinning Wheel, or full Games Platform implementation  
-- Alpha / Alpha Bondfire  
-- Production Voxora `.riv` artwork  
+Label: `LOCAL CI-EQUIVALENT CHECKS`
+
+| Command | Result | Exit |
+|---------|--------|------|
+| `pnpm install --frozen-lockfile` | pass | 0 |
+| `pnpm format:check` | pass (after prettier write) | 0 |
+| `pnpm --filter @voxora/contracts --filter @voxora/config --filter @voxora/design-system --filter @voxora/testing run build` | pass | 0 |
+| `DATABASE_URL=… pnpm --filter @voxora/api prisma:validate` | pass | 0 |
+| `pnpm --filter @voxora/api prisma:generate` | pass | 0 |
+| `pnpm --filter @voxora/api lint` | pass | 0 |
+| `pnpm typecheck` | pass | 0 |
+| `pnpm test` | pass | 0 |
+| `pnpm --filter @voxora/api build` | pass | 0 |
+| `pnpm --filter @voxora/mobile typecheck` | pass | 0 |
+| `pnpm --filter @voxora/mobile exec expo config --type public` | pass | 0 |
+| `pnpm build` | pass | 0 |
+| `pnpm --filter @voxora/api exec prisma migrate deploy` | blocked — no Postgres at localhost:5432 | 1 |
+| `pnpm --filter @voxora/api test:e2e` | blocked — DATABASE_URL/REDIS_URL/JWT secrets + DB unavailable | 1 |
+| Remote GitHub Actions CI | not run (no push per Product Owner instruction) | N/A |
+| Native iOS/Android / Expo dev build visual Rive proof | NATIVE VALIDATION REQUIRED | N/A |
 
 ## Moon Dash Legendary ownership compatibility
 
