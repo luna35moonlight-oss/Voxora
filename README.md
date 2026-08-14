@@ -18,11 +18,7 @@ Expo template attribution (not a Voxora MIT grant) lives at [`apps/mobile/THIRD_
 
 **Phase 0** architecture was reviewed and **approved with amendments** by Maryke Farrell (2026-08-10) and merged to `main`.
 
-**Phase 1** (Core Foundation) closeout is on PR #2 pending owner merge review.
-
-**Do not begin Phase 2 until Phase 1 is merged and explicitly authorised.**
-
-Phase 0 documents live in [`conductor/`](./conductor/):
+Phase documents live in [`conductor/`](./conductor/):
 
 | Document | Purpose |
 |----------|---------|
@@ -37,7 +33,8 @@ Phase 0 documents live in [`conductor/`](./conductor/):
 | [avatar-system.md](./conductor/avatar-system.md) | Living avatars |
 | [pet-system.md](./conductor/pet-system.md) | Living species-based pets |
 | [pet-battle-system.md](./conductor/pet-battle-system.md) | Server-authoritative battles |
-| [game-system.md](./conductor/game-system.md) | Modular games |
+| [game-system.md](./conductor/game-system.md) | Modular games & rewards architecture |
+| [moon-dash.md](./conductor/moon-dash.md) | White Wolf Moon Dash Phase 2.5 vertical slice |
 | [alpha-architecture.md](./conductor/alpha-architecture.md) | One Alpha intelligence |
 | [bondfire.md](./conductor/bondfire.md) | Alpha Bondfire |
 | [integrations.md](./conductor/integrations.md) | Provider adapters |

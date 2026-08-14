@@ -28,10 +28,22 @@ Do not treat this placeholder as the permanent renderer.
 
 The catalogue includes a locked `Moon Dash Legendary` avatar reference. It is not granted automatically. A future valid Moon Dash prize redemption must grant ownership through the same `UserAvatarOwnership` / inventory path as normal avatars.
 
+## Games & Rewards Addendum (documentation only)
+
+Owner-approved requirements are recorded in `game-system.md`, `moon-dash.md`, `pet-system.md`, `avatar-system.md`, `roadmap.md`, `decisions.md` (ADR-024), `open-questions.md`, and `requirements-matrix.md`.
+
+Confirmed for **future** phases (not Phase 3 implementation):
+
+- Rock Paper Scissors — 10 attempts/user/UTC day; server-approved pet skill progression points  
+- Spinning Wheel — may award Pet Skill-Up Shards, Voxora Diamonds, Voxora Coins, Avatar Skin redeem codes  
+- Central Reward Ledger; shared redeem-code architecture; UTC server day for attempt limits  
+
+**Do not** build Rock Paper Scissors, Spinning Wheel, Coins, Diamonds, shard economies, or Phase 13 during this Phase 3 closeout. Do not invent unresolved formulas or Wheel probabilities.
+
 ## Explicit non-goals
 
 - No pets.
 - No Alpha provider, reasoning, voice capture, or Alpha Bondfire chat.
-- No additional games or full Games Platform.
+- No Rock Paper Scissors, Spinning Wheel, or full Games Platform implementation.
 - No mass art generation.
 - No hard-coded special avatar grant in a profile field.

@@ -203,6 +203,23 @@
 - **Legendary prizes:** Future Moon Dash Legendary prizes must grant through the same avatar ownership system. No separate MoonDashAvatarSystem is approved.
 - **Boundary:** No pets, no Alpha, no Phase 4, no additional games.
 
+### ADR-024 — Authoritative Games & Rewards Addendum
+- **Status:** APPROVED REQUIREMENTS RECORDED (Maryke Farrell) — documentation only; do not implement prematurely
+- **Decision:**
+  - Confirmed future games/mechanics: **Rock Paper Scissors** (10 tries/user/UTC day; server UTC day) and **Spinning Wheel** (server-authoritative outcomes)
+  - White Wolf Moon Dash remains the approved Phase 2.5 vertical slice; do not redesign it for this addendum
+  - Full modular Games Platform remains **Phase 13**; RPS/Wheel do not authorise skipping phases
+  - Rock Paper Scissors contributes **server-approved** progression points toward pet skill development (client never mutates skills/awards)
+  - Spinning Wheel may award: Pet Skill-Up Shards; Voxora Diamonds; Voxora Coins; Avatar Skin redeem code — as separate reward types
+  - Coins and Diamonds remain separate ledger-backed currencies; no invented commercial rules
+  - Central Reward Service / Reward Ledger is mandatory for games/rewards; prevent duplicate grants
+  - Shared redeem-code architecture for Moon Dash prizes, Wheel skins, promotions — no parallel incompatible systems; no separate WheelAvatarSystem
+  - Prefer reusable UTC play-limit/attempt policy component where appropriate; do not assume every game is 10/day
+  - Spinning Wheel attempt/probability/quantity rules are **OWNER DECISION REQUIRED BEFORE SPINNING WHEEL IMPLEMENTATION**
+  - Phase 3/4 must only record requirements and avoid architectural dead ends — do not build RPS, Wheel, currencies, or shard economies now
+- **Documents:** `game-system.md`, `moon-dash.md`, `pet-system.md`, `avatar-system.md`, `open-questions.md`
+- **Owner review:** Requirements approved for recording
+
 ---
 
 ## Process gate
@@ -213,4 +230,4 @@
 | Phase 0 on `main` | **YES** |
 | Phase 1 Core Foundation + closeout | **READY FOR OWNER MERGE REVIEW** (PR #2) |
 | Phase 2 | Complete per owner instruction (2026-08-13) |
-| Phase 3 | **IMPLEMENTED FOR OWNER REVIEW** — do not start Phase 4 |
+| Phase 3 | **IMPLEMENTED FOR OWNER REVIEW** — Games & Rewards addendum recorded; do not start Phase 4 or Phase 13 games |
