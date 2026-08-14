@@ -64,20 +64,47 @@ export const AuthTokensSchema = z.object({
 });
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 
+export const AuthenticationAssurance = z.enum(['PASSWORD', 'MFA']);
+export type AuthenticationAssurance = z.infer<typeof AuthenticationAssurance>;
+
 export const AuthUserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
   emailVerified: z.boolean(),
   roles: z.array(RoleName),
   mfaEnabled: z.boolean(),
+  /** Server-authoritative session assurance — never trust a client-provided MFA flag. */
+  authenticationAssurance: AuthenticationAssurance.optional(),
 });
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 
 export const AuthResponseSchema = z.object({
+  status: z.literal('authenticated'),
   user: AuthUserSchema,
   tokens: AuthTokensSchema,
 });
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
+
+export const MfaRequiredResponseSchema = z.object({
+  status: z.literal('mfa_required'),
+  challengeToken: z.string(),
+  expiresInSeconds: z.number().int().positive(),
+});
+export type MfaRequiredResponse = z.infer<typeof MfaRequiredResponseSchema>;
+
+export const MfaEnrollmentRequiredResponseSchema = z.object({
+  status: z.literal('mfa_enrollment_required'),
+  enrollmentToken: z.string(),
+  expiresInSeconds: z.number().int().positive(),
+});
+export type MfaEnrollmentRequiredResponse = z.infer<typeof MfaEnrollmentRequiredResponseSchema>;
+
+export const LoginResponseSchema = z.discriminatedUnion('status', [
+  AuthResponseSchema.extend({ status: z.literal('authenticated') }),
+  MfaRequiredResponseSchema,
+  MfaEnrollmentRequiredResponseSchema,
+]);
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string().min(1),
@@ -122,6 +149,131 @@ export const ProviderConnectionState = z.enum([
 ]);
 export type ProviderConnectionState = z.infer<typeof ProviderConnectionState>;
 
+/** Interest selection is not connection. */
+export const InterestState = z.literal('INTEREST_SELECTED');
+export type InterestState = z.infer<typeof InterestState>;
+
+export const OnboardingStage = z.enum([
+  'ACCOUNT_CREATED',
+  'EMAIL_VERIFICATION',
+  'USERNAME',
+  'PRIVACY',
+  'REGION_LOCALE',
+  'CONTACT_NUMBER',
+  'PHONE_VERIFICATION',
+  'PROVIDER_INTERESTS',
+  'AGE_GATE',
+  'LEGAL_CONSENTS',
+  'SUBSCRIPTION_SELECTION',
+  'AVATAR_PET_HANDOFF',
+]);
+export type OnboardingStage = z.infer<typeof OnboardingStage>;
+
+export const ONBOARDING_STAGE_ORDER: readonly OnboardingStage[] = [
+  'ACCOUNT_CREATED',
+  'EMAIL_VERIFICATION',
+  'USERNAME',
+  'PRIVACY',
+  'REGION_LOCALE',
+  'CONTACT_NUMBER',
+  'PHONE_VERIFICATION',
+  'PROVIDER_INTERESTS',
+  'AGE_GATE',
+  'LEGAL_CONSENTS',
+  'SUBSCRIPTION_SELECTION',
+  'AVATAR_PET_HANDOFF',
+] as const;
+
+export const DeliveryStatus = z.enum(['NOT_CONFIGURED', 'ACCEPTED', 'FAILED', 'DEV_CAPTURED']);
+export type DeliveryStatus = z.infer<typeof DeliveryStatus>;
+
+export const Visibility = z.enum(['PRIVATE', 'PUBLIC']);
+export type Visibility = z.infer<typeof Visibility>;
+
+export const UsernameSchema = z
+  .string()
+  .min(3)
+  .max(24)
+  .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'Username must start with a letter and use A-Z, 0-9, _');
+
+export const SetUsernameRequestSchema = z.object({
+  username: UsernameSchema,
+});
+
+export const PrivacyUpdateSchema = z.object({
+  emailVisibility: Visibility.optional(),
+  phoneVisibility: Visibility.optional(),
+});
+
+export const RegionLocaleSchema = z.object({
+  countryCode: z.string().length(2),
+  regionCode: z.string().max(32).optional(),
+  locale: z.string().min(2).max(35),
+  timeZone: z.string().min(1).max(64),
+  displayCurrency: z.string().length(3),
+});
+
+export const PhoneRequestSchema = z.object({
+  phone: z.string().min(8).max(20),
+  defaultCountry: z.string().length(2).optional(),
+});
+
+export const OtpVerifySchema = z.object({
+  code: z.string().min(4).max(10),
+});
+
+export const ProviderInterestsSchema = z.object({
+  providers: z.array(z.string().min(1).max(64)).max(32),
+});
+
+export const AgeGateSchema = z.object({
+  confirmed18Plus: z.literal(true),
+  ruleVersion: z.string().min(1).max(32).default('age-gate-v1'),
+});
+
+export const ConsentGrantSchema = z.object({
+  consents: z
+    .array(
+      z.object({
+        consentType: z.enum([
+          'terms_of_service',
+          'privacy_policy',
+          'communications_preferences',
+          'marketing_optional',
+          'provider_specific',
+          'feature_permissions_optional',
+        ]),
+        policyVersion: z.string().min(1).max(64),
+        status: z.enum(['GRANTED', 'DENIED']),
+        platform: z.string().min(1).max(32).default('mobile'),
+      }),
+    )
+    .min(1),
+});
+
+export const SubscriptionSelectSchema = z.object({
+  productCode: z.enum(['level_1', 'level_2', 'level_3', 'level_4']),
+  storefront: z.enum(['APPLE', 'GOOGLE', 'INTERNAL']).default('INTERNAL'),
+});
+
+export const MfaVerifySchema = z.object({
+  code: z.string().regex(/^\d{6}$/),
+  challengeToken: z.string().min(1).optional(),
+  enrollmentToken: z.string().min(1).optional(),
+});
+
+export const MfaConfirmEnrollmentSchema = z.object({
+  enrollmentToken: z.string().min(1),
+  code: z.string().regex(/^\d{6}$/),
+});
+
+export const StoreVerifySchema = z.object({
+  storefront: z.enum(['APPLE', 'GOOGLE']),
+  productCode: z.string().min(1),
+  purchaseToken: z.string().min(1).optional(),
+  receiptData: z.string().min(1).optional(),
+});
+
 export const ApiErrorSchema = z.object({
   statusCode: z.number().int(),
   error: z.string(),
@@ -129,3 +281,6 @@ export const ApiErrorSchema = z.object({
   correlationId: z.string().optional(),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+/** Policy documents require professional legal review — placeholders only. */
+export const LEGAL_REVIEW_REQUIRED = 'OWNER / LEGAL DECISION REQUIRED — professional legal review';

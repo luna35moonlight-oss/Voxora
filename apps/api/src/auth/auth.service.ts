@@ -1,20 +1,32 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash, randomBytes } from 'crypto';
-import { RoleName } from '@prisma/client';
+import { AuthenticationAssurance, RoleName, Visibility } from '@prisma/client';
 import type { ApiEnv } from '@voxora/config';
-import { isPrivilegedRole, type RoleName as ContractRole } from '@voxora/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { RbacService } from '../rbac/rbac.service';
 import { AuditService } from '../audit/audit.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
 import { OWNER_BOOTSTRAP_COMPLETION_ID, safeEqualSecret } from './crypto.util';
+import { MfaService } from '../mfa/mfa.service';
+import { VerificationService } from '../verification/verification.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
+import { rolesArePrivileged, type AuthLevel } from './session-assurance';
+
+export type IssueSessionOptions = {
+  /**
+   * Only true after successful MFA challenge verification (or secure refresh of an
+   * already MFA-assured session). Never accept from client input.
+   */
+  mfaAssured?: boolean;
+};
 
 @Injectable()
 export class AuthService {
@@ -25,6 +37,9 @@ export class AuthService {
     private readonly rbac: RbacService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<ApiEnv, true>,
+    @Inject(forwardRef(() => MfaService)) private readonly mfa: MfaService,
+    private readonly verification: VerificationService,
+    @Inject(forwardRef(() => OnboardingService)) private readonly onboarding: OnboardingService,
   ) {}
 
   async register(email: string, password: string) {
@@ -42,19 +57,34 @@ export class AuthService {
         identities: {
           create: { type: 'password', provider: 'local', subject: normalized },
         },
+        profile: {
+          create: {
+            emailVisibility: Visibility.PRIVATE,
+            phoneVisibility: Visibility.PRIVATE,
+          },
+        },
       },
     });
 
     await this.rbac.assignRole({ userId: user.id, role: RoleName.USER });
-    await this.createEmailVerification(user.id);
+    await this.onboarding.ensureStarted(user.id);
+    const delivery = await this.verification.requestEmailVerification(user.id);
     await this.audit.record({
       actorId: user.id,
       action: 'auth.register',
       subject: user.id,
-      payload: { email: normalized },
+      payload: { email: normalized, emailDeliveryStatus: delivery.deliveryStatus },
     });
 
-    return this.issueSession(user.id);
+    const session = await this.issueSessionForUser(user.id);
+    return {
+      status: 'authenticated' as const,
+      ...session,
+      emailDeliveryStatus: delivery.deliveryStatus,
+      ...(delivery.deliveryStatus === 'DEV_CAPTURED' && 'devVerificationToken' in delivery
+        ? { devVerificationToken: delivery.devVerificationToken }
+        : {}),
+    };
   }
 
   async login(email: string, password: string) {
@@ -73,18 +103,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const roles = await this.rbac.getUserRoles(user.id);
-    const privileged = roles.some((r) => isPrivilegedRole(r as ContractRole));
-    if (privileged && !user.mfaEnabled) {
-      // PHASE 1 STATUS: MFA-READY, NOT YET PRODUCTION-ENFORCED.
-      // Privileged login without MFA is audited but still issues a session in Phase 1.
-      // Phase 2 must enforce real MFA enrollment/challenge before privileged production access.
-      await this.audit.record({
-        actorId: user.id,
-        action: 'auth.privileged_login_without_mfa',
-        subject: user.id,
-        payload: { roles, mfaStatus: 'ready_not_enforced' },
-      });
+    const gate = await this.mfa.beginPrivilegedLoginGate(user.id);
+    if (gate.gate === 'enrollment') {
+      return {
+        status: 'mfa_enrollment_required' as const,
+        enrollmentToken: gate.enrollmentToken,
+        expiresInSeconds: gate.expiresInSeconds,
+      };
+    }
+    if (gate.gate === 'challenge') {
+      return {
+        status: 'mfa_required' as const,
+        challengeToken: gate.challengeToken,
+        expiresInSeconds: gate.expiresInSeconds,
+      };
     }
 
     await this.audit.record({
@@ -93,9 +125,14 @@ export class AuthService {
       subject: user.id,
     });
 
-    return this.issueSession(user.id);
+    const session = await this.issueSessionForUser(user.id);
+    return { status: 'authenticated' as const, ...session };
   }
 
+  /**
+   * Refresh rotation with privileged MFA assurance check.
+   * Never silently upgrades an ordinary session into an OWNER session.
+   */
   async refresh(refreshToken: string) {
     const hash = this.tokens.hashToken(refreshToken);
     const session = await this.prisma.session.findFirst({
@@ -105,12 +142,35 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
+    const roles = await this.rbac.getUserRoles(session.userId);
+    const privileged = rolesArePrivileged(roles);
+    const sessionMfaAssured =
+      session.authenticationAssurance === AuthenticationAssurance.MFA &&
+      session.mfaVerifiedAt != null;
+
+    if (privileged && !sessionMfaAssured) {
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      });
+      await this.audit.record({
+        actorId: session.userId,
+        action: 'auth.refresh_rejected_privileged_without_mfa',
+        subject: session.id,
+        payload: { roles, reason: 'stale_or_unassured_session' },
+      });
+      throw new UnauthorizedException('Privileged re-authentication with MFA required');
+    }
+
     await this.prisma.session.update({
       where: { id: session.id },
       data: { revokedAt: new Date() },
     });
 
-    return this.issueSession(session.userId);
+    const next = await this.issueSessionForUser(session.userId, {
+      mfaAssured: privileged ? true : false,
+    });
+    return { status: 'authenticated' as const, ...next };
   }
 
   async logout(refreshToken: string) {
@@ -133,43 +193,13 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    const hash = this.hashOpaque(token);
-    const record = await this.prisma.verificationRecord.findFirst({
-      where: { tokenHash: hash, purpose: 'email_verification', usedAt: null },
-    });
-    if (!record || record.expiresAt.getTime() < Date.now()) {
-      throw new BadRequestException('Invalid or expired verification token');
-    }
-    if (record.attemptCount >= 5) {
-      throw new BadRequestException('Verification attempts exceeded');
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.verificationRecord.update({
-        where: { id: record.id },
-        data: { usedAt: new Date(), attemptCount: { increment: 1 } },
-      }),
-      this.prisma.user.update({
-        where: { id: record.userId },
-        data: { emailVerifiedAt: new Date() },
-      }),
-    ]);
-
-    await this.audit.record({
-      actorId: record.userId,
-      action: 'auth.email_verified',
-      subject: record.userId,
-    });
-
-    return { status: 'verified' as const };
+    return this.verification.confirmEmailVerificationPublic(token);
   }
 
   /**
    * Genuine one-time Owner bootstrap.
-   * Requires configured identity + secret + registered user.
-   * Email alone or token alone never grants Owner.
-   * Completion is persisted in DB and survives restarts.
-   * Bootstrap secrets are never returned in responses or audit payloads.
+   * Grants OWNER role only — does not return privileged tokens.
+   * Revokes all pre-elevation sessions so ordinary refresh cannot become Owner.
    */
   async bootstrapOwner(email: string, bootstrapToken: string) {
     const configuredEmail = process.env.OWNER_BOOTSTRAP_EMAIL;
@@ -201,7 +231,6 @@ export class AuthService {
     const emailMatches = safeEqualSecret(normalizedEmail, configuredEmail.trim().toLowerCase());
     const tokenMatches = safeEqualSecret(bootstrapToken, configuredToken);
 
-    // Both identity and secret required — never elevate on either alone.
     if (!emailMatches || !tokenMatches) {
       await this.audit.record({
         action: 'owner.bootstrap_rejected',
@@ -240,18 +269,29 @@ export class AuthService {
       throw new ConflictException('Owner bootstrap has already been completed');
     }
 
+    // assignRole(OWNER) revokes existing sessions (privileged role grant rule).
     await this.rbac.assignRole({
       userId: user.id,
       role: RoleName.OWNER,
       assignedBy: 'system:bootstrap',
     });
+
+    // Explicit second revoke for bootstrap clarity / race safety.
+    await this.rbac.revokeAllSessionsForUser(user.id, 'owner_bootstrap_elevation');
+
     await this.audit.record({
       actorId: user.id,
       action: 'owner.bootstrap_assigned',
       subject: user.id,
-      payload: { via: 'one_time_bootstrap' },
+      payload: {
+        via: 'one_time_bootstrap',
+        sessionsRevoked: true,
+        privilegedIdentityPolicy: 'SINGLE_OWNER_MARYKE_FARRELL',
+        note: 'Bootstrap grants role only; MFA login required for Owner session',
+      },
     });
 
+    // No privileged access/refresh tokens returned from bootstrap.
     return { status: 'owner_assigned' as const, userId: user.id };
   }
 
@@ -272,33 +312,35 @@ export class AuthService {
     return count > 0;
   }
 
-  private async createEmailVerification(userId: string) {
-    const token = randomBytes(32).toString('base64url');
-    const tokenHash = this.hashOpaque(token);
-    await this.prisma.verificationRecord.create({
-      data: {
-        userId,
-        channel: 'email',
-        purpose: 'email_verification',
-        tokenHash,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
-    // Phase 1: token stored hashed. Delivery vendor is deferred — do not claim email Sent.
-    return token;
-  }
-
-  private hashOpaque(token: string) {
-    return createHash('sha256').update(token).digest('hex');
-  }
-
-  private async issueSession(userId: string) {
+  /**
+   * Issues a session. Privileged roles require mfaAssured=true (set only after MFA verify
+   * or assured refresh). Client-provided flags are never consulted.
+   */
+  async issueSessionForUser(userId: string, options: IssueSessionOptions = {}) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const roles = await this.rbac.getUserRoles(userId);
+    const privileged = rolesArePrivileged(roles);
+    const mfaAssured = options.mfaAssured === true;
+
+    if (privileged && !mfaAssured) {
+      await this.audit.record({
+        actorId: userId,
+        action: 'auth.privileged_session_blocked_without_mfa',
+        subject: userId,
+        payload: { roles },
+      });
+      throw new UnauthorizedException('Privileged re-authentication with MFA required');
+    }
+
+    const authLevel: AuthLevel = mfaAssured ? 'mfa' : 'password';
+    const assurance = mfaAssured ? AuthenticationAssurance.MFA : AuthenticationAssurance.PASSWORD;
+    const mfaVerifiedAt = mfaAssured ? new Date() : null;
+
     const accessToken = await this.tokens.signAccessToken({
       sub: user.id,
       email: user.email,
       roles,
+      authLevel,
     });
     const refresh = this.tokens.createRefreshToken();
     await this.prisma.session.create({
@@ -306,6 +348,8 @@ export class AuthService {
         userId: user.id,
         refreshTokenHash: refresh.hash,
         expiresAt: refresh.expiresAt,
+        authenticationAssurance: assurance,
+        mfaVerifiedAt,
       },
     });
 
@@ -316,6 +360,7 @@ export class AuthService {
         emailVerified: Boolean(user.emailVerifiedAt),
         roles,
         mfaEnabled: user.mfaEnabled,
+        authenticationAssurance: assurance,
       },
       tokens: {
         accessToken,

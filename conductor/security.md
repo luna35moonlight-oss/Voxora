@@ -35,20 +35,40 @@
 
 ---
 
-## 3. MFA (OWNER DECISION 2026-08-10 + Phase 1 closeout)
+## 3. MFA (OWNER DECISION 2026-08-10 + Phase 2 enforcement)
 
 | Role | Policy |
 |------|--------|
-| Architecture | MFA-capable from **Phase 1** |
-| Phase 1 implementation status | **MFA-READY, NOT YET PRODUCTION-ENFORCED** |
-| Owner | MFA **mandatory** before production privileged access (**Phase 2 enforcement**) |
-| Admin | MFA **mandatory** (**Phase 2 enforcement**) |
-| Moderator | MFA **mandatory** (**Phase 2 enforcement**) |
-| Support | MFA **mandatory** (**Phase 2 enforcement**) |
-| Ordinary user | MFA **capability** required; final mandatory vs optional launch rule **DEFERRED** |
+| Architecture | MFA-capable from Phase 1; **enforced in Phase 2** for privileged roles |
+| Phase 2 implementation status | **PRIVILEGED MFA ENFORCED (TOTP)** |
+| Owner | MFA **mandatory** — enrollment + challenge before privileged session |
+| Admin | MFA **mandatory** |
+| Moderator | MFA **mandatory** |
+| Support | MFA **mandatory** |
+| Ordinary user | MFA **capability** available via same factor model; final mandatory vs optional launch rule **DEFERRED** |
 
-Phase 1 may audit privileged login without MFA and still issue a session. That is **not** full MFA enforcement.  
-Phase 2 must implement real enrollment, verification, and login challenge so privileged roles cannot simply warn/audit and continue.
+Privileged login without MFA no longer issues a full session. Responses are `mfa_enrollment_required` or `mfa_required` until TOTP succeeds. Secrets are encrypted at rest and never appear in logs/audit payloads.
+
+### CURRENT PRIVILEGED IDENTITY POLICY: SINGLE OWNER — MARYKE FARRELL
+
+- One OWNER account (Maryke Farrell) established via one-time bootstrap  
+- Do **not** assign ADMIN / MODERATOR / SUPPORT unless explicitly authorised later  
+- Do **not** assign both OWNER and ADMIN to Maryke merely to duplicate labels  
+- OWNER is the highest privileged authority  
+- ADMIN / MODERATOR / SUPPORT remain in RBAC for future use only  
+
+### Privileged session MFA assurance (Phase 2 closeout)
+
+| Rule | Behaviour |
+|------|-----------|
+| Session authority | DB `Session.authenticationAssurance` + `Session.mfaVerifiedAt` (never client flags) |
+| Privileged issuance | Only after successful MFA challenge (`mfaAssured` set server-side) |
+| Refresh (non-privileged) | Normal rotation |
+| Refresh (privileged, no MFA assurance) | Revoke session; reject; require fresh MFA login |
+| Refresh (privileged, MFA-assured) | Rotate and preserve MFA assurance |
+| Owner bootstrap | Grants role only; revokes all pre-Owner sessions; no privileged tokens returned |
+| Privileged role grant/revoke | Invalidate existing sessions |
+| MFA reset | Revoke sessions; force re-enrollment/authentication |
 
 Owner/bootstrap role elevation must be: server-side, auditable, restricted, revocable, protected, and **genuinely one-time** (persisted completion + active-OWNER guard).
 
@@ -153,12 +173,6 @@ Digital entitlements via Apple IAP / Google Play Billing with **server-side rece
 
 Production secrets must never be committed.
 
-## 13. Phase 2 security requirement (privileged MFA)
+## 13. Phase 2 privileged MFA — implemented
 
-Before any privileged role is production-ready:
-
-- real MFA enrollment  
-- verification  
-- login challenge enforcement  
-
-for OWNER, ADMIN, MODERATOR, SUPPORT. No privileged production login may only warn/audit and then continue.
+Real TOTP enrollment, verification, and login challenge enforcement are implemented for OWNER, ADMIN, MODERATOR, SUPPORT. Privileged production login no longer warns/audits and continues.

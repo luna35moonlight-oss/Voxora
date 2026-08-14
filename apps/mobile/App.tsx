@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from './src/auth/AuthContext';
 import { BootstrapScreen } from './src/screens/BootstrapScreen';
 import { SignInScreen } from './src/screens/SignInScreen';
 import { FoundationHomeScreen } from './src/screens/FoundationHomeScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { useConnectivity } from './src/hooks/useConnectivity';
 import type { RootStackParamList } from './src/navigation/types';
@@ -28,20 +30,42 @@ const navTheme = {
 };
 
 function RootNavigator() {
-  const { status } = useAuth();
+  const { status, onboardingStatus, refreshProfile } = useAuth();
   const connectivity = useConnectivity();
+  const [showSettings, setShowSettings] = useState(false);
 
   if (status === 'loading') {
     return <BootstrapScreen connectivity={connectivity} />;
   }
 
+  const needsOnboarding = status === 'signedIn' && onboardingStatus !== 'HANDOFF_READY';
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {status === 'signedOut' ? (
         <Stack.Screen name="SignIn" component={SignInScreen} />
+      ) : needsOnboarding ? (
+        <Stack.Screen name="Onboarding">
+          {() => (
+            <OnboardingScreen
+              onHandoffReady={() => {
+                void refreshProfile();
+              }}
+            />
+          )}
+        </Stack.Screen>
+      ) : showSettings ? (
+        <Stack.Screen name="Settings">
+          {() => <SettingsScreen onBack={() => setShowSettings(false)} />}
+        </Stack.Screen>
       ) : (
         <Stack.Screen name="FoundationHome">
-          {() => <FoundationHomeScreen connectivity={connectivity} />}
+          {() => (
+            <FoundationHomeScreen
+              connectivity={connectivity}
+              onOpenSettings={() => setShowSettings(true)}
+            />
+          )}
         </Stack.Screen>
       )}
     </Stack.Navigator>
@@ -55,7 +79,9 @@ export default function App() {
       config: {
         screens: {
           SignIn: 'sign-in',
+          Onboarding: 'onboarding',
           FoundationHome: 'home',
+          Settings: 'settings',
         },
       },
     }),

@@ -2,7 +2,7 @@
 
 **Document status:** OWNER REVIEW COMPLETE — deferred items remain visible  
 **Product owner:** Maryke Farrell  
-**Last updated:** 2026-08-10  
+**Last updated:** 2026-08-10 (Phase 2 — deferred commercial/Bondfire/Wellness rules unchanged)  
 
 **Policy:** Items marked **DEFERRED — OWNER DECISION REQUIRED BEFORE RELEVANT IMPLEMENTATION PHASE** do **not** block Phase 1. Cursor must build interfaces/extension points and must **not** invent answers.
 

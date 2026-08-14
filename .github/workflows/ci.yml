@@ -44,6 +44,11 @@ jobs:
       JWT_REFRESH_TTL: 30d
       OWNER_BOOTSTRAP_EMAIL: luna35moonlight@gmail.com
       OWNER_BOOTSTRAP_TOKEN: ci-bootstrap-token-min16
+      EMAIL_PROVIDER: dev
+      PHONE_PROVIDER: dev
+      MFA_ENCRYPTION_KEY: ci-mfa-encryption-key-min-32-characters!
+      APPLE_IAP_CONFIGURED: 'false'
+      GOOGLE_PLAY_BILLING_CONFIGURED: 'false'
       API_PORT: 3000
       API_HOST: 127.0.0.1
       CORS_ORIGINS: http://localhost:8081

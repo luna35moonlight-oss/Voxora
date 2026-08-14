@@ -15,12 +15,22 @@ export class FeatureFlagsService implements OnModuleInit {
       {
         key: 'bondfire.enabled',
         enabled: false,
-        description: 'Alpha Bondfire product surface (not Phase 1)',
+        description: 'Alpha Bondfire product surface (not Phase 2 production)',
       },
       {
         key: 'pets.enabled',
         enabled: false,
         description: 'Living pets (later phase)',
+      },
+      {
+        key: 'avatars.enabled',
+        enabled: false,
+        description: 'Living avatars / Scene Engine (Phase 3+)',
+      },
+      {
+        key: 'wellness.enabled',
+        enabled: false,
+        description: 'Wellness product surface (not Phase 2)',
       },
     ];
     for (const flag of defaults) {
@@ -35,6 +45,14 @@ export class FeatureFlagsService implements OnModuleInit {
   listPublic() {
     return this.prisma.featureFlag.findMany({
       where: { enabled: true },
+      select: { key: true, enabled: true },
+      orderBy: { key: 'asc' },
+    });
+  }
+
+  /** Includes disabled flags so entitlement evaluation can distinguish off vs unknown. */
+  listForEvaluation() {
+    return this.prisma.featureFlag.findMany({
       select: { key: true, enabled: true },
       orderBy: { key: 'asc' },
     });
