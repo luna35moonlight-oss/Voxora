@@ -141,6 +141,8 @@ Server evaluates capabilities (`bondfire.messageQuota`, `pet.battle`, etc.). UI 
 
 All progression rewards write immutable ledger entries with idempotency. Details: `pet-battle-system.md`, `game-system.md`.
 
+**Games & Rewards Addendum (recorded):** Moon Dash, future Rock Paper Scissors, and Spinning Wheel must use the central Reward Ledger. Confirmed separate reward/currency types include Pet Skill-Up Shards, Voxora Coins, and Voxora Diamonds. Full Games Platform remains Phase 13 — do not implement RPS/Wheel prematurely. See ADR-024.
+
 ### 6.5 Provider Adapter Layer
 
 Uniform connection states and capability declarations. Details: `integrations.md`.
