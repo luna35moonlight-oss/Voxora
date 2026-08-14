@@ -11,6 +11,7 @@ import { SignInScreen } from './src/screens/SignInScreen';
 import { FoundationHomeScreen } from './src/screens/FoundationHomeScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { RiveNativeValidationScreen } from './src/screens/RiveNativeValidationScreen';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { useConnectivity } from './src/hooks/useConnectivity';
 import type { RootStackParamList } from './src/navigation/types';
@@ -33,9 +34,20 @@ function RootNavigator() {
   const { status, onboardingStatus, refreshProfile } = useAuth();
   const connectivity = useConnectivity();
   const [showSettings, setShowSettings] = useState(false);
+  const [showRiveValidation, setShowRiveValidation] = useState(false);
 
   if (status === 'loading') {
     return <BootstrapScreen connectivity={connectivity} />;
+  }
+
+  if (__DEV__ && showRiveValidation) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="RiveNativeValidation">
+          {() => <RiveNativeValidationScreen onBack={() => setShowRiveValidation(false)} />}
+        </Stack.Screen>
+      </Stack.Navigator>
+    );
   }
 
   const needsOnboarding = status === 'signedIn' && onboardingStatus !== 'HANDOFF_READY';
@@ -43,7 +55,9 @@ function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {status === 'signedOut' ? (
-        <Stack.Screen name="SignIn" component={SignInScreen} />
+        <Stack.Screen name="SignIn">
+          {() => <SignInScreen onOpenRiveValidation={() => setShowRiveValidation(true)} />}
+        </Stack.Screen>
       ) : needsOnboarding ? (
         <Stack.Screen name="Onboarding">
           {() => (

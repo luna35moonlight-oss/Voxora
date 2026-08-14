@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import { useAuth } from '../auth/AuthContext';
 
-export function SignInScreen() {
+export function SignInScreen({ onOpenRiveValidation }: { onOpenRiveValidation?: () => void }) {
   const { signIn, register, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,6 +83,17 @@ export function SignInScreen() {
       >
         <Text style={styles.buttonText}>Create account</Text>
       </Pressable>
+
+      {__DEV__ && onOpenRiveValidation ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpenRiveValidation}
+          style={[styles.button, styles.secondary]}
+          testID="open-rive-native-validation"
+        >
+          <Text style={styles.buttonText}>Native Rive validation harness</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

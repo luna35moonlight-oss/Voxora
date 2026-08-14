@@ -3,4 +3,5 @@ export type RootStackParamList = {
   Onboarding: undefined;
   FoundationHome: undefined;
   Settings: undefined;
+  RiveNativeValidation: undefined;
 };
