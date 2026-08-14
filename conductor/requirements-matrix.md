@@ -81,7 +81,7 @@ Deferred commercial formulas remain in `open-questions.md`.
 | REQ-P3-005 | Compatibility rules | Locked/incompatible errors | Rig/ownership/conflict checks | Item rig + conflict metadata | API typecheck | INTEGRATED |
 | REQ-P3-006 | Runtime state model | Idle/Listen/Think/Speak/Smile controls | Client runtime foundation | — | `avatarRuntime.test.ts` | INTEGRATED |
 | REQ-P3-007 | Reduced motion | Toggle in avatar card | Client runtime fallback | — | Reduced-motion runtime test | INTEGRATED |
-| REQ-P3-008 | Rive primary runtime metadata | Rive reference shown | Catalogue stores Rive refs | `riveAssetRef`, `AvatarAsset.storageRef` | Documentation | INTEGRATED — real Rive validation pending on this branch |
+| REQ-P3-008 | Rive primary runtime | Avatar Foundation Rive view | Catalogue stores Rive refs + `@rive-app/react-native@0.4.19` | `riveAssetRef`, `AvatarAsset.storageRef` | Adapter/unit tests; native outstanding | INTEGRATED — JS validated; NATIVE VALIDATION REQUIRED |
 | REQ-P3-009 | Moon Dash Legendary prize compatibility | Locked Legendary avatar reference | Future ownership grant path uses same ownership model | `UserAvatarOwnership` | Contract locked Legendary test | INTEGRATED FOUNDATION |
 | REQ-P3-010 | No pets / no Alpha / no additional games beyond Moon Dash | Honest mobile copy | Moon Dash only; no pet/Alpha APIs | — | Documentation review | INTEGRATED |
 | REQ-P3-011 | Games & Rewards Addendum recorded (RPS, Wheel, ledger, currencies) | — | Docs only — no premature game build | — | `game-system.md` + ADR-027 | RECORDED — NOT IMPLEMENTED |

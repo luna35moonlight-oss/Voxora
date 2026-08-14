@@ -52,5 +52,7 @@ Phase documents live in [`conductor/`](./conductor/):
 | [roadmap.md](./conductor/roadmap.md) | Phases 0–17 |
 | [decisions.md](./conductor/decisions.md) | Architecture decisions |
 | [open-questions.md](./conductor/open-questions.md) | Owner decisions required |
+| [phase-3-notes.md](./conductor/phase-3-notes.md) | Phase 3 integration + Rive validation notes |
+| [rive-production-asset-contract.md](./conductor/rive-production-asset-contract.md) | Production `.riv` asset contract |
 
 Official spelling: **Bondfire** (not Bonfire). Feature name: **Alpha Bondfire**.

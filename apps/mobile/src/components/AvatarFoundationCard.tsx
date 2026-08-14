@@ -9,6 +9,9 @@ import type {
 import { apiClient } from '../services/apiClient';
 import { secureSessionStore } from '../services/secureSessionStore';
 import { requestAvatarStateTransition, shouldReturnToIdle } from '../scene/avatarRuntime';
+import { RiveAvatarRuntimeView } from '../scene/RiveAvatarRuntimeView';
+import { RIVE_DEV_TEST_ASSET } from '../scene/riveDevAsset';
+import { describeDevAssetAdapter } from '../scene/riveStateAdapter';
 
 const demoStates: AvatarRuntimeState[] = ['IDLE', 'LISTEN', 'THINK', 'SPEAK', 'SMILE'];
 
@@ -16,6 +19,7 @@ export function AvatarFoundationCard() {
   const [avatarState, setAvatarState] = useState<CurrentAvatarResponse | null>(null);
   const [runtimeState, setRuntimeState] = useState<AvatarRuntimeState>('IDLE');
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [performanceProfile, setPerformanceProfile] = useState<'STANDARD' | 'LOW'>('STANDARD');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,30 +35,22 @@ export function AvatarFoundationCard() {
       <Text style={styles.kicker}>Phase 3</Text>
       <Text style={styles.title}>Living Avatar Foundation</Text>
       <Text style={styles.body}>
-        Server-owned catalogue, ownership, wardrobe, persistent equipment, and Rive-ready runtime
-        states. Pet selection remains Phase 4.
+        Server-owned catalogue, ownership, wardrobe, persistent equipment, and real Rive runtime
+        proof (development asset). Pet selection remains Phase 4.
       </Text>
 
-      <View
-        style={styles.scene}
-        accessibilityLabel={sceneLabel(currentAvatar?.displayName, runtimeState)}
-      >
-        <View style={styles.avatarBase}>
-          <View style={styles.hairLayer} />
-          <View style={styles.face}>
-            <View style={styles.eye} />
-            <View style={styles.eye} />
-          </View>
-          <View style={[styles.outfitLayer, runtimeState === 'SPEAK' && styles.speakingOutfit]} />
-          {avatarState?.equipment.some((entry) => entry.slot === 'JEWELLERY') ? (
-            <View style={styles.accessoryLayer} />
-          ) : null}
-        </View>
-      </View>
+      <RiveAvatarRuntimeView
+        equippedSlotLabels={avatarState?.equipment.map((entry) => entry.slot) ?? []}
+        performanceProfile={performanceProfile}
+        reducedMotion={reducedMotion}
+        runtimeState={runtimeState}
+      />
 
       <Text style={styles.meta}>Current: {currentAvatar?.displayName ?? 'loading avatar...'}</Text>
       <Text style={styles.meta}>Runtime state: {runtimeState}</Text>
-      <Text style={styles.meta}>Rive asset: {currentAvatar?.riveAssetRef ?? 'pending'}</Text>
+      <Text style={styles.meta}>Catalogue Rive ref: {currentAvatar?.riveAssetRef ?? 'pending'}</Text>
+      <Text style={styles.meta}>{describeDevAssetAdapter()}</Text>
+      <Text style={styles.meta}>{RIVE_DEV_TEST_ASSET.marker}</Text>
 
       <View style={styles.buttonRow}>
         {demoStates.map((state) => (
@@ -75,6 +71,16 @@ export function AvatarFoundationCard() {
         style={styles.secondaryButton}
       >
         <Text style={styles.buttonText}>Reduced motion: {reducedMotion ? 'on' : 'off'}</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          setPerformanceProfile((value) => (value === 'STANDARD' ? 'LOW' : 'STANDARD'))
+        }
+        style={styles.secondaryButton}
+      >
+        <Text style={styles.buttonText}>Performance profile: {performanceProfile}</Text>
       </Pressable>
 
       <Text style={styles.sectionTitle}>Catalogue</Text>
@@ -115,8 +121,10 @@ export function AvatarFoundationCard() {
       ) : null}
 
       <Text style={styles.finePrint}>
-        Listening and Speaking are avatar states only here. No microphone capture or Alpha provider
-        is active in Phase 3.
+        Listening and Speaking are avatar states only here. No microphone capture, speech
+        recognition, voice output, or Alpha provider is active in Phase 3. Return-to-IDLE for the
+        development asset is application orchestration unless a production `.riv` provides a genuine
+        state-machine transition.
       </Text>
     </View>
   );
@@ -235,10 +243,6 @@ async function requireAccessToken(): Promise<string> {
   return token;
 }
 
-function sceneLabel(avatarName: string | undefined, state: AvatarRuntimeState) {
-  return `${avatarName ?? 'Avatar'} scene in ${state} state`;
-}
-
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
@@ -263,65 +267,6 @@ const styles = StyleSheet.create({
   body: {
     color: colors.text.secondary,
     marginTop: spacing.xs,
-  },
-  scene: {
-    alignItems: 'center',
-    backgroundColor: '#1F1636',
-    borderColor: colors.border.strong,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: 210,
-    justifyContent: 'center',
-    marginTop: spacing.md,
-  },
-  avatarBase: {
-    alignItems: 'center',
-    backgroundColor: '#7C3AED',
-    borderColor: colors.brand.blue,
-    borderRadius: 58,
-    borderWidth: 2,
-    height: 132,
-    justifyContent: 'center',
-    width: 112,
-  },
-  hairLayer: {
-    backgroundColor: '#E9D5FF',
-    borderRadius: 40,
-    height: 38,
-    position: 'absolute',
-    top: 8,
-    width: 86,
-  },
-  face: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  eye: {
-    backgroundColor: colors.text.primary,
-    borderRadius: 5,
-    height: 10,
-    width: 10,
-  },
-  outfitLayer: {
-    backgroundColor: colors.brand.pink,
-    borderRadius: radius.md,
-    bottom: 18,
-    height: 40,
-    position: 'absolute',
-    width: 76,
-  },
-  speakingOutfit: {
-    backgroundColor: colors.brand.blue,
-  },
-  accessoryLayer: {
-    backgroundColor: colors.state.warning,
-    borderRadius: 9,
-    height: 18,
-    position: 'absolute',
-    right: 22,
-    top: 58,
-    width: 18,
   },
   meta: {
     color: colors.text.secondary,

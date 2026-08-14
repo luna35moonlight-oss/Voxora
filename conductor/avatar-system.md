@@ -115,7 +115,24 @@ This proves the pipeline. It is not mass art production.
 
 ## 10. Known limitation
 
-Production Rive files are not present yet. Phase 3 stores Rive references and uses a React Native placeholder scene to prove data flow, layering, state, persistence, and reduced-motion behaviour. Final Rive art/runtime integration requires supplied `.riv` assets.
+Production Voxora `.riv` artwork is not present yet. Phase 3:
+
+- stores catalogue Rive references;
+- integrates `@rive-app/react-native@0.4.19` for real runtime validation;
+- loads a clearly marked development community demo asset from the public Rive CDN (binary not committed);
+- maps Voxora states to the demo asset via an explicit adapter (demo asset does **not** implement the production contract);
+- requires an Expo development build for native proof (`NATIVE VALIDATION REQUIRED` until observed on device).
+
+See `rive-production-asset-contract.md` and `phase-3-notes.md`.
+
+## 11. Moon Dash Legendary ownership path
+
+Legendary Moon Dash prizes must grant through `UserAvatarOwnership` (same model as all avatars). Lifecycle:
+
+verified prize → manual redeem code/reference → valid redemption → server ownership grant → inventory/selection → audit → code marked redeemed
+
+No automatic issuance/redemption/grant in Phase 3. No `MoonDashAvatarSystem`.
+
 
 ---
 

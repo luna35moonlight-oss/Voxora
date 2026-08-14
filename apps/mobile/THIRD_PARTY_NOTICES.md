@@ -42,3 +42,12 @@ SOFTWARE.
 ```
 
 Additional dependency licences are carried by those packages under `node_modules` / package manager metadata and must be respected when redistributing binaries.
+
+---
+
+## Rive React Native runtime
+
+`@rive-app/react-native` (MIT) and `react-native-nitro-modules` (MIT) are third-party dependencies used for living-avatar runtime validation. Their licences do **not** license Voxora product code or artwork.
+
+The development `.riv` referenced for runtime testing is a Rive community demo loaded from the public CDN and is marked `DEVELOPMENT TEST ASSET — NOT VOXORA PRODUCTION ART`. It is **not** committed to this repository and is **not** Voxora-owned production art.
+
