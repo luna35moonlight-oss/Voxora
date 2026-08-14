@@ -61,10 +61,49 @@ Label: `LOCAL CI-EQUIVALENT CHECKS`
 | `pnpm --filter @voxora/mobile typecheck` | pass | 0 |
 | `pnpm --filter @voxora/mobile exec expo config --type public` | pass | 0 |
 | `pnpm build` | pass | 0 |
-| `pnpm --filter @voxora/api exec prisma migrate deploy` | blocked — no Postgres at localhost:5432 | 1 |
-| `pnpm --filter @voxora/api test:e2e` | blocked — DATABASE_URL/REDIS_URL/JWT secrets + DB unavailable | 1 |
-| Remote GitHub Actions CI | not run (no push per Product Owner instruction) | N/A |
+| `pnpm --filter @voxora/api exec prisma migrate deploy` | blocked locally — no Postgres; **passed in remote CI** | local 1 / CI 0 |
+| `pnpm --filter @voxora/api test:e2e` | blocked locally; **passed in remote CI** (26 tests) | local 1 / CI 0 |
+| Remote GitHub Actions CI | **pass** (PR #7) | 0 |
 | Native iOS/Android / Expo dev build visual Rive proof | NATIVE VALIDATION REQUIRED | N/A |
+
+## Remote CI (2026-08-14)
+
+Label: `REMOTE CI VALIDATED`
+
+| Run | Event | Job | Result | URL |
+|-----|-------|-----|--------|-----|
+| 31842840312 | pull_request | foundation | **pass** | https://github.com/luna35moonlight-oss/Voxora/actions/runs/31842840312 |
+| 31842817122 | push | foundation | **pass** | https://github.com/luna35moonlight-oss/Voxora/actions/runs/31842817122 |
+
+CI applied migrations: Phase 2 account/commercial, session MFA assurance, White Wolf game attempts, Phase 3 avatar foundation. API e2e: foundation + Phase 2 + session-assurance (26 passed). No dedicated Moon Dash/Avatar HTTP e2e files yet (unit/service/contract + migrate cover those areas).
+
+Draft PR: https://github.com/luna35moonlight-oss/Voxora/pull/7
+
+## Native Rive manual procedure (Product Owner / native tester)
+
+**Requirement:** Expo development build. **Expo Go does not count.**
+
+1. `pnpm install --frozen-lockfile`
+2. Point `EXPO_PUBLIC_API_URL` at a reachable API.
+3. Android first: EAS development build or `expo prebuild` + native run.
+4. Launch the **development client** (not Expo Go); sign in; open Avatar Foundation.
+5. Confirm banner `DEVELOPMENT TEST ASSET — NOT VOXORA PRODUCTION ART`.
+6. Online: `.riv` loads from CDN; artboard visible; state machine active; IDLE visible.
+7. Trigger LISTEN / THINK / SPEAK / SMILE. LISTEN/THINK/SPEAK are **application-orchestrated** on this demo asset; SMILE drives `isHappy`.
+8. Confirm return to IDLE via app orchestration after reaction.
+9. Parent re-renders must not continuously restart animation; unmount/remount behaves cleanly.
+10. Reduced motion retains presence; STANDARD and LOW profiles both show meaningful avatar presence.
+11. Offline / CDN failure: honest fallback (remote CDN is **dev-only**, not production delivery).
+12. Repeat on iOS where macOS/Xcode is available.
+
+This cloud agent host has **no Android SDK/emulator and no Xcode** — native steps were not executed here.
+
+## Explicitly not started
+
+- Phase 4 pets  
+- Rock Paper Scissors, Spinning Wheel, or full Games Platform implementation  
+- Alpha / Alpha Bondfire  
+- Production Voxora `.riv` artwork  
 
 ## Moon Dash Legendary ownership compatibility
 
@@ -73,3 +112,4 @@ Conceptual lifecycle preserved (not auto-executed):
 verified prize → manual redeem code/reference → valid redemption → server ownership grant (`UserAvatarOwnership`) → inventory/selection available → audit → code marked redeemed
 
 No `MoonDashAvatarSystem`. No automatic code issuance/redemption/grant in Phase 3.
+
