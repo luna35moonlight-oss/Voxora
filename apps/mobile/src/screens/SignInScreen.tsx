@@ -84,7 +84,7 @@ export function SignInScreen({ onOpenRiveValidation }: { onOpenRiveValidation?: 
         <Text style={styles.buttonText}>Create account</Text>
       </Pressable>
 
-      {__DEV__ && onOpenRiveValidation ? (
+      {(__DEV__ || process.env.EXPO_PUBLIC_ENABLE_RIVE_HARNESS === '1') && onOpenRiveValidation ? (
         <Pressable
           accessibilityRole="button"
           onPress={onOpenRiveValidation}

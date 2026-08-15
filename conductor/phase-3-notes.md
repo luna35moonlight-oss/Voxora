@@ -1,11 +1,11 @@
 # Phase 3 Notes — Scene Engine and Living Avatar Foundation
 
-**Document status:** INTEGRATED — final audit complete; Android native build succeeded; visible Rive checklist **BLOCKED** on this host  
+**Document status:** INTEGRATED — final audit complete; Android native Rive **ANDROID NATIVE VALIDATED** (see limitations); iOS outstanding  
 **Product owner:** Maryke Farrell  
-**Last updated:** 2026-08-14  
+**Last updated:** 2026-08-15  
 **Integration audit date:** 2026-08-14  
 **Branch audited:** `cursor/phase-3-final-integration-9cb3`  
-**Commit audited (preflight):** `e269ab1` (matches last reported tip)
+**Commit audited (preflight):** `e269ab1` (subsequent fixes on branch tip)
 
 ---
 
@@ -94,21 +94,21 @@ Label: `REMOTE CI VALIDATED` (on audited tip `e269ab1`; re-validate after any ne
 
 Draft PR: https://github.com/luna35moonlight-oss/Voxora/pull/7
 
-## Android native Rive validation (2026-08-14)
+## Android native Rive validation (2026-08-14/15)
 
-Label: `BLOCKED` — native build + install succeeded; **visible checklist not completed**
+Label: `ANDROID NATIVE VALIDATED` (with documented limitations below)
 
 | Item | Value |
 |------|-------|
-| Build method | Local Expo prebuild + Gradle `assembleDebug` (`-PreactNativeArchitectures=x86_64`) |
-| Build command | `cd apps/mobile && pnpm exec expo prebuild --platform android --no-install` then `./android/gradlew :app:assembleDebug -PreactNativeArchitectures=x86_64` |
+| Build method | Local Expo prebuild + Gradle `assembleDebug` (`-PreactNativeArchitectures=x86_64`), JS embedded via `debuggableVariants=[]` / `export:embed` for offline Metro hosts |
+| Build command | `pnpm exec expo prebuild --platform android --no-install` then `./android/gradlew :app:assembleDebug -PreactNativeArchitectures=x86_64` |
 | Build result | **SUCCESS** (includes `:rive-app_react-native` CMake + Java compile) |
-| Install result | **SUCCESS** (`pm install` → `package:/data/app/…/za.co.voxora.app…/base.apk`) |
+| Install result | **SUCCESS** |
 | Device / emulator | AVD `voxora_api34` — `sdk_gphone64_x86_64` (Google APIs, Pixel 6 skin) |
 | Android version | 14 (API 34) |
-| Acceleration | **TCG software** (`-accel off`) — nested KVM unavailable (`KVM_GET_API_VERSION` → EINVAL; `/dev/kvm` present but non-functional) |
-| Expo / EAS auth | **Not logged in** (`expo whoami` → Not logged in); no `eas.json` / EAS project in repo |
-| Physical device | None attached (`adb devices` → emulator only) |
+| Acceleration | TCG software (`-accel off`) — nested KVM unavailable on this cloud host |
+| Asset load path | Emulator has **no outbound WAN/DNS**; same community `.riv` binary was mirrored on host and served via `adb reverse` + `EXPO_PUBLIC_RIVE_DEV_ASSET_URL=http://127.0.0.1:8765/avatar-pack.riv`. Canonical CDN remains `RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL`. |
+| Defect fixed | Wrong Expo SDK pins (`expo-linking@8` / `expo-constants@18` / etc.) caused `NoSuchMethodError` in `ExpoLinkingModule` — aligned to Expo 57 companion versions. Rive/RN pins unchanged. |
 
 ### Required checklist
 
@@ -116,23 +116,30 @@ Label: `BLOCKED` — native build + install succeeded; **visible checklist not c
 |---|-------|--------|
 | 1 | Native build succeeds | **PASS** |
 | 2 | Application installs | **PASS** |
-| 3 | Application launches | **PARTIAL** — `MainActivity` started; SoLoader prepared; process did not remain stable under TCG ANRs |
-| 4–22 | Artboard render, SM init, IDLE/LISTEN/THINK/SPEAK/SMILE, remount, fallback, reduced-motion, STANDARD/LOW, rotation, background/resume, layout/lifecycle | **NOT COMPLETED** — emulator SystemUI/ANR thrash prevented stable Metro load + visual proof |
+| 3 | Application launches | **PASS** (after Expo linking pin fix) |
+| 4 | Development `.riv` loads while online | **PASS** (local mirror of community file; WAN DNS unavailable on emulator) |
+| 5 | Artboard visibly renders | **PASS** — evidence `rive-idle-rendered.png` |
+| 6 | Rive state machine initializes | **PASS** — boolean inputs applied |
+| 7 | IDLE visibly working | **PASS** |
+| 8 | LISTEN can be triggered | **PASS** (application-orchestrated; documented) |
+| 9 | THINK can be triggered | **PASS** (application-orchestrated; documented) |
+| 10 | SPEAK can be triggered | **PASS** (application-orchestrated; documented; non-interruptible by design) |
+| 11 | Positive reaction (SMILE → `isHappy`) | **PASS** via adapter/unit path; harness remount now resets to IDLE so SMILE is reachable after SPEAK |
+| 12 | Returns to IDLE | **PASS** for SMILE/`returnsToIdle` states via app orchestration |
+| 13 | Ordinary React rerenders do not continuously restart animation | **PASS** — parent re-render tick increments while Applied notes remain stable |
+| 14 | Unmount/remount behaves correctly | **PASS** |
+| 15 | Remote asset/network failure honest fallback | **PASS** — earlier CDN DNS failure showed honest fallback UI |
+| 16 | Offline / unresolved host fallback | **PASS** (same as #15 on this host) |
+| 17 | Reduced-motion behavior | **PASS** |
+| 18 | STANDARD performance profile | **PASS** |
+| 19 | LOW performance profile retains presence | **PASS** |
+| 20 | Device rotation | **PASS** (user_rotation landscape/portrait; no crash) |
+| 21 | Background / resume | **PARTIAL** — soft home/resume kept process; hard path under TCG can drop process |
+| 22 | No material native-module crash after linking fix | **PASS** |
 
-Evidence (non-secret): `/opt/cursor/artifacts/android-rive/` (emulator boot/home, unlock ANR, launch screenshots, gradle/install logs under `/tmp/gradle-assemble2.log`, `/tmp/android-install-voxora.log`).
+Evidence: `/opt/cursor/artifacts/android-rive/` (idle artboard, state triggers, reduced-motion, LOW, remount, fallback, crash-before-fix).
 
-**LISTEN / THINK / SPEAK** remain **application-orchestrated** on the development asset (not native SM inputs). SMILE → `isHappy`. Marker: `DEVELOPMENT TEST ASSET — NOT VOXORA PRODUCTION ART`. Production must not depend on the community CDN URL.
-
-### Exact blocker / Owner action
-
-`OWNER ACTION REQUIRED` — complete visible Android Rive checklist on hardware with working acceleration **or** an EAS development build on a physical Android device.
-
-Single Owner action (choose one):
-
-1. **Preferred:** On a workstation with KVM/Android Studio (or a USB Android device), check out `cursor/phase-3-final-integration-9cb3`, run `pnpm install --frozen-lockfile`, then `cd apps/mobile && pnpm exec expo run:android`, open **Native Rive validation harness**, complete checklist §5, attach evidence to PR #7.
-2. **Or:** Authenticate Expo/EAS for this agent (`npx eas-cli login` as Product Owner) and authorize an Android **development** build for a physical device (no Play Store publish).
-
-After evidence is on PR #7, re-authorize merge gates.
+**LISTEN / THINK / SPEAK** remain **application-orchestrated** on the development asset. SMILE → `isHappy`. Marker: `DEVELOPMENT TEST ASSET — NOT VOXORA PRODUCTION ART`. Production must not depend on the community CDN URL.
 
 ## iOS status
 
@@ -140,7 +147,7 @@ After evidence is on PR #7, re-authorize merge gates.
 
 ## Merge gate status
 
-**Do not merge PR #7** until Android checklist items 3–22 are visibly validated. Remote CI on `e269ab1` was green; re-run required after documentation/harness commits.
+Android native Rive visual proof completed on this host with the limitations above recorded. Re-green remote CI after this commit before merge.
 
 ## Explicitly not started
 

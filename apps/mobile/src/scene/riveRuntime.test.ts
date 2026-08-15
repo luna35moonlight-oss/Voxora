@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mapVoxoraStateToDevAssetCommands, describeDevAssetAdapter } from './riveStateAdapter';
-import { RIVE_DEV_TEST_ASSET } from './riveDevAsset';
+import { RIVE_DEV_TEST_ASSET, RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL } from './riveDevAsset';
 import {
   applyCommandsToNativeView,
   buildRiveProofPlan,
@@ -16,7 +16,8 @@ describe('rive development asset metadata', () => {
   it('is clearly marked as non-production and not redistributed', () => {
     expect(RIVE_DEV_TEST_ASSET.marker).toContain('DEVELOPMENT TEST ASSET');
     expect(RIVE_DEV_TEST_ASSET.redistributionInRepositoryPermitted).toBe(false);
-    expect(RIVE_DEV_TEST_ASSET.sourceUrl).toMatch(/^https:\/\/public\.rive\.app\//);
+    expect(RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL).toMatch(/^https:\/\/public\.rive\.app\//);
+    expect(RIVE_DEV_TEST_ASSET.canonicalCdnUrl).toBe(RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL);
   });
 });
 

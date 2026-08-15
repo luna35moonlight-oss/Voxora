@@ -6,11 +6,25 @@
  * loads the officially documented public Rive community URL at test/dev time only.
  */
 
+/** Canonical public CDN URL — production must never depend on this community asset. */
+export const RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL =
+  'https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv' as const;
+
+/**
+ * Optional local override for native validation hosts without outbound DNS
+ * (e.g. EXPO_PUBLIC_RIVE_DEV_ASSET_URL=http://127.0.0.1:8765/avatar-pack.riv via adb reverse).
+ * Does not change the canonical CDN contract or production asset requirements.
+ */
+const resolvedDevAssetUrl =
+  (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_RIVE_DEV_ASSET_URL?.trim()) ||
+  RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL;
+
 export const RIVE_DEV_TEST_ASSET = {
   marker: 'DEVELOPMENT TEST ASSET — NOT VOXORA PRODUCTION ART' as const,
   assetName: 'Avatar Pack Use Case',
   originalSource: 'Rive Community / official React Native runtime documentation example',
-  sourceUrl: 'https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv',
+  canonicalCdnUrl: RIVE_DEV_TEST_ASSET_CANONICAL_CDN_URL,
+  sourceUrl: resolvedDevAssetUrl,
   communityFileId: '2195-4346',
   creatorOrOwner: 'Rive community example (not Voxora-owned)',
   licenceOrUsage:

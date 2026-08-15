@@ -40,7 +40,7 @@ function RootNavigator() {
     return <BootstrapScreen connectivity={connectivity} />;
   }
 
-  if (__DEV__ && showRiveValidation) {
+  if ((__DEV__ || process.env.EXPO_PUBLIC_ENABLE_RIVE_HARNESS === '1') && showRiveValidation) {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="RiveNativeValidation">
@@ -56,7 +56,15 @@ function RootNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {status === 'signedOut' ? (
         <Stack.Screen name="SignIn">
-          {() => <SignInScreen onOpenRiveValidation={() => setShowRiveValidation(true)} />}
+          {() => (
+            <SignInScreen
+              onOpenRiveValidation={
+                __DEV__ || process.env.EXPO_PUBLIC_ENABLE_RIVE_HARNESS === '1'
+                  ? () => setShowRiveValidation(true)
+                  : undefined
+              }
+            />
+          )}
         </Stack.Screen>
       ) : needsOnboarding ? (
         <Stack.Screen name="Onboarding">

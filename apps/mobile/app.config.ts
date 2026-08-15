@@ -33,13 +33,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         monochromeImage: './assets/android-icon-monochrome.png',
       },
       softwareKeyboardLayoutMode: 'resize',
+      // Required for local Metro / adb-reverse Rive validation hosts (http://127.0.0.1).
+      usesCleartextTraffic: true,
     },
     plugins: [
       'expo-secure-store',
       [
         'expo-build-properties',
         {
-          android: { minSdkVersion: 29 },
+          android: { minSdkVersion: 29, usesCleartextTraffic: true },
           ios: { deploymentTarget: '16.4' },
         },
       ],

@@ -85,7 +85,10 @@ export function RiveNativeValidationScreen({ onBack }: { onBack: () => void }) {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => setRemountToken((value) => value + 1)}
+        onPress={() => {
+          setRuntimeState('IDLE');
+          setRemountToken((value) => value + 1);
+        }}
         style={styles.secondaryButton}
         testID="rive-remount"
       >
