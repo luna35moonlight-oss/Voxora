@@ -15,6 +15,8 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     const roles = await this.rbac.getUserRoles(userId);
+    const profile = await this.prisma.userProfile.findUnique({ where: { userId } });
+    const onboarding = await this.prisma.onboardingState.findUnique({ where: { userId } });
     return {
       id: user.id,
       email: user.email,
@@ -22,6 +24,10 @@ export class UsersService {
       roles,
       mfaEnabled: user.mfaEnabled,
       status: user.status,
+      username: profile?.username ?? null,
+      phoneVerified: Boolean(profile?.phoneVerifiedAt),
+      onboardingStage: onboarding?.currentStage ?? null,
+      onboardingStatus: onboarding?.status ?? null,
       createdAt: user.createdAt.toISOString(),
     };
   }

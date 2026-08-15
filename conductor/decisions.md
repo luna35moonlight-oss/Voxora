@@ -196,6 +196,65 @@
 - **Decision:** Voxora product copyright © Maryke Farrell. All rights reserved. Expo template MIT preserved only as third-party attribution (`apps/mobile/THIRD_PARTY_NOTICES.md`). Do not present Voxora as MIT. Public OSS licence for Voxora-owned code requires **OWNER / LEGAL DECISION**.
 - **Owner review:** Complete
 
+### ADR-023 — CURRENT PRIVILEGED IDENTITY POLICY: SINGLE OWNER — MARYKE FARRELL
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 Phase 2 closeout)
+- **Decision:**
+  - Maryke Farrell is the **only** privileged human account at this product stage
+  - One OWNER via one-time bootstrap; do **not** also assign ADMIN to Owner merely to duplicate authority
+  - ADMIN / MODERATOR / SUPPORT remain in RBAC architecture for future authorised use
+  - No additional privileged users/roles are assigned unless the Product Owner explicitly authorises it later
+  - OWNER is the highest privileged authority
+- **Owner review:** Complete
+
+### ADR-024 — Privileged session MFA assurance (no stale elevation)
+- **Status:** APPROVED (Maryke Farrell, 2026-08-10 Phase 2 closeout)
+- **Decision:**
+  - Server `Session` records carry authoritative `authenticationAssurance` + `mfaVerifiedAt`
+  - Privileged sessions may be issued only after successful MFA challenge
+  - Refresh of privileged accounts requires existing MFA-assured session; otherwise reject and require fresh MFA login
+  - Never silently upgrade an ordinary USER refresh into an OWNER session
+  - Owner bootstrap revokes all pre-elevation sessions and does **not** return privileged tokens
+  - Granting/revoking privileged roles invalidates existing sessions
+  - MFA reset revokes sessions so stale MFA assurance cannot continue
+  - Client-provided MFA flags are never trusted
+- **Owner review:** Complete
+
+### ADR-025 — White Wolf Moon Dash Phase 2.5 vertical slice
+- **Status:** APPROVED (Maryke Farrell, 2026-08-13)
+- **Decision:** White Wolf Moon Dash is formally recorded as **Phase 2.5 — Early Game Vertical Slice** inside Voxora.
+- **Scope boundary:** This is not authorisation for the full Voxora Games Platform. Full Games remains Phase 13; do not build additional games from this approval.
+- **Rules locked:** 10 tries per user per UTC day; server-created attempt reservation before gameplay; server-owned daily attempt count, high score, leaderboard position, and prize states; tied scores rank by earliest authoritative server completion timestamp.
+- **Prize posture:** First and Second leaderboard positions are provisional until Owner review. Legendary Avatar redeem codes are manually issued by the Voxora team and must ultimately grant ownership through the real Avatar Catalogue / Avatar Ownership system, not a Moon Dash-specific avatar system.
+- **Security posture:** The server validates reservation, ownership, single-use finalization, score bounds, plausible duration, and replay/duplicate submission. Complete deterministic server replay is not yet implemented and must not be represented as cheat-proof.
+- **Integration note:** Originally numbered ADR-023 on the Moon Dash branch; renumbered to ADR-025 on integration to preserve Phase 2 ADR-023/024 numbering.
+- **Owner review:** Complete for Phase 2.5 slice; public promotional terms still require owner/legal review.
+
+### ADR-026 — Phase 3 Avatar Catalogue and ownership foundation
+- **Status:** INTEGRATED FOR OWNER REVIEW (2026-08-14)
+- **Decision:** Avatar is modelled as catalogue template + server ownership + inventory + equipped layers + runtime state. It is not a flat profile image.
+- **Rive:** Rive remains the primary runtime target. Phase 3 stores Rive asset references; placeholder mobile layers are temporary until production `.riv` files and real runtime validation are completed on the final-integration branch.
+- **Legendary prizes:** Future Moon Dash Legendary prizes must grant through the same avatar ownership system. No separate MoonDashAvatarSystem is approved.
+- **Boundary:** No pets, no Alpha, no Phase 4, no additional games beyond Moon Dash.
+- **Integration note:** Originally numbered ADR-023 on the Phase 3 branch; renumbered to ADR-026 on integration.
+
+### ADR-027 — Authoritative Games & Rewards Addendum
+- **Status:** APPROVED REQUIREMENTS RECORDED (Maryke Farrell) — documentation only; do not implement prematurely
+- **Integration note:** Originally numbered ADR-024 on the Games & Rewards addendum branch; renumbered to ADR-027 on integration to preserve Phase 2 ADR-024.
+- **Decision:**
+  - Confirmed future games/mechanics: **Rock Paper Scissors** (10 tries/user/UTC day; server UTC day) and **Spinning Wheel** (server-authoritative outcomes)
+  - White Wolf Moon Dash remains the approved Phase 2.5 vertical slice; do not redesign it for this addendum
+  - Full modular Games Platform remains **Phase 13**; RPS/Wheel do not authorise skipping phases
+  - Rock Paper Scissors contributes **server-approved** progression points toward pet skill development (client never mutates skills/awards)
+  - Spinning Wheel may award: Pet Skill-Up Shards; Voxora Diamonds; Voxora Coins; Avatar Skin redeem code — as separate reward types
+  - Coins and Diamonds remain separate ledger-backed currencies; no invented commercial rules
+  - Central Reward Service / Reward Ledger is mandatory for games/rewards; prevent duplicate grants
+  - Shared redeem-code architecture for Moon Dash prizes, Wheel skins, promotions — no parallel incompatible systems; no separate WheelAvatarSystem
+  - Prefer reusable UTC play-limit/attempt policy component where appropriate; do not assume every game is 10/day
+  - Spinning Wheel attempt/probability/quantity rules are **OWNER DECISION REQUIRED BEFORE SPINNING WHEEL IMPLEMENTATION**
+  - Phase 3/4 must only record requirements and avoid architectural dead ends — do not build RPS, Wheel, currencies, or shard economies now
+- **Documents:** `game-system.md`, `moon-dash.md`, `pet-system.md`, `avatar-system.md`, `open-questions.md`
+- **Owner review:** Requirements approved for recording
+
 ---
 
 ## Process gate
@@ -204,5 +263,8 @@
 |------|--------|
 | Phase 0 architecture approved with amendments | **YES** (2026-08-10) |
 | Phase 0 on `main` | **YES** |
-| Phase 1 Core Foundation + closeout | **READY FOR OWNER MERGE REVIEW** (PR #2) |
-| Phase 2 | **NOT authorised** until Phase 1 merged + explicit Phase 2 authorisation |
+| Phase 1 Core Foundation + closeout | **MERGED** (PR #2) |
+| Phase 2 | **INTEGRATED** (source PR #3) |
+| Phase 2.5 White Wolf Moon Dash vertical slice | **INTEGRATED** (source PR #4) — full Games still Phase 13 |
+| Phase 3 Scene Engine and living avatar foundation | **INTEGRATED** (source PR #5) — Rive native validation + final Owner review pending |
+| Games & Rewards Addendum | **INTEGRATED / DOCUMENTED ONLY** (source PR #6 / ADR-027) — RPS, Wheel, currencies NOT implemented; do not start Phase 4 |

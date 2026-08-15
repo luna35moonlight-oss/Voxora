@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import { useAuth } from '../auth/AuthContext';
 
-export function SignInScreen() {
+export function SignInScreen({ onOpenRiveValidation }: { onOpenRiveValidation?: () => void }) {
   const { signIn, register, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,9 +31,10 @@ export function SignInScreen() {
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
-      <Text style={styles.subtitle}>Phase 1 foundation sign-in</Text>
+      <Text style={styles.subtitle}>Enter Voxora</Text>
       <Text style={styles.note}>
-        Email is not marked Verified until verification succeeds. No fake success states.
+        Create a real account to begin resumable onboarding. Email and phone are never Verified
+        until verification succeeds. No fake success states.
       </Text>
 
       <TextInput
@@ -82,6 +83,17 @@ export function SignInScreen() {
       >
         <Text style={styles.buttonText}>Create account</Text>
       </Pressable>
+
+      {(__DEV__ || process.env.EXPO_PUBLIC_ENABLE_RIVE_HARNESS === '1') && onOpenRiveValidation ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpenRiveValidation}
+          style={[styles.button, styles.secondary]}
+          testID="open-rive-native-validation"
+        >
+          <Text style={styles.buttonText}>Native Rive validation harness</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

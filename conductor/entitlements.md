@@ -1,7 +1,9 @@
-# Voxora Entitlements — Phase 0
+# Voxora Entitlements — Phase 2 implementation notes
 
-**Document status:** OWNER REVIEW REQUIRED  
+**Document status:** Phase 2 Entitlement Service implemented — OWNER REVIEW REQUIRED BEFORE PHASE 3  
 **Rule:** Server is authoritative. Never determine access from UI text labels. Do not scatter `if level === 4`.
+
+**Implementation:** `apps/api/src/entitlements/EntitlementsService` evaluates subscription/trial/admin sources against feature flags. Intent-only subscription selection does **not** grant Active paid access. Unknown capability = no access.
 
 ---
 

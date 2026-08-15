@@ -79,3 +79,83 @@ See `data-model.md`: `avatar_bases`, `avatar_items`, `user_avatars`, `avatar_inv
 - Which Elite/Legendary items ship first  
 - Downgrade behaviour for owned cosmetics (see commercial open questions)  
 - Whether colour customisation ships in early phases  
+
+---
+
+## 8. Phase 3 implementation status
+
+Phase 3 implements a minimal real avatar foundation:
+
+- `AvatarCatalogue` — server catalogue templates, tier, rarity, rig, Rive reference, entitlement capability, performance profile, fallback.
+- `AvatarAsset` — formal asset metadata for Rive base/layer references.
+- `AvatarItem` — wardrobe item metadata, slot, rig compatibility, conflicts, performance profile.
+- `UserAvatarOwnership` — server-side avatar ownership grants.
+- `UserAvatarItemOwnership` — server-side wardrobe ownership grants.
+- `UserAvatarSelection` — persistent current avatar.
+- `UserAvatarEquipment` — persistent equipped item per avatar/slot.
+
+API:
+
+- `GET /v1/avatars/me`
+- `POST /v1/avatars/select`
+- `POST /v1/avatars/equip`
+- `POST /v1/avatars/unequip`
+
+The API rejects unowned avatar selection, unowned item equip, and incompatible rig equip. The mobile app previews locked Legendary content honestly and does not grant ownership from local state.
+
+## 9. Phase 3 proof catalogue
+
+Minimal seed content only:
+
+- Basic avatar: `Voxora Guide`
+- Locked Legendary avatar reference: `Moon Dash Legendary`
+- Starter wardrobe: hair, top, jewellery accessory
+
+This proves the pipeline. It is not mass art production.
+
+## 10. Known limitation
+
+Production Voxora `.riv` artwork is not present yet. Phase 3:
+
+- stores catalogue Rive references;
+- integrates `@rive-app/react-native@0.4.19` for real runtime validation;
+- loads a clearly marked development community demo asset from the public Rive CDN (binary not committed);
+- maps Voxora states to the demo asset via an explicit adapter (demo asset does **not** implement the production contract);
+- requires an Expo development build for native proof (`NATIVE VALIDATION REQUIRED` until observed on device).
+
+See `rive-production-asset-contract.md` and `phase-3-notes.md`.
+
+## 11. Moon Dash Legendary ownership path
+
+Legendary Moon Dash prizes must grant through `UserAvatarOwnership` (same model as all avatars). Lifecycle:
+
+verified prize → manual redeem code/reference → valid redemption → server ownership grant → inventory/selection → audit → code marked redeemed
+
+No automatic issuance/redemption/grant in Phase 3. No `MoonDashAvatarSystem`.
+
+
+---
+
+## 11. Redeem codes and future Spinning Wheel Avatar Skins
+
+**Owner-approved Games & Rewards Addendum:**
+
+- Moon Dash Legendary Avatar redeem codes and future Spinning Wheel Avatar Skin redeem codes must use a **shared redeem-code architecture** capable of uniqueness, reward reference, issuance state, optional expiry, eligible user, single-use redemption, redemption timestamp, ownership grant, and audit.
+- Redemption must grant through the normal Phase 3 Avatar Catalogue / ownership / inventory path.
+- Do **not** create a separate `WheelAvatarSystem` or `MoonDashAvatarSystem`.
+- Do **not** grant skins by modifying local mobile state.
+- Do **not** automatically issue Moon Dash competition codes merely because shared redeem architecture exists.
+- Exact expiry / promotional rules remain **OWNER DECISION REQUIRED** where not defined.
+
+Conceptual future Spinning Wheel skin flow:
+
+```text
+server-approved wheel outcome
+→ redeem entitlement/code allocated per approved rules
+→ valid redemption
+→ authoritative avatar skin/item ownership grant
+→ Avatar Inventory updated
+→ audit / Reward Ledger updated
+```
+
+The actual skin must be an approved Avatar Catalogue / Asset item.

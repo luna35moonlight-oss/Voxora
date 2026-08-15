@@ -16,6 +16,20 @@ export const ApiEnvSchema = z.object({
   JWT_REFRESH_TTL: z.string().default('30d'),
   OWNER_BOOTSTRAP_EMAIL: z.string().email().optional(),
   OWNER_BOOTSTRAP_TOKEN: z.string().optional(),
+  /** none = NOT_CONFIGURED; dev = isolated capture transport (never claim production send). */
+  EMAIL_PROVIDER: z.enum(['none', 'dev']).default('none'),
+  /** none = NOT_CONFIGURED; dev = isolated OTP capture (never fake production verify). */
+  PHONE_PROVIDER: z.enum(['none', 'dev']).default('none'),
+  /** 32+ char key used to encrypt MFA TOTP secrets at rest. */
+  MFA_ENCRYPTION_KEY: z.string().min(32).optional(),
+  APPLE_IAP_CONFIGURED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  GOOGLE_PLAY_BILLING_CONFIGURED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 export type ApiEnv = z.infer<typeof ApiEnvSchema>;
 

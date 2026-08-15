@@ -16,49 +16,74 @@ Documentation update incorporates those decisions.
 
 ---
 
-## Phase 1 — Core foundation — READY FOR OWNER MERGE REVIEW
+## Phase 1 — Core foundation — MERGED
 
-Delivered (including closeout):
+Delivered and merged to `main` (PR #2):
 
 - monorepo foundation (`apps/mobile`, `apps/api`, real `packages/*`)
 - Expo SDK 57 skeleton (Android API 29 / iOS 16.4)
 - NestJS + PostgreSQL + Prisma + Redis/BullMQ foundation
 - auth / RBAC / audit / feature flags / health / CI
 - **one-time Owner bootstrap** (DB-persisted completion)
-- MFA schema + **MFA-READY, NOT YET PRODUCTION-ENFORCED** documentation
+- MFA schema readiness (enforcement completed in Phase 2)
 - copyright vs third-party licence notices
 
-**Explicitly out of Phase 1 (confirmed):** Bondfire, Alpha providers, avatars/pets/Scene/Interaction production, games, battles, Wellness, mail/calendar, fake social/billing success.
+---
 
-# PHASE 1 READY FOR OWNER MERGE REVIEW
+## Phase 2 — Account and commercial foundation — INTEGRATED
+
+Authorised by Maryke Farrell after Phase 1 merge. Source: `cursor/phase-2-account-commercial-9cb3` (PR #3). Integrated into Phase 3 final-integration working branch. **Complete per 2026-08-13 owner instruction for product status.**
+
+Delivered:
+
+- Resumable server-authoritative onboarding state machine  
+- Email verification via `EmailDeliveryProvider`  
+- Phone OTP via `PhoneVerificationProvider`  
+- Username / privacy defaults / region-locale  
+- Versioned consents + 18+ age gate  
+- Product catalogue + subscription intent entities  
+- Apple/Google store adapters (`NOT_CONFIGURED` until credentials)  
+- Central Entitlement Service (flags kept separate)  
+- Wellness trial **architecture only**  
+- **Privileged MFA TOTP enrollment/challenge enforcement**  
+- Settings + mobile onboarding surfaces  
+- Avatar/pet **handoff only** (no fake owned avatars/pets)
+
+**Explicitly out of Phase 2:** Scene Engine, living avatars/pets, Bondfire conversations, Wellness product, games/battles, mail/calendar/contacts, fake Paid/Active billing.
+
+# PHASE 2 READY FOR OWNER MERGE REVIEW — DO NOT BEGIN PHASE 3 WITHOUT APPROVAL
 
 ---
 
-## Phase 2 — Account and commercial foundation
+## Phase 2.5 — White Wolf Moon Dash early game vertical slice — APPROVED / FROZEN
 
-**Not authorised until Phase 1 is merged and Phase 2 is explicitly authorised.**
+White Wolf Moon Dash is a controlled early gameplay vertical slice:
 
-Must include (when authorised):
+mobile gameplay -> API -> server-owned attempt reservation -> result submission -> persistence -> leaderboard position -> manual promotional prize handling.
 
-- Resumable onboarding  
-- Email verification (full product flows)  
-- Phone OTP  
-- Settings + privacy defaults  
-- Products, prices (server)  
-- Subscriptions + Apple/Google receipt validation  
-- Entitlements engine  
-- Trials structure (Wellness trial wiring later)  
-- **Full privileged MFA enrollment/challenge enforcement** (OWNER/ADMIN/MODERATOR/SUPPORT) — no audit-only bypass
+Rules:
 
-**Exit criteria:** User can register, verify, subscribe (sandbox), receive entitlements; prices not hard-coded in UI; privileged MFA enforced.
+- 10 tries per user per UTC day.
+- Server reserves attempts before gameplay.
+- Server owns daily attempt count, high score, leaderboard position, and prize status.
+- Tie rule: highest verified score first; tied score ranks by earliest server completion timestamp.
+- First and Second positions are provisional prize positions, not automatically verified winners.
+- Legendary Avatar redeem codes are manually issued by the Voxora team after Owner review.
+- Full Games Platform remains **Phase 13**.
+
+See `moon-dash.md`.
 
 ---
 
-## Phase 3 — Scene and avatar
+## Phase 3 — Scene Engine and living avatar foundation — INTEGRATED FOR OWNER REVIEW
 
 - Scene Engine (Rive primary; Skia/native may supplement)  
 - Art-pipeline PoC gate before mass assets (ADR-004)  
 - Avatar catalogue + instance + clothing + state machine  
+- Avatar ownership, inventory, equipment, persistence, compatibility rules, reduced motion, and Legendary Moon Dash prize compatibility foundation
+- Real Rive runtime validation outstanding on final-integration branch
+
+Do not start pets, Alpha, Phase 4, or the full Games Platform until owner review authorises the next phase.
 
 ---
 
@@ -68,6 +93,9 @@ Must include (when authorised):
 - Clothing/equipment  
 - Growth plumbing  
 - Basic interactions  
+- Leave extension points for future pet skills, skill progression, Skill-Up Shards, and game/reward consumption (`pet-system.md`)  
+
+Do **not** build Rock Paper Scissors, Spinning Wheel, Coins, Diamonds, or shard economies in Phase 4 unless specifically authorised.
 
 ---
 
@@ -123,6 +151,17 @@ Official APIs only; no fakes.
 
 ## Phase 13 — Games
 
+Full modular Games Platform. Must be capable of hosting at least:
+
+1. White Wolf Moon Dash (already the Phase 2.5 early vertical slice — not redesigned here)  
+2. Rock Paper Scissors (confirmed; 10 tries/user/UTC day; server-approved pet skill progression points)  
+3. Spinning Wheel (confirmed reward mechanic; attempt rules and probabilities **OWNER DECISION REQUIRED**)  
+4. Future Voxora games  
+
+Central Reward Service / Reward Ledger; reusable UTC play-limit policy where appropriate; game contracts that are not score-only. See `game-system.md`.
+
+Rock Paper Scissors and Spinning Wheel do **not** authorise skipping earlier phases.
+
 ---
 
 ## Phase 14 — Pet battles
@@ -154,4 +193,6 @@ Android/iOS hardening, performance, store requirements, monitoring, security/a11
 2. Store billing architecture approved; full product wiring in commercial phases.  
 3. Deferred formulas must not be invented early.  
 4. Provider API eligibility gates integrations phases.  
-5. Wellness blocked on separate specification.
+5. Wellness blocked on separate specification.  
+6. Games & Rewards Addendum recorded: RPS + Spinning Wheel are confirmed future requirements; Phase 13 remains the Games Platform; do not implement them in Phase 3/4.  
+7. White Wolf Moon Dash remains the approved early exception/vertical slice (`moon-dash.md`).

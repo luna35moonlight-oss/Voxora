@@ -1,7 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RoleName } from '@prisma/client';
-import type { PermissionKey } from '@voxora/contracts';
+import {
+  isPrivilegedRole,
+  type PermissionKey,
+  type RoleName as ContractRole,
+} from '@voxora/contracts';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 const DEFAULT_PERMISSIONS: Array<{ key: PermissionKey; description: string }> = [
   { key: 'auth.session.read', description: 'Read own sessions' },
@@ -57,9 +62,20 @@ const ROLE_PERMISSIONS: Record<RoleName, PermissionKey[]> = {
   SERVICE_ACCOUNT: ['auth.session.read'],
 };
 
+/**
+ * CURRENT PRIVILEGED IDENTITY POLICY: SINGLE OWNER — MARYKE FARRELL
+ *
+ * RBAC retains ADMIN / MODERATOR / SUPPORT for future authorised use.
+ * Do not assign those roles unless the Product Owner explicitly authorises it.
+ * OWNER is the highest privileged authority; do not also assign ADMIN to Owner
+ * merely to duplicate labels.
+ */
 @Injectable()
 export class RbacService implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async onModuleInit() {
     await this.ensureSeed();
@@ -122,9 +138,13 @@ export class RbacService implements OnModuleInit {
     return count > 0;
   }
 
+  /**
+   * Assign a role. Granting a privileged role invalidates existing sessions
+   * so stale refresh tokens cannot silently pick up elevated claims.
+   */
   async assignRole(input: { userId: string; role: RoleName; assignedBy?: string }) {
     const role = await this.prisma.role.findUniqueOrThrow({ where: { name: input.role } });
-    return this.prisma.roleAssignment.upsert({
+    const assignment = await this.prisma.roleAssignment.upsert({
       where: { userId_roleId: { userId: input.userId, roleId: role.id } },
       create: {
         userId: input.userId,
@@ -136,5 +156,56 @@ export class RbacService implements OnModuleInit {
         assignedBy: input.assignedBy,
       },
     });
+
+    if (isPrivilegedRole(input.role as ContractRole)) {
+      await this.revokeAllSessionsForUser(input.userId, `privileged_role_granted:${input.role}`);
+    }
+
+    return assignment;
+  }
+
+  /**
+   * Revoke a role assignment. Removing a privileged role also invalidates sessions.
+   */
+  async revokeRole(input: { userId: string; role: RoleName; revokedBy?: string }) {
+    const role = await this.prisma.role.findUniqueOrThrow({ where: { name: input.role } });
+    const existing = await this.prisma.roleAssignment.findUnique({
+      where: { userId_roleId: { userId: input.userId, roleId: role.id } },
+    });
+    if (!existing || existing.revokedAt) {
+      return existing;
+    }
+
+    const updated = await this.prisma.roleAssignment.update({
+      where: { id: existing.id },
+      data: { revokedAt: new Date() },
+    });
+
+    if (isPrivilegedRole(input.role as ContractRole)) {
+      await this.revokeAllSessionsForUser(input.userId, `privileged_role_revoked:${input.role}`);
+    }
+
+    await this.audit.record({
+      actorId: input.userId,
+      action: 'rbac.role_revoked',
+      subject: input.userId,
+      payload: { role: input.role, revokedBy: input.revokedBy ?? null },
+    });
+
+    return updated;
+  }
+
+  async revokeAllSessionsForUser(userId: string, reason: string) {
+    const result = await this.prisma.session.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await this.audit.record({
+      actorId: userId,
+      action: 'auth.sessions_revoked',
+      subject: userId,
+      payload: { reason, count: result.count },
+    });
+    return result;
   }
 }

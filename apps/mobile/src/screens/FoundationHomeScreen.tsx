@@ -1,15 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import { useAuth } from '../auth/AuthContext';
 import { apiClient } from '../services/apiClient';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { notificationArchitecture } from '../services/notificationArchitecture';
+import { WhiteWolfMoonDashCard } from '../games/WhiteWolfMoonDashCard';
+import { AvatarFoundationCard } from '../components/AvatarFoundationCard';
 
-export function FoundationHomeScreen({ connectivity }: { connectivity: ConnectivityState }) {
+export function FoundationHomeScreen({
+  connectivity,
+  onOpenSettings,
+}: {
+  connectivity: ConnectivityState;
+  onOpenSettings: () => void;
+}) {
   const { user, signOut } = useAuth();
   const [health, setHealth] = useState<string>('checking…');
   const [flags, setFlags] = useState<string>('loading…');
+  const [subscription, setSubscription] = useState<string>('loading…');
 
   useEffect(() => {
     void (async () => {
@@ -25,20 +34,41 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
       } catch {
         setFlags('unavailable');
       }
+      try {
+        const products = (await apiClient.catalogue()) as Array<{
+          code: string;
+          pricing: { amountMinor: number; currency: string } | null;
+        }>;
+        setSubscription(
+          products
+            .map((p) =>
+              p.pricing
+                ? `${p.code} ${p.pricing.currency} ${(p.pricing.amountMinor / 100).toFixed(0)}`
+                : p.code,
+            )
+            .join(' · '),
+        );
+      } catch {
+        setSubscription('catalogue unavailable');
+      }
     })();
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.brand} accessibilityRole="header">
         VOXORA
       </Text>
-      <Text style={styles.title}>Core foundation shell</Text>
+      <Text style={styles.title}>Scene Engine and living avatar foundation</Text>
       <Text style={styles.body}>
-        Phase 1 only — no Bondfire, pets, battles, games, or fake provider connections.
+        Phase 2 account path, White Wolf Moon Dash, and Phase 3 avatar ownership are integrated.
+        Pets and Alpha remain later phases. No Bondfire conversations or fake Connected providers.
       </Text>
 
-      <View style={styles.card}>
+      <AvatarFoundationCard />
+      <WhiteWolfMoonDashCard />
+
+      <View style={styles.panel}>
         <Text style={styles.label}>Signed in as</Text>
         <Text style={styles.value}>{user?.email}</Text>
         <Text style={styles.meta}>
@@ -47,29 +77,40 @@ export function FoundationHomeScreen({ connectivity }: { connectivity: Connectiv
         </Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={styles.panel}>
         <Text style={styles.label}>API health</Text>
         <Text style={styles.value}>{health}</Text>
         <Text style={styles.meta}>Connectivity: {connectivity}</Text>
         <Text style={styles.meta}>Feature flags: {flags}</Text>
+        <Text style={styles.meta}>Catalogue: {subscription}</Text>
         <Text style={styles.meta}>
           Notifications interface: {notificationArchitecture.describe()}
         </Text>
       </View>
 
-      <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.button}>
+      <Pressable accessibilityRole="button" onPress={onOpenSettings} style={styles.button}>
+        <Text style={styles.buttonText}>Open settings</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void signOut()}
+        style={[styles.button, styles.secondary]}
+      >
         <Text style={styles.buttonText}>Sign out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
     backgroundColor: colors.background.base,
+  },
+  container: {
+    flexGrow: 1,
     padding: spacing.lg,
-    justifyContent: 'center',
+    paddingBottom: spacing.xl,
   },
   brand: {
     color: colors.brand.blue,
@@ -86,7 +127,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.lg,
   },
-  card: {
+  panel: {
     backgroundColor: colors.background.elevated,
     borderRadius: radius.lg,
     padding: spacing.md,
@@ -106,6 +147,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  secondary: {
+    backgroundColor: colors.background.soft,
+    borderWidth: 1,
+    borderColor: colors.border.strong,
   },
   buttonText: { color: colors.text.primary, fontWeight: typography.weight.semibold },
 });

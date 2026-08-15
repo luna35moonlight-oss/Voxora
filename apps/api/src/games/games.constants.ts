@@ -1,0 +1,9 @@
+export const WHITE_WOLF_GAME_ID = 'white-wolf-moon-dash';
+export const WHITE_WOLF_COMPETITION_ID = 'white-wolf-moon-dash-launch';
+export const WHITE_WOLF_ATTEMPT_RESERVED = 'RESERVED';
+export const WHITE_WOLF_ATTEMPT_COMPLETED = 'COMPLETED';
+export const WHITE_WOLF_ATTEMPT_FORFEITED = 'FORFEITED';
+export const WHITE_WOLF_ATTEMPT_EXPIRED = 'EXPIRED';
+export const WHITE_WOLF_VALIDATION_ACCEPTED = 'ACCEPTED';
+export const WHITE_WOLF_VALIDATION_RESERVED = 'RESERVED';
+export const WHITE_WOLF_RUN_TTL_MS = 15 * 60 * 1000;

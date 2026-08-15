@@ -22,44 +22,204 @@ enum UserStatus {
   PENDING_DELETION
 }
 
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum OnboardingStage {
+  ACCOUNT_CREATED
+  EMAIL_VERIFICATION
+  USERNAME
+  PRIVACY
+  REGION_LOCALE
+  CONTACT_NUMBER
+  PHONE_VERIFICATION
+  PROVIDER_INTERESTS
+  AGE_GATE
+  LEGAL_CONSENTS
+  SUBSCRIPTION_SELECTION
+  AVATAR_PET_HANDOFF
+}
+
+enum OnboardingStatus {
+  IN_PROGRESS
+  HANDOFF_READY
+  COMPLETE
+}
+
+enum ConsentStatus {
+  GRANTED
+  WITHDRAWN
+  DENIED
+}
+
+enum InterestState {
+  INTEREST_SELECTED
+}
+
+enum SubscriptionStatus {
+  INTENT_SELECTED
+  PENDING_STORE_CONFIGURATION
+  PENDING_VERIFICATION
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  IN_GRACE
+  REVOKED
+}
+
+enum EntitlementSource {
+  SUBSCRIPTION
+  TRIAL
+  ADD_ON
+  PACKAGE
+  PROMOTION
+  ADMIN_GRANT
+  FEATURE_DEFAULT
+}
+
+enum TrialStatus {
+  ARCHITECTURE_ONLY
+  PENDING_OWNER_RULES
+  ACTIVE
+  EXPIRED
+  CONSUMED
+}
+
+enum Storefront {
+  APPLE
+  GOOGLE
+  INTERNAL
+}
+
 model User {
-  id               String            @id @default(uuid()) @db.Uuid
-  email            String            @unique
-  emailVerifiedAt  DateTime?
-  passwordHash     String
-  status           UserStatus        @default(ACTIVE)
-  mfaEnabled       Boolean           @default(false)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  identities       AuthIdentity[]
-  sessions         Session[]
-  roleAssignments  RoleAssignment[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  email               String               @unique
+  emailVerifiedAt     DateTime?
+  passwordHash        String
+  status              UserStatus           @default(ACTIVE)
+  mfaEnabled          Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  identities          AuthIdentity[]
+  sessions            Session[]
+  roleAssignments     RoleAssignment[]
   verificationRecords VerificationRecord[]
-  auditEvents      AuditEvent[]      @relation("AuditActor")
-  mfaFactors       MfaFactor[]
+  auditEvents         AuditEvent[]         @relation("AuditActor")
+  mfaFactors          MfaFactor[]
+  mfaChallenges       MfaChallenge[]
+  profile             UserProfile?
+  onboarding          OnboardingState?
+  consents            ConsentRecord[]
+  providerInterests   ProviderInterest[]
+  subscriptions       Subscription[]
+  entitlements        UserEntitlement[]
+  trials              TrialGrant[]
+  purchaseReferences  PurchaseReference[]
+  gameAttempts        GameAttempt[]
+  gameDailyCounters   GameDailyCounter[]
+  gamePrizeAwards     GamePrizeAward[]     @relation("GamePrizeUser")
+  issuedGamePrizeAwards GamePrizeAward[]   @relation("GamePrizeIssuer")
+  avatarOwnerships    UserAvatarOwnership[]
+  avatarItemOwnerships UserAvatarItemOwnership[]
+  avatarSelections    UserAvatarSelection[]
+  avatarEquipment     UserAvatarEquipment[]
+}
+
+model UserProfile {
+  id                   String     @id @default(uuid()) @db.Uuid
+  userId               String     @unique @db.Uuid
+  username             String?    @unique
+  usernameNormalized   String?    @unique
+  emailVisibility      Visibility @default(PRIVATE)
+  phoneVisibility      Visibility @default(PRIVATE)
+  countryCode          String?
+  regionCode           String?
+  locale               String?
+  timeZone             String?
+  displayCurrency      String?
+  phoneE164            String?
+  phoneVerifiedAt      DateTime?
+  ageGateConfirmedAt   DateTime?
+  ageGateRuleVersion   String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phoneE164])
+}
+
+model OnboardingState {
+  id               String           @id @default(uuid()) @db.Uuid
+  userId           String           @unique @db.Uuid
+  currentStage     OnboardingStage  @default(EMAIL_VERIFICATION)
+  status           OnboardingStatus @default(IN_PROGRESS)
+  completedStages  Json             @default("[]")
+  lastAdvancedAt   DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ConsentRecord {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @db.Uuid
+  consentType   String
+  policyVersion String
+  status        ConsentStatus
+  platform      String
+  source        String?
+  createdAt     DateTime      @default(now())
+  replacedAt    DateTime?
+  withdrawnAt   DateTime?
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consentType])
+}
+
+model ProviderInterest {
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @db.Uuid
+  providerKey String
+  state       InterestState @default(INTEREST_SELECTED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerKey])
+  @@index([userId])
 }
 
 model AuthIdentity {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
-  type       String
-  provider   String?
-  subject    String?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String
+  provider  String?
+  subject   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
+enum AuthenticationAssurance {
+  PASSWORD
+  MFA
+}
+
 model Session {
-  id               String    @id @default(uuid()) @db.Uuid
-  userId           String    @db.Uuid
-  refreshTokenHash String
-  deviceLabel      String?
-  expiresAt        DateTime
-  revokedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                       String                    @id @default(uuid()) @db.Uuid
+  userId                   String                    @db.Uuid
+  refreshTokenHash         String
+  deviceLabel              String?
+  /// Server-authoritative MFA proof for this session chain. Never trust client-provided flags.
+  authenticationAssurance  AuthenticationAssurance   @default(PASSWORD)
+  mfaVerifiedAt            DateTime?
+  expiresAt                DateTime
+  revokedAt                DateTime?
+  createdAt                DateTime                  @default(now())
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([refreshTokenHash])
@@ -104,32 +264,51 @@ model RoleAssignment {
 }
 
 model VerificationRecord {
-  id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @db.Uuid
-  channel      String
-  purpose      String
-  tokenHash    String
-  expiresAt    DateTime
-  usedAt       DateTime?
-  attemptCount Int       @default(0)
-  createdAt    DateTime  @default(now())
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  channel         String
+  purpose         String
+  tokenHash       String
+  destinationHash String?
+  expiresAt       DateTime
+  usedAt          DateTime?
+  attemptCount    Int       @default(0)
+  lastResendAt    DateTime?
+  providerRef     String?
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, purpose])
   @@index([tokenHash])
 }
 
 model MfaFactor {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
-  type       String
-  secretEnc  String?
-  enabled    Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  verifiedAt DateTime?
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  type           String
+  secretEnc      String?
+  enabled        Boolean   @default(false)
+  lastUsedStep   Int?
+  createdAt      DateTime  @default(now())
+  verifiedAt     DateTime?
+  disabledAt     DateTime?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model MfaChallenge {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  purpose      String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
 }
 
 model FeatureFlag {
@@ -156,6 +335,203 @@ model AuditEvent {
   @@index([actorId])
 }
 
+model GameAttempt {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  gameId           String
+  dayKey           DateTime
+  attemptNumber    Int
+  status           String    @default("RESERVED")
+  startState       Json?
+  completionState  String?
+  validationStatus String    @default("RESERVED")
+  score            Int?
+  durationMs       Int?
+  reservedAt       DateTime  @default(now())
+  expiresAt        DateTime?
+  submittedAt      DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prizeAwards      GamePrizeAward[]
+
+  @@index([userId, gameId, dayKey])
+  @@index([gameId, status, score])
+  @@unique([userId, gameId, dayKey, attemptNumber])
+  @@index([createdAt])
+}
+
+model GameDailyCounter {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  gameId       String
+  dayKey       DateTime
+  attemptCount Int      @default(0)
+  highScore    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId, dayKey])
+  @@index([gameId, dayKey])
+}
+
+model GamePrizeAward {
+  id                    String    @id @default(uuid()) @db.Uuid
+  gameId                String
+  competitionId         String
+  userId                String    @db.Uuid
+  leaderboardPosition   Int
+  qualifyingRunId       String    @db.Uuid
+  qualifyingScore       Int
+  verificationStatus    String    @default("PROVISIONAL_WINNER")
+  prizeType             String
+  prizeCatalogueRef     String?
+  issuanceStatus        String    @default("NOT_ISSUED")
+  issuedBy              String?   @db.Uuid
+  issuedAt              DateTime?
+  redemptionStatus      String    @default("NOT_REDEEMED")
+  redeemedAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation("GamePrizeUser", fields: [userId], references: [id], onDelete: Cascade)
+  qualifyingRun         GameAttempt @relation(fields: [qualifyingRunId], references: [id], onDelete: Restrict)
+  issuer                User?     @relation("GamePrizeIssuer", fields: [issuedBy], references: [id], onDelete: SetNull)
+
+  @@index([gameId, competitionId])
+  @@index([userId])
+  @@index([verificationStatus, issuanceStatus])
+  @@unique([gameId, competitionId, leaderboardPosition])
+}
+
+model AvatarCatalogue {
+  id                    String   @id
+  displayName           String
+  tier                  String
+  rarity                String
+  rigFamily             String
+  riveAssetRef          String
+  thumbnailRef          String
+  entitlementCapability String?
+  packageKey            String?
+  active                Boolean  @default(true)
+  version               Int      @default(1)
+  performanceProfile    String   @default("STANDARD")
+  fallbackAvatarId      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  ownerships            UserAvatarOwnership[]
+  selections            UserAvatarSelection[]
+  equipment             UserAvatarEquipment[]
+
+  @@index([active, tier])
+  @@index([rigFamily])
+}
+
+model AvatarAsset {
+  id                 String   @id
+  assetType          String
+  version            Int      @default(1)
+  rigFamily          String
+  avatarId           String?
+  itemId             String?
+  slot               String?
+  storageRef         String
+  thumbnailRef       String?
+  performanceProfile String   @default("STANDARD")
+  fallbackAssetId    String?
+  metadataJson       Json?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([assetType, active])
+  @@index([rigFamily])
+}
+
+model AvatarItem {
+  id                    String   @id
+  displayName           String
+  slot                  String
+  rarity                String
+  rigFamily             String
+  assetRef              String
+  thumbnailRef          String
+  entitlementCapability String?
+  packageKey            String?
+  conflictsJson         Json?
+  active                Boolean  @default(true)
+  version               Int      @default(1)
+  performanceProfile    String   @default("STANDARD")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  ownerships            UserAvatarItemOwnership[]
+  equipment             UserAvatarEquipment[]
+
+  @@index([slot, active])
+  @@index([rigFamily])
+}
+
+model UserAvatarOwnership {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  avatarId    String
+  source      String
+  sourceRef   String?
+  grantedBy   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar      AvatarCatalogue @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, avatarId])
+  @@index([source])
+}
+
+model UserAvatarItemOwnership {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  itemId      String
+  source      String
+  sourceRef   String?
+  grantedBy   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item        AvatarItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, itemId])
+  @@index([source])
+}
+
+model UserAvatarSelection {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  avatarId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar    AvatarCatalogue @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+
+  @@unique([userId])
+  @@index([avatarId])
+}
+
+model UserAvatarEquipment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  avatarId  String
+  itemId    String
+  slot      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar    AvatarCatalogue @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+  item      AvatarItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, avatarId, slot])
+  @@index([itemId])
+}
+
 /// Singleton durable record proving Owner bootstrap completed.
 /// Key is always "owner_bootstrap". Survives restarts; bootstrap cannot reuse env token after this exists.
 model OwnerBootstrapCompletion {
@@ -163,4 +539,152 @@ model OwnerBootstrapCompletion {
   ownerUserId String   @db.Uuid
   completedAt DateTime
   createdAt   DateTime @default(now())
+}
+
+/// Product catalogue — server authoritative. Prices are versioned; never use price as entitlement logic.
+model Product {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique
+  name        String
+  description String?
+  active      Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  versions    ProductVersion[]
+  subscriptions Subscription[]
+}
+
+model ProductVersion {
+  id              String               @id @default(uuid()) @db.Uuid
+  productId       String               @db.Uuid
+  version         Int
+  currency        String
+  amountMinor     Int
+  billingPeriod   String
+  entitlementsJson Json
+  active          Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  product         Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeMappings   StoreProductMapping[]
+  subscriptions   Subscription[]
+  trials          TrialGrant[]
+
+  @@unique([productId, version])
+  @@index([currency])
+}
+
+model StoreProductMapping {
+  id               String         @id @default(uuid()) @db.Uuid
+  productVersionId String         @db.Uuid
+  storefront       Storefront
+  storeProductId   String?
+  configured       Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  productVersion   ProductVersion @relation(fields: [productVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([productVersionId, storefront])
+}
+
+model Subscription {
+  id               String             @id @default(uuid()) @db.Uuid
+  userId           String             @db.Uuid
+  productId        String             @db.Uuid
+  productVersionId String             @db.Uuid
+  status           SubscriptionStatus @default(INTENT_SELECTED)
+  storefront       Storefront         @default(INTERNAL)
+  startedAt        DateTime?
+  endsAt           DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product          Product            @relation(fields: [productId], references: [id])
+  productVersion   ProductVersion     @relation(fields: [productVersionId], references: [id])
+  events           SubscriptionEvent[]
+  purchases        PurchaseReference[]
+
+  @@index([userId, status])
+}
+
+model SubscriptionEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  subscriptionId String       @db.Uuid
+  eventType      String
+  payload        Json?
+  createdAt      DateTime     @default(now())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, createdAt])
+}
+
+model PurchaseReference {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @db.Uuid
+  subscriptionId String?       @db.Uuid
+  storefront     Storefront
+  storeRef       String?
+  status         String
+  rawVerified    Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model EntitlementDefinition {
+  id          String   @id @default(uuid()) @db.Uuid
+  capability  String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model UserEntitlement {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @db.Uuid
+  capability  String
+  source      EntitlementSource
+  limitValue  Int?
+  startsAt    DateTime          @default(now())
+  endsAt      DateTime?
+  revokedAt   DateTime?
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capability])
+}
+
+/// Wellness trial architecture only — do not start real Wellness product trials in Phase 2.
+model TrialGrant {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @db.Uuid
+  productVersionId String?        @db.Uuid
+  trialKey         String
+  status           TrialStatus    @default(ARCHITECTURE_ONLY)
+  durationDays     Int            @default(7)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  metadata         Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productVersion   ProductVersion? @relation(fields: [productVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, trialKey])
+}
+
+/// Dev/test delivery outbox — never treat as production send confirmation.
+model DevDeliveryArtifact {
+  id        String   @id @default(uuid()) @db.Uuid
+  channel   String
+  purpose   String
+  userId    String   @db.Uuid
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, channel, purpose])
 }

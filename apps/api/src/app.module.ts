@@ -4,12 +4,23 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthCoreModule } from './auth/auth-core.module';
 import { AuthModule } from './auth/auth.module';
 import { RbacModule } from './rbac/rbac.module';
 import { AuditModule } from './audit/audit.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { JobsModule } from './jobs/jobs.module';
 import { UsersModule } from './users/users.module';
+import { ProvidersModule } from './providers/providers.module';
+import { VerificationModule } from './verification/verification.module';
+import { OnboardingModule } from './onboarding/onboarding.module';
+import { CatalogueModule } from './catalogue/catalogue.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
+import { StoreModule } from './store/store.module';
+import { MfaModule } from './mfa/mfa.module';
+import { SettingsModule } from './settings/settings.module';
+import { GamesModule } from './games/games.module';
+import { AvatarsModule } from './avatars/avatars.module';
 import { validateEnv } from './config/validate-env';
 
 @Module({
@@ -17,23 +28,31 @@ import { validateEnv } from './config/validate-env';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
-      // Always use process.env. Local/dev loads `.env` via shell or dotenv in main.ts.
-      // Prevents decorator-time NODE_ENV races in tests.
       ignoreEnvFile: true,
     }),
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
-        // Elevated in automated tests so security suites are not blocked by abuse limits.
         limit: process.env.NODE_ENV === 'test' ? 10_000 : 100,
       },
     ]),
     PrismaModule,
+    AuthCoreModule,
     JobsModule,
     AuditModule,
+    ProvidersModule,
     RbacModule,
+    VerificationModule,
     AuthModule,
+    MfaModule,
     UsersModule,
+    OnboardingModule,
+    CatalogueModule,
+    EntitlementsModule,
+    StoreModule,
+    SettingsModule,
+    GamesModule,
+    AvatarsModule,
     FeatureFlagsModule,
     HealthModule,
   ],
