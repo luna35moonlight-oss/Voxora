@@ -4,9 +4,10 @@ import { colors, radius, spacing, typography } from '@voxora/design-system';
 import {
   PET_CARD_RACE_ROSTER,
   PET_CARD_RACE_TACTIC_DEFINITIONS,
+  PetCardRaceOpeningDealSize,
   PetCardRacePlayCooldownMs,
-  PetCardRaceRivalTickMs,
   PetCardRaceStationCount,
+  PetCardRaceSyncIntervalMs,
   type PetCardRaceCard as PetCardRaceCardModel,
   type PetCardRaceEvent,
   type PetCardRaceLane,
@@ -113,7 +114,7 @@ export function PetCardRaceCard() {
   useEffect(() => {
     const timer = setInterval(() => {
       void syncRace();
-    }, PetCardRaceRivalTickMs);
+    }, PetCardRaceSyncIntervalMs);
 
     return () => clearInterval(timer);
   }, []);
@@ -131,10 +132,11 @@ export function PetCardRaceCard() {
       </View>
 
       <Text style={styles.intro}>
-        Three races, a different pet each race. Cards run your champion: singles crawl, pairs and
-        full houses surge, and 10, J, Q, and K run faster than the rest. Rivals move on the server
-        clock while you wait {Math.round(PetCardRacePlayCooldownMs / 1000)} seconds between
-        selections.
+        Three races, a different pet each race. Every race opens with the same mixed deal of{' '}
+        {PetCardRaceOpeningDealSize} cards and four stations deal more along the way. Cards run your
+        champion: singles crawl, pairs and full houses surge, and 10, J, Q, and K run faster than
+        the rest. Rivals move on the server clock while you wait{' '}
+        {Math.round(PetCardRacePlayCooldownMs / 1000)} seconds between selections.
       </Text>
 
       <View style={styles.meetStrip}>

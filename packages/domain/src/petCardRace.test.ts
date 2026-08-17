@@ -72,7 +72,7 @@ describe('pet card race selections', () => {
   it('scores pairs, three of a kind, runs, three pair, full house, and four of a kind', () => {
     expect(
       evaluatePetCardRaceSelection([rankCard('2', 'MOON'), rankCard('2', 'STAR')]),
-    ).toMatchObject({ kind: 'PAIR', steps: 3 });
+    ).toMatchObject({ kind: 'PAIR', steps: 2 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -81,7 +81,7 @@ describe('pet card race selections', () => {
         rankCard('3', 'MOON'),
         rankCard('3', 'STAR'),
       ]),
-    ).toMatchObject({ kind: 'TWO_PAIR', steps: 4 });
+    ).toMatchObject({ kind: 'TWO_PAIR', steps: 3 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -89,7 +89,7 @@ describe('pet card race selections', () => {
         rankCard('2', 'STAR'),
         rankCard('2', 'CRYSTAL'),
       ]),
-    ).toMatchObject({ kind: 'THREE_OF_A_KIND', steps: 5 });
+    ).toMatchObject({ kind: 'THREE_OF_A_KIND', steps: 3 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -98,7 +98,7 @@ describe('pet card race selections', () => {
         rankCard('3', 'CRYSTAL'),
         rankCard('4', 'FLAME'),
       ]),
-    ).toMatchObject({ kind: 'RUN_OF_FOUR', steps: 6 });
+    ).toMatchObject({ kind: 'RUN_OF_FOUR', steps: 4 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -109,7 +109,7 @@ describe('pet card race selections', () => {
         rankCard('4', 'MOON'),
         rankCard('4', 'STAR'),
       ]),
-    ).toMatchObject({ kind: 'THREE_PAIR', steps: 6 });
+    ).toMatchObject({ kind: 'THREE_PAIR', steps: 4 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -119,7 +119,7 @@ describe('pet card race selections', () => {
         rankCard('3', 'MOON'),
         rankCard('3', 'STAR'),
       ]),
-    ).toMatchObject({ kind: 'FULL_HOUSE', steps: 7 });
+    ).toMatchObject({ kind: 'FULL_HOUSE', steps: 5 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -128,13 +128,13 @@ describe('pet card race selections', () => {
         rankCard('2', 'CRYSTAL'),
         rankCard('2', 'FLAME'),
       ]),
-    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', steps: 8 });
+    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', steps: 6 });
   });
 
   it('adds a step for every high card inside a combination', () => {
     expect(
       evaluatePetCardRaceSelection([rankCard('Q', 'MOON'), rankCard('Q', 'STAR')]),
-    ).toMatchObject({ kind: 'PAIR', baseSteps: 3, fastBonus: 2, steps: 5 });
+    ).toMatchObject({ kind: 'PAIR', baseSteps: 2, fastBonus: 2, steps: 4 });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -143,19 +143,20 @@ describe('pet card race selections', () => {
         rankCard('K', 'CRYSTAL'),
         rankCard('K', 'FLAME'),
       ]),
-    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', baseSteps: 8, fastBonus: 4, steps: 12 });
+      // Four kings would earn four high-card steps, but the bonus is capped at two.
+    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', baseSteps: 6, fastBonus: 2, steps: 8 });
   });
 
   it('turns jokers into whichever card helps the selection most', () => {
     expect(evaluatePetCardRaceSelection([rankCard('7', 'MOON'), jokerCard(0)])).toMatchObject({
       kind: 'PAIR',
-      steps: 3,
+      steps: 2,
     });
 
     expect(evaluatePetCardRaceSelection([rankCard('10', 'MOON'), jokerCard(0)])).toMatchObject({
       kind: 'PAIR',
       fastBonus: 2,
-      steps: 5,
+      steps: 4,
     });
 
     expect(
@@ -165,7 +166,7 @@ describe('pet card race selections', () => {
         jokerCard(0),
         jokerCard(1),
       ]),
-    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', fastBonus: 4, steps: 12 });
+    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', fastBonus: 2, steps: 8 });
   });
 
   it('rejects selections that are not combinations', () => {

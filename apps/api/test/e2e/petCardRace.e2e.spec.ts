@@ -137,7 +137,7 @@ describe('Voxora Pet Card Race (e2e)', () => {
       .expect(401);
   });
 
-  it('reserves a meet, deals the opening station, and keeps the deck server side', async () => {
+  it('reserves a meet, deals the opening mix of eight cards, and keeps the deck server side', async () => {
     const token = await signIn();
     const res = await startMeet(token).expect(201);
 
@@ -149,8 +149,11 @@ describe('Voxora Pet Card Race (e2e)', () => {
       meetScore: 0,
       usedRacerIds: ['moonlit-wolf'],
     });
-    expect(res.body.meet.currentRace.hand).toHaveLength(3);
-    expect(res.body.meet.currentRace.stationsDealt).toBe(1);
+    const hand = res.body.meet.currentRace.hand as Card[];
+    expect(hand).toHaveLength(8);
+    expect(hand.filter((card) => card.type === 'TACTIC')).toHaveLength(2);
+    expect(res.body.meet.currentRace.stationsDealt).toBe(0);
+    expect(res.body.meet.currentRace.cardsLeftToDeal).toBe(13);
     expect(res.body.meet.currentRace.lanes).toHaveLength(4);
     expect(res.body.status.attemptsUsedToday).toBe(1);
 
@@ -179,7 +182,7 @@ describe('Voxora Pet Card Race (e2e)', () => {
       .send(playableSingle(hand))
       .expect(201);
 
-    expect(played.body.meet.currentRace.hand).toHaveLength(2);
+    expect(played.body.meet.currentRace.hand).toHaveLength(7);
     expect(played.body.meet.currentRace.cooldownRemainingMs).toBeGreaterThan(0);
 
     const tooSoon = await request(app.getHttpServer())
@@ -191,7 +194,7 @@ describe('Voxora Pet Card Race (e2e)', () => {
 
     const stored = await prisma.gameAttempt.findUniqueOrThrow({ where: { id: attemptId } });
     const progress = stored.progressState as { currentRace: { hand: Card[] } };
-    expect(progress.currentRace.hand).toHaveLength(2);
+    expect(progress.currentRace.hand).toHaveLength(7);
     expect(stored.score).toBeNull();
   });
 

@@ -1,6 +1,8 @@
 import {
   PET_CARD_RACE_ROSTER,
   PetCardRaceMudLeadSteps,
+  PetCardRaceOpeningDealSize,
+  PetCardRaceOpeningTacticCards,
   PetCardRacePlayCooldownMs,
   PetCardRacePlayCooldownToleranceMs,
   PetCardRaceRacesPerMeet,
@@ -320,6 +322,7 @@ function openRace(
   };
 
   race.rivalDeck = buildRivalBlock(meet.seed, race, 0);
+  race.hand = dealOpeningHand(race);
   meet.currentRace = race;
   meet.usedRacerIds.push(championRacerId);
   meet.meetPhase = 'RACING';
@@ -329,9 +332,46 @@ function openRace(
     'RACE_START',
     championRacerId,
     0,
-    `Race ${raceNumber} of ${PetCardRaceRacesPerMeet}: ${racerName(championRacerId)} is your champion.`,
+    `Race ${raceNumber} of ${PetCardRaceRacesPerMeet}: ${racerName(championRacerId)} is your champion. Opening deal: ${race.hand
+      .map((card) => card.label)
+      .join(', ')}.`,
   );
   dealDueStations(meet, race);
+}
+
+/**
+ * The opening deal is the same shape for every player and every race: a mix of run cards and
+ * tactic cards, so nobody opens on eight tactic cards or on no tactics at all.
+ */
+function dealOpeningHand(race: PetCardRaceRaceState): PetCardRaceCard[] {
+  const runCards = PetCardRaceOpeningDealSize - PetCardRaceOpeningTacticCards;
+  const opening: PetCardRaceCard[] = [
+    ...takeFromDrawPile(race, (card) => card.type !== 'TACTIC', runCards),
+    ...takeFromDrawPile(race, (card) => card.type === 'TACTIC', PetCardRaceOpeningTacticCards),
+  ];
+
+  // Anything the mix could not satisfy falls back to the top of the shuffled pile.
+  opening.push(...race.drawPile.splice(0, PetCardRaceOpeningDealSize - opening.length));
+  return opening;
+}
+
+/** Draws in shuffled order, skipping cards that do not match the requested mix. */
+function takeFromDrawPile(
+  race: PetCardRaceRaceState,
+  matches: (card: PetCardRaceCard) => boolean,
+  count: number,
+): PetCardRaceCard[] {
+  const taken: PetCardRaceCard[] = [];
+  for (let index = 0; index < race.drawPile.length && taken.length < count; index += 1) {
+    const card = race.drawPile[index];
+    if (card && matches(card)) {
+      taken.push(card);
+      race.drawPile.splice(index, 1);
+      index -= 1;
+    }
+  }
+
+  return taken;
 }
 
 function rivalIdsOf(race: PetCardRaceRaceState): PetCardRaceRacerId[] {
@@ -394,11 +434,12 @@ function dealDueStations(meet: PetCardRaceMeetState, race: PetCardRaceRaceState)
       'STATION_DEAL',
       null,
       null,
-      `${isFinalStation ? 'Final station' : `Station ${race.stationsDealt}`}: ${dealt.length} cards dealt (${dealt
+      `${isFinalStation ? 'Final station' : `Station ${race.stationsDealt}`}: ${dealt.length} extra cards dealt (${dealt
         .map((card) => card.label)
         .join(', ')}).`,
     );
 
+    // The first station is a free refill; after that every station is answered by the rivals.
     if (race.stationsDealt > 1) {
       applyRivalTactic(meet, race);
     }

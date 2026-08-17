@@ -13,11 +13,12 @@ does **not** create a second avatar, pet, or reward system.
 
 ## 1. What the game is
 
-Four pets race along an 11-step track. The player picks one pet as their champion; the other three
+Four pets race along a 14-step track. The player picks one pet as their champion; the other three
 run as rivals. Cards do the running:
 
+- every race opens with the same **mixed deal of 8 cards**, and four stations deal more along the way;
 - the player's champion advances only when the player plays cards;
-- rivals advance one run card per **server** tick (every 2.5 s), so standing still costs ground;
+- rivals advance one run card per **server** tick (every 1.3 s), shared between the three of them, so standing still costs ground;
 - one attempt is a **meet of three races** and each race needs a **different pet**.
 
 Meet score is the sum of the three race scores, and the daily leaderboard uses the best meet score.
@@ -32,12 +33,14 @@ Meet score is the sum of the three race scores, and the daily leaderboard uses t
 - The server reserves the meet before the first race starts; a reserved meet is consumed even if it
   is abandoned or forfeited.
 - **3 races per meet, a different pet each race.** The server rejects a repeated pet.
-- Each race has **four card stations**, opened when the leading racer reaches steps 0, 4, 7, and 9.
-  Stations one to three deal **3 cards**; the **final station deals 4** — 13 cards per race.
+- **Every player opens every race with a mixed deal of 8 cards:** 6 run cards and 2 tactic cards, so
+  nobody opens on eight tactic cards or on none at all. The deal shape is identical for every player.
+- Each race then has **four card stations**, opened when the leading racer reaches steps 3, 6, 9, and
+  12. Stations one to three deal **3 extra cards**; the **final station deals 4** — 21 cards per race.
 - Unplayed cards stay in hand, so combinations can be assembled across stations.
 - **Five seconds between card selections.** The server enforces the wait (250 ms latency
   allowance) and the client shows the countdown.
-- Rival racers advance on the server clock, one run card every 2.5 s, drawn from a shuffled deck
+- Rival racers advance on the server clock, one run card every 1.3 s, drawn from a shuffled deck
   that holds an equal number of cards per rival. No racer has better odds than another.
 - A race ends when the champion crosses the line, or when all three rivals have crossed.
 - The meet ends after the third race, on forfeit, or on attempt expiry (45 minutes).
@@ -58,39 +61,40 @@ Each race is dealt from its own shuffled 64-card deck:
 | Tactic cards, two copies each of Trail chaser, Heavy paws, Mud stretch, Moon shield, Star sprint | 10 | interfere with the race |
 
 **10, J, Q, and K run faster than the rest of the deck:** every high card in a played selection adds
-one step to that selection, whether it is played alone or inside a combination. A joker that stands
-in for a high rank counts as a high card.
+one step to that selection, whether it is played alone or inside a combination, up to two extra steps
+per selection. A joker that stands in for a high rank counts as a high card.
 
 ### Combination values
 
 | Selection | Base steps |
 |-----------|-----------|
 | Single card | 1 |
-| Pair | 3 |
-| Two pair (for example 2 2 3 3) | 4 |
-| Three of a kind (2 2 2) | 5 |
-| Run of four (A 2 3 4) | 6 |
-| Three pair (2 2 3 3 4 4) | 6 |
-| Full house | 7 |
-| Four of a kind (2 2 2 2) | 8 |
+| Pair | 2 |
+| Two pair (for example 2 2 3 3) | 3 |
+| Three of a kind (2 2 2) | 3 |
+| Run of four (A 2 3 4) | 4 |
+| Three pair (2 2 3 3 4 4) | 4 |
+| Full house | 5 |
+| Four of a kind (2 2 2 2) | 6 |
 
-Steps = base steps + one per high card. Four kings is therefore the jackpot play at 12 steps. Any
-selection that is not one of the combinations above is rejected, and the client shows why before the
-player commits.
+Steps = base steps + one per high card, and the high-card bonus is capped at two, so four kings is the
+jackpot play at 8 steps on a 14-step track rather than an instant win. Any selection that is not one
+of the combinations above is rejected, and the client shows why before the player commits.
 
 ### Tactic cards
 
 | Card | Effect |
 |------|--------|
-| **Trail chaser** | A wild animal chases one chosen rival off the path: that rival drops back a step and loses its next run card. |
-| **Heavy paws** | Weights settle on every rival's feet: each rival loses its next run card. |
-| **Mud stretch** | Mud floods the track two steps ahead of your champion: every rival that reaches it loses a step slogging through. |
+| **Trail chaser** | A wild animal chases one chosen rival off the path: that rival drops back a step and loses its next two steps. |
+| **Heavy paws** | Weights settle on every rival's feet: each rival loses its next two steps. |
+| **Mud stretch** | Mud floods the track two steps ahead of your champion: every rival that reaches it loses two steps slogging through. |
 | **Moon shield** | Blocks the next rival tactic aimed at your champion. |
-| **Star sprint** | Your champion sprints one extra step immediately. |
+| **Star sprint** | Your champion sprints two extra steps immediately. |
 
 A tactic card is played on its own, never as part of a rank combination, and it still costs the
-five-second wait. Rival trainers answer **every station after the first** with one server-chosen
-tactic aimed at the champion, which is what the moon shield exists to block.
+five-second wait. Rival trainers answer the **second, third, and final stations** with one
+server-chosen tactic aimed at the champion, which is what the moon shield exists to block. The first
+station is a free refill.
 
 ---
 
@@ -141,22 +145,27 @@ shared redeem-code architecture in `game-system.md` — never a Pet-Card-Race-sp
 
 ## 7. Provisional balance values an owner may want to change
 
-The owner-stated rules are fixed: three races, a different pet each race, four stations dealing
-3/3/3/4 cards, five seconds between selections, fast 10/J/Q/K cards, the combination list, two
-jokers, and the five tactic cards. Everything below was chosen to make those rules play well and is
-recorded as a question rather than a settled product rule (see `open-questions.md`): track length 11,
-station steps 0/4/7/9, the 2 s rival tick, the combination step values, the score weights, and the
-rule that rival trainers answer each station with one tactic.
+The owner-stated rules are fixed: three races, a different pet each race, the 8-card opening deal,
+four stations dealing 3/3/3/4 extra cards, five seconds between selections, fast 10/J/Q/K cards, the
+combination list, two jokers, and the five tactic cards. Everything below was chosen to make those
+rules play well and is recorded as a question rather than a settled product rule (see
+`open-questions.md`): track length 14, station steps 3/6/9/12, the 6-run-card and 2-tactic-card split
+inside the opening deal, the 1.3 s rival tick, the combination step values and the two-step cap on the
+high-card bonus, the two-step cost of a slow effect, the score weights, and the rule that rivals
+answer the second, third, and final stations.
 
-**Why the track is 11 steps.** A race deals 13 cards. Roughly two of them are tactic cards, and the
-rank cards average a little over one step each when spent as singles, so a player who spends their
-hand sensibly has about 14 to 18 steps of movement available. Rival tactics take about three steps
-back off the champion. A 14-step track left an average player stranded one step short of the line
-with an empty hand; 11 steps leaves room to absorb the rival tactics and still reward good play.
+**How the numbers were reached.** Scripted playthroughs against a running API measured the real rates
+rather than guessing them. A race deals 21 cards, of which about four are tactic cards, and a player
+spending them sensibly produces roughly 20 steps of movement across ten to twelve plays — a little
+over a minute at five seconds a selection. The tactics rivals aim at the champion take about four to
+six steps back off that. A 14-step track sits inside what those 21 cards can cover while leaving the
+rival tactics room to hurt, and at a 1.3 s tick the leading rival arrives at about the same time as a
+player spending cards steadily.
 
-**Why rivals tick every 2 seconds.** The three rivals share one run-card stream, so each advances on
-roughly every third tick. At two seconds the leading rival reaches the line at about the same time as
-a player spending cards steadily, which is what makes slowing rivals down worth a play.
+Earlier attempts show why this needed measuring rather than guessing: a 14-step track with only 13
+cards a race left the player stranded short of the line every time, an 11-step track with the 8-card
+opening deal turned every race into a walkover finished in three plays, and a 20-step track with a
+one-second tick made the rivals unbeatable.
 
 ---
 
@@ -168,6 +177,7 @@ a player spending cards steadily, which is what makes slowing rivals down worth 
 | Forged score | The client has no score field; the engine scores from its own state |
 | Forged progress | Lane positions, hand contents, and the deal live in server state (`GameAttempt.progressState`) |
 | Card that was never dealt | Every played card id must be in the server-held hand |
+| Opening deal manipulation | The opening mix is dealt by the server from its own shuffled pile |
 | Illegal combination | The server re-evaluates the selection with the shared rules and rejects anything invalid |
 | Cooldown bypass | The server compares against its own last-play timestamp |
 | Peeking at the deck | The client is sent the hand only, never the draw pile, the rival deck, or the seed |
@@ -191,18 +201,19 @@ Verified against a real PostgreSQL database and a running API, not only unit tes
 |-------|--------|
 | Migration `20260817203000_game_attempt_progress_state` applied by `prisma migrate deploy` | pass |
 | API end-to-end suite (`petCardRace.e2e.spec.ts`, 8 cases) plus the existing 26 e2e cases | pass |
+| Opening deal is always 8 cards: 6 run cards and 2 tactic cards | pass |
 | Draw pile, rival schedule, and shuffle seed absent from every response payload | pass |
 | Ten meets reserved per UTC day, eleventh rejected with 409 | pass |
 | Five second cooldown rejected with 409 and an honest message | pass |
 | Card that was never dealt rejected with 400 | pass |
 | Another player's meet rejected with 403 | pass |
 | Rivals advanced on the server clock while the client only synced | pass |
-| Full three-race meets played through HTTP by a scripted player | 4 meets, 12 races completed; meets scored 43–167 |
+| Full three-race meets played through HTTP by a scripted player | 27 races across 9 meets while tuning |
 
-The scripted playthroughs are what retuned the balance: on a 14-step track an average player ran out
-of cards one step short of the line and lost every race, so the track is now 11 steps and rivals tick
-every 2 s. The last two playthroughs won 5 of 6 races, including one photo finish and one second
-place, with race scores spread across 29–59 — a race that can be lost, and a score worth improving.
+The final settings were confirmed over nine consecutive races: **three firsts, three seconds, one
+third, two fourths, and one photo finish**, with meet scores of 56, 122, and 144. Races ran ten to
+twelve plays, about a minute each, and the scripted player used most of its 21 cards. That spread —
+winnable, losable, and scored differently each time — is the outcome the balance was tuned for.
 
 ---
 

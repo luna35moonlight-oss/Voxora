@@ -379,15 +379,21 @@ export const PetCardRaceDailyLimit = 10;
 /** Races in one meet — a different pet must be chosen for each. */
 export const PetCardRaceRacesPerMeet = 3;
 /**
- * Steps from the starting line to the finish line. Tuned against the 13 cards a race deals:
+ * Steps from the starting line to the finish line. Tuned against the cards a race deals:
  * sensible play covers the track with room for the tactics rivals aim at the champion.
  */
-export const PetCardRaceTrackLength = 11;
+export const PetCardRaceTrackLength = 14;
+/** Every player starts a race with the same mixed deal: run cards plus tactic cards. */
+export const PetCardRaceOpeningDealSize = 8;
+export const PetCardRaceOpeningTacticCards = 2;
 /** Track step of the leading racer that opens each card station. */
-export const PetCardRaceStationSteps = [0, 4, 7, 9] as const;
-/** Cards dealt at each station — the final station deals one extra card. */
+export const PetCardRaceStationSteps = [3, 6, 9, 12] as const;
+/** Extra cards dealt at each station — the final station deals one extra card. */
 export const PetCardRaceStationDealSizes = [3, 3, 3, 4] as const;
 export const PetCardRaceStationCount = 4;
+/** Opening deal plus every station deal. */
+export const PetCardRaceCardsPerRace =
+  PetCardRaceOpeningDealSize + PetCardRaceStationDealSizes.reduce((total, size) => total + size, 0);
 /** Waiting period between card selections. */
 export const PetCardRacePlayCooldownMs = 5_000;
 /** Latency allowance so an honest client is never rejected for being milliseconds early. */
@@ -397,7 +403,12 @@ export const PetCardRacePlayCooldownToleranceMs = 250;
  * the stream and each advances roughly every third tick. Tuned so the leading rival reaches the
  * line at about the same time as a player who spends their cards sensibly.
  */
-export const PetCardRaceRivalTickMs = 2_000;
+export const PetCardRaceRivalTickMs = 1_300;
+/**
+ * How often the client asks the server what the rivals did. Deliberately slower than the tick:
+ * a sync returns every rival card that fell due and the client animates them in order.
+ */
+export const PetCardRaceSyncIntervalMs = 1_500;
 /** Wild cards in a race deck. */
 export const PetCardRaceJokerCount = 2;
 export const PetCardRaceMaxRaceScore = 100;
@@ -491,6 +502,8 @@ export const PET_CARD_RACE_RANK_ORDER: readonly PetCardRaceRank[] = [
 /** High cards run faster than the rest: each one in a selection adds a step. */
 export const PET_CARD_RACE_FAST_RANKS: readonly PetCardRaceRank[] = ['10', 'J', 'Q', 'K'] as const;
 export const PetCardRaceFastRankStepBonus = 1;
+/** Ceiling on the high-card bonus so one lucky hand cannot end a race on its own. */
+export const PetCardRaceFastBonusCap = 2;
 
 export const PetCardRaceSuitSchema = z.enum(['MOON', 'STAR', 'CRYSTAL', 'FLAME']);
 export type PetCardRaceSuit = z.infer<typeof PetCardRaceSuitSchema>;
@@ -515,10 +528,10 @@ export const PetCardRaceTacticDefinitionSchema = z.object({
 });
 export type PetCardRaceTacticDefinition = z.infer<typeof PetCardRaceTacticDefinitionSchema>;
 
-/** Steps a rival loses to weights, mud, or a chaser. */
-export const PetCardRaceSlowSteps = 1;
+/** Steps a racer loses to weights, mud, or a chaser. */
+export const PetCardRaceSlowSteps = 2;
 /** Steps a sprint card adds to the champion. */
-export const PetCardRaceSprintSteps = 1;
+export const PetCardRaceSprintSteps = 2;
 /** Steps ahead of the champion where a mud stretch is laid down. */
 export const PetCardRaceMudLeadSteps = 2;
 
@@ -594,13 +607,13 @@ export type PetCardRaceComboKind = z.infer<typeof PetCardRaceComboKindSchema>;
 /** Steps a combination is worth before fast-card bonuses. */
 export const PET_CARD_RACE_COMBO_BASE_STEPS: Readonly<Record<PetCardRaceComboKind, number>> = {
   SINGLE: 1,
-  PAIR: 3,
-  TWO_PAIR: 4,
-  THREE_OF_A_KIND: 5,
-  RUN_OF_FOUR: 6,
-  THREE_PAIR: 6,
-  FULL_HOUSE: 7,
-  FOUR_OF_A_KIND: 8,
+  PAIR: 2,
+  TWO_PAIR: 3,
+  THREE_OF_A_KIND: 3,
+  RUN_OF_FOUR: 4,
+  THREE_PAIR: 4,
+  FULL_HOUSE: 5,
+  FOUR_OF_A_KIND: 6,
   TACTIC: 0,
 };
 

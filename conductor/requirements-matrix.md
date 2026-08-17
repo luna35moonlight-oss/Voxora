@@ -77,7 +77,8 @@ Deferred commercial formulas remain in `open-questions.md`.
 | REQ-PCR-001 | Card game with pets as the racers, inside Voxora | Mobile home race card with four lanes | `GET /v1/games/pet-card-race/me` | — | Mobile helper tests | IMPLEMENTED FOR OWNER REVIEW |
 | REQ-PCR-002 | 10 meets per user per UTC server day | Meets remaining display | Atomic daily counter increment | `GameDailyCounter` unique user/game/day | Engine + service tests | IMPLEMENTED |
 | REQ-PCR-003 | Three races per meet, a different pet each race | Champion picker filtered to unused pets | `POST /meets/:attemptId/races/next` | `GameAttempt.progressState` | Engine meet-completion tests | IMPLEMENTED |
-| REQ-PCR-004 | Four stations per race: 3 cards, 4 at the final station | Hand and station counter | Server deal from a server-held draw pile | `GameAttempt.progressState` | Engine station tests | IMPLEMENTED |
+| REQ-PCR-004 | Every player starts a race with the same mixed deal of 8 cards | Opening hand | Server deals 6 run cards and 2 tactic cards | `GameAttempt.progressState` | Engine opening-deal tests | IMPLEMENTED |
+| REQ-PCR-004b | Four stations per race deal extra cards: 3, 3, 3, then 4 | Hand and station counter | Server deal from a server-held draw pile | `GameAttempt.progressState` | Engine station tests | IMPLEMENTED |
 | REQ-PCR-005 | Five seconds between card selections | Countdown on the run button | Server compares its own last-play timestamp | — | Engine cooldown test | IMPLEMENTED |
 | REQ-PCR-006 | Combinations, jokers, and faster 10/J/Q/K cards | Live selection preview | Server re-evaluates every selection | — | `packages/domain` combination tests | IMPLEMENTED |
 | REQ-PCR-007 | Five tactic cards: chaser, weights, mud, shield, sprint | Tactic cards and target picker | Engine tactic effects and rival answers | `GameAttempt.progressState` | Engine tactic tests | IMPLEMENTED |

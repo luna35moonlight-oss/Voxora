@@ -83,8 +83,8 @@ describe('pet card race selection summary', () => {
       card((entry) => entry.rank === 'Q' && entry.suit === 'STAR'),
     ]);
 
-    expect(summary).toMatchObject({ valid: true, steps: 5, isTactic: false });
-    expect(summary.headline).toBe('Pair · 5 steps');
+    expect(summary).toMatchObject({ valid: true, steps: 4, isTactic: false });
+    expect(summary.headline).toBe('Pair · 4 steps');
     expect(summary.detail).toMatch(/high cards/);
   });
 

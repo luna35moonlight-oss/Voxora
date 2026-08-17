@@ -7,6 +7,7 @@ import {
   PET_CARD_RACE_TACTIC_DEFINITIONS,
   PetCardRaceComboScoreCap,
   PetCardRaceComboScorePoints,
+  PetCardRaceFastBonusCap,
   PetCardRaceFastRankStepBonus,
   PetCardRaceJokerCount,
   PetCardRaceMarginBonusCap,
@@ -178,8 +179,10 @@ export function evaluatePetCardRaceSelection(
     }
 
     const baseSteps = PET_CARD_RACE_COMBO_BASE_STEPS[kind];
-    const fastBonus =
-      ranks.filter((rank) => isPetCardRaceFastRank(rank)).length * PetCardRaceFastRankStepBonus;
+    const fastBonus = Math.min(
+      ranks.filter((rank) => isPetCardRaceFastRank(rank)).length * PetCardRaceFastRankStepBonus,
+      PetCardRaceFastBonusCap,
+    );
     const steps = baseSteps + fastBonus;
 
     if (!best || steps > best.steps) {
