@@ -19,6 +19,7 @@
     "@rive-app/react-native": "0.4.19",
     "@voxora/contracts": "workspace:*",
     "@voxora/design-system": "workspace:*",
+    "@voxora/domain": "workspace:*",
     "expo": "~57.0.11",
     "expo-build-properties": "~57.0.11",
     "expo-constants": "~57.0.11",

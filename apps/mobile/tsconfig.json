@@ -5,7 +5,8 @@
     "noUncheckedIndexedAccess": true,
     "paths": {
       "@voxora/design-system": ["../../packages/design-system/src"],
-      "@voxora/contracts": ["../../packages/contracts/src"]
+      "@voxora/contracts": ["../../packages/contracts/src"],
+      "@voxora/domain": ["../../packages/domain/src"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "app.config.ts"]

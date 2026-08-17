@@ -44,6 +44,9 @@ importers:
       '@voxora/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@voxora/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       argon2:
         specifier: ^0.43.1
         version: 0.43.1
@@ -138,6 +141,9 @@ importers:
       '@voxora/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@voxora/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       expo:
         specifier: ~57.0.11
         version: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
@@ -212,6 +218,19 @@ importers:
         version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.49.2)(yaml@2.9.0)
 
   packages/design-system:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.49.2)(yaml@2.9.0)
+
+  packages/domain:
+    dependencies:
+      '@voxora/contracts':
+        specifier: workspace:*
+        version: link:../contracts
     devDependencies:
       typescript:
         specifier: ^5.9.2

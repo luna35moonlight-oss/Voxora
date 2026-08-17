@@ -364,6 +364,451 @@ export type CompleteWhiteWolfAttemptResponse = z.infer<
   typeof CompleteWhiteWolfAttemptResponseSchema
 >;
 
+/**
+ * Voxora Pet Card Race — a card game where pets are the racers.
+ *
+ * One attempt is a three-race meet and each race needs a different pet. The server owns
+ * every shuffle, deal, rival advance, combination evaluation, cooldown check, and score.
+ * The client selects cards and animates server-approved results; it never reports a score.
+ */
+export const PetCardRaceGameId = z.literal('voxora-pet-card-race');
+export type PetCardRaceGameId = z.infer<typeof PetCardRaceGameId>;
+
+/** Meets per user per UTC server day. */
+export const PetCardRaceDailyLimit = 10;
+/** Races in one meet — a different pet must be chosen for each. */
+export const PetCardRaceRacesPerMeet = 3;
+/** Steps from the starting line to the finish line. */
+export const PetCardRaceTrackLength = 14;
+/** Track step of the leading racer that opens each card station. */
+export const PetCardRaceStationSteps = [0, 5, 9, 12] as const;
+/** Cards dealt at each station — the final station deals one extra card. */
+export const PetCardRaceStationDealSizes = [3, 3, 3, 4] as const;
+export const PetCardRaceStationCount = PetCardRaceStationSteps.length;
+/** Waiting period between card selections. */
+export const PetCardRacePlayCooldownMs = 5_000;
+/** Latency allowance so an honest client is never rejected for being milliseconds early. */
+export const PetCardRacePlayCooldownToleranceMs = 250;
+/** A rival racer advances one run card on every tick of the server clock. */
+export const PetCardRaceRivalTickMs = 2_500;
+/** Wild cards in a race deck. */
+export const PetCardRaceJokerCount = 2;
+export const PetCardRaceMaxRaceScore = 100;
+export const PetCardRaceMaxAcceptedScore = PetCardRaceMaxRaceScore * PetCardRaceRacesPerMeet;
+export const PetCardRaceLeaderboardSize = 5;
+/** Cards a single selection may contain — one card up to three pairs. */
+export const PetCardRaceMaxSelectionSize = 6;
+
+export const PetCardRaceRacerIdSchema = z.enum([
+  'shadow-panther',
+  'star-kitten',
+  'moonlit-wolf',
+  'aurora-dragon',
+]);
+export type PetCardRaceRacerId = z.infer<typeof PetCardRaceRacerIdSchema>;
+
+export const PetCardRaceRacerSchema = z.object({
+  racerId: PetCardRaceRacerIdSchema,
+  displayName: z.string().min(1),
+  speciesFamily: z.string().min(1),
+  /** Appearance only. Every racer runs on identical odds — no hidden stat differences. */
+  appearance: z.string().min(1),
+});
+export type PetCardRaceRacer = z.infer<typeof PetCardRaceRacerSchema>;
+
+/**
+ * Race roster. These are race-local racer definitions for this game only: they are not
+ * pet species records, not user-owned pets, and they grant no ownership or pet progression.
+ * Phase 4 Pet Foundation owns real pets and may later map these racers onto real species.
+ */
+export const PET_CARD_RACE_ROSTER: readonly PetCardRaceRacer[] = [
+  {
+    racerId: 'shadow-panther',
+    displayName: 'Nyx',
+    speciesFamily: 'cats',
+    appearance: 'Black panther in violet crystal armour with glowing amethyst markings',
+  },
+  {
+    racerId: 'star-kitten',
+    displayName: 'Nova',
+    speciesFamily: 'cats',
+    appearance: 'Fluffy pastel kitten with a lilac star crest and a comet tail',
+  },
+  {
+    racerId: 'moonlit-wolf',
+    displayName: 'Lumi',
+    speciesFamily: 'canines',
+    appearance: 'Silver-white wolf with moonlit crystal jewellery',
+  },
+  {
+    racerId: 'aurora-dragon',
+    displayName: 'Kai',
+    speciesFamily: 'dragons',
+    appearance: 'Teal aurora dragon with luminous green scale lines and a fanned crest',
+  },
+] as const;
+
+export const PetCardRaceRankSchema = z.enum([
+  'A',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10',
+  'J',
+  'Q',
+  'K',
+]);
+export type PetCardRaceRank = z.infer<typeof PetCardRaceRankSchema>;
+
+export const PET_CARD_RACE_RANK_ORDER: readonly PetCardRaceRank[] = [
+  'A',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10',
+  'J',
+  'Q',
+  'K',
+] as const;
+
+/** High cards run faster than the rest: each one in a selection adds a step. */
+export const PET_CARD_RACE_FAST_RANKS: readonly PetCardRaceRank[] = ['10', 'J', 'Q', 'K'] as const;
+export const PetCardRaceFastRankStepBonus = 1;
+
+export const PetCardRaceSuitSchema = z.enum(['MOON', 'STAR', 'CRYSTAL', 'FLAME']);
+export type PetCardRaceSuit = z.infer<typeof PetCardRaceSuitSchema>;
+
+export const PetCardRaceTacticKindSchema = z.enum([
+  'CHASER',
+  'WEIGHTS',
+  'MUD',
+  'SHIELD',
+  'SPRINT',
+]);
+export type PetCardRaceTacticKind = z.infer<typeof PetCardRaceTacticKindSchema>;
+
+export const PetCardRaceTacticTargetSchema = z.enum([
+  'CHAMPION',
+  'ONE_RIVAL',
+  'ALL_RIVALS',
+  'TRACK',
+]);
+export type PetCardRaceTacticTarget = z.infer<typeof PetCardRaceTacticTargetSchema>;
+
+export const PetCardRaceTacticDefinitionSchema = z.object({
+  kind: PetCardRaceTacticKindSchema,
+  title: z.string().min(1),
+  description: z.string().min(1),
+  affects: PetCardRaceTacticTargetSchema,
+  requiresRivalTarget: z.boolean(),
+});
+export type PetCardRaceTacticDefinition = z.infer<typeof PetCardRaceTacticDefinitionSchema>;
+
+/** Steps a rival loses to weights or a chaser. */
+export const PetCardRaceSlowCards = 1;
+/** Steps a sprint card adds to the champion. */
+export const PetCardRaceSprintSteps = 1;
+/** Steps ahead of the champion where a mud stretch is laid down. */
+export const PetCardRaceMudLeadSteps = 2;
+
+export const PET_CARD_RACE_TACTIC_DEFINITIONS: readonly PetCardRaceTacticDefinition[] = [
+  {
+    kind: 'CHASER',
+    title: 'Trail chaser',
+    description:
+      'A wild trail animal bursts from the trees and chases one rival off the path: that rival drops back a step and loses its next run card.',
+    affects: 'ONE_RIVAL',
+    requiresRivalTarget: true,
+  },
+  {
+    kind: 'WEIGHTS',
+    title: 'Heavy paws',
+    description: 'Weights settle on every rival’s feet: each rival loses its next run card.',
+    affects: 'ALL_RIVALS',
+    requiresRivalTarget: false,
+  },
+  {
+    kind: 'MUD',
+    title: 'Mud stretch',
+    description:
+      'Mud floods the track ahead of your champion: every rival that reaches it spends a run card slogging through.',
+    affects: 'TRACK',
+    requiresRivalTarget: false,
+  },
+  {
+    kind: 'SHIELD',
+    title: 'Moon shield',
+    description: 'A guarding sigil blocks the next rival tactic aimed at your champion.',
+    affects: 'CHAMPION',
+    requiresRivalTarget: false,
+  },
+  {
+    kind: 'SPRINT',
+    title: 'Star sprint',
+    description: 'Your champion sprints one extra step immediately.',
+    affects: 'CHAMPION',
+    requiresRivalTarget: false,
+  },
+] as const;
+
+export const PetCardRaceCardTypeSchema = z.enum(['RANK', 'JOKER', 'TACTIC']);
+export type PetCardRaceCardType = z.infer<typeof PetCardRaceCardTypeSchema>;
+
+export const PetCardRaceCardSchema = z.object({
+  /** Unique within a race. Server-issued; the client may only play cards it was dealt. */
+  cardId: z.string().min(1),
+  type: PetCardRaceCardTypeSchema,
+  rank: PetCardRaceRankSchema.nullable(),
+  suit: PetCardRaceSuitSchema.nullable(),
+  tactic: PetCardRaceTacticKindSchema.nullable(),
+  /** True for 10, J, Q, and K — and for a joker standing in for one of them. */
+  fast: z.boolean(),
+  label: z.string().min(1),
+});
+export type PetCardRaceCard = z.infer<typeof PetCardRaceCardSchema>;
+
+export const PetCardRaceComboKindSchema = z.enum([
+  'SINGLE',
+  'PAIR',
+  'TWO_PAIR',
+  'THREE_OF_A_KIND',
+  'RUN_OF_FOUR',
+  'THREE_PAIR',
+  'FULL_HOUSE',
+  'FOUR_OF_A_KIND',
+  'TACTIC',
+]);
+export type PetCardRaceComboKind = z.infer<typeof PetCardRaceComboKindSchema>;
+
+/** Steps a combination is worth before fast-card bonuses. */
+export const PET_CARD_RACE_COMBO_BASE_STEPS: Readonly<Record<PetCardRaceComboKind, number>> = {
+  SINGLE: 1,
+  PAIR: 3,
+  TWO_PAIR: 4,
+  THREE_OF_A_KIND: 5,
+  RUN_OF_FOUR: 6,
+  THREE_PAIR: 6,
+  FULL_HOUSE: 7,
+  FOUR_OF_A_KIND: 8,
+  TACTIC: 0,
+};
+
+export const PET_CARD_RACE_COMBO_LABELS: Readonly<Record<PetCardRaceComboKind, string>> = {
+  SINGLE: 'Single card',
+  PAIR: 'Pair',
+  TWO_PAIR: 'Two pair',
+  THREE_OF_A_KIND: 'Three of a kind',
+  RUN_OF_FOUR: 'Run of four',
+  THREE_PAIR: 'Three pair',
+  FULL_HOUSE: 'Full house',
+  FOUR_OF_A_KIND: 'Four of a kind',
+  TACTIC: 'Tactic card',
+};
+
+/** Combinations of a pair or better earn meet score in addition to track steps. */
+export const PetCardRaceComboScorePoints = 3;
+export const PetCardRaceComboScoreCap = 30;
+export const PetCardRaceTacticScorePoints = 4;
+export const PetCardRaceTacticScoreCap = 16;
+export const PET_CARD_RACE_POSITION_POINTS: readonly number[] = [40, 25, 12, 5] as const;
+export const PetCardRaceMarginBonusPerStep = 2;
+export const PetCardRaceMarginBonusCap = 10;
+export const PetCardRacePhotoFinishBonus = 4;
+
+export const PetCardRaceLaneSchema = z.object({
+  racerId: PetCardRaceRacerIdSchema,
+  isChampion: z.boolean(),
+  step: z.number().int().min(0).max(PetCardRaceTrackLength),
+  /** Run cards this racer will lose to weights, mud, or a chaser before moving again. */
+  slowedCards: z.number().int().min(0),
+  shielded: z.boolean(),
+  finishPosition: z.number().int().min(1).max(4).nullable(),
+});
+export type PetCardRaceLane = z.infer<typeof PetCardRaceLaneSchema>;
+
+export const PetCardRaceEventTypeSchema = z.enum([
+  'RACE_START',
+  'STATION_DEAL',
+  'CHAMPION_ADVANCE',
+  'RIVAL_ADVANCE',
+  'SLOWED',
+  'MUD_HIT',
+  'TACTIC_PLAYED',
+  'RIVAL_TACTIC',
+  'SHIELD_BLOCKED',
+  'RACER_FINISHED',
+  'RACE_COMPLETE',
+]);
+export type PetCardRaceEventType = z.infer<typeof PetCardRaceEventTypeSchema>;
+
+export const PetCardRaceEventSchema = z.object({
+  sequence: z.number().int().nonnegative(),
+  type: PetCardRaceEventTypeSchema,
+  racerId: PetCardRaceRacerIdSchema.nullable(),
+  step: z.number().int().min(0).max(PetCardRaceTrackLength).nullable(),
+  message: z.string().min(1),
+});
+export type PetCardRaceEvent = z.infer<typeof PetCardRaceEventSchema>;
+
+export const PetCardRacePhaseSchema = z.enum(['RUNNING', 'FINISHED', 'FORFEITED']);
+export type PetCardRacePhase = z.infer<typeof PetCardRacePhaseSchema>;
+
+export const PetCardRaceMeetPhaseSchema = z.enum([
+  'RACING',
+  'RACE_INTERMISSION',
+  'COMPLETE',
+  'FORFEITED',
+]);
+export type PetCardRaceMeetPhase = z.infer<typeof PetCardRaceMeetPhaseSchema>;
+
+export const PetCardRaceFinishSchema = z.object({
+  racerId: PetCardRaceRacerIdSchema,
+  position: z.number().int().min(1).max(4),
+  step: z.number().int().min(0).max(PetCardRaceTrackLength),
+  crossedLine: z.boolean(),
+});
+export type PetCardRaceFinish = z.infer<typeof PetCardRaceFinishSchema>;
+
+export const PetCardRaceScoreBreakdownSchema = z.object({
+  positionPoints: z.number().int().nonnegative(),
+  comboPoints: z.number().int().nonnegative(),
+  tacticPoints: z.number().int().nonnegative(),
+  marginBonus: z.number().int().nonnegative(),
+  photoFinishBonus: z.number().int().nonnegative(),
+  total: z.number().int().min(0).max(PetCardRaceMaxRaceScore),
+});
+export type PetCardRaceScoreBreakdown = z.infer<typeof PetCardRaceScoreBreakdownSchema>;
+
+export const PetCardRaceRaceResultSchema = z.object({
+  raceNumber: z.number().int().min(1).max(PetCardRaceRacesPerMeet),
+  championRacerId: PetCardRaceRacerIdSchema,
+  championPosition: z.number().int().min(1).max(4),
+  championCrossedLine: z.boolean(),
+  order: z.array(PetCardRaceFinishSchema).length(4),
+  combosPlayed: z.number().int().nonnegative(),
+  tacticsPlayed: z.number().int().nonnegative(),
+  photoFinish: z.boolean(),
+  score: z.number().int().min(0).max(PetCardRaceMaxRaceScore),
+  breakdown: PetCardRaceScoreBreakdownSchema,
+});
+export type PetCardRaceRaceResult = z.infer<typeof PetCardRaceRaceResultSchema>;
+
+export const PetCardRaceSelectionPreviewSchema = z.object({
+  valid: z.boolean(),
+  kind: PetCardRaceComboKindSchema.nullable(),
+  label: z.string().min(1),
+  baseSteps: z.number().int().nonnegative(),
+  fastBonus: z.number().int().nonnegative(),
+  steps: z.number().int().nonnegative(),
+  reason: z.string().nullable(),
+});
+export type PetCardRaceSelectionPreview = z.infer<typeof PetCardRaceSelectionPreviewSchema>;
+
+export const PetCardRaceRaceViewSchema = z.object({
+  raceNumber: z.number().int().min(1).max(PetCardRaceRacesPerMeet),
+  phase: PetCardRacePhaseSchema,
+  championRacerId: PetCardRaceRacerIdSchema,
+  trackLength: z.literal(PetCardRaceTrackLength),
+  lanes: z.array(PetCardRaceLaneSchema).length(4),
+  mudSteps: z.array(z.number().int().min(0).max(PetCardRaceTrackLength)),
+  hand: z.array(PetCardRaceCardSchema),
+  cardsLeftToDeal: z.number().int().nonnegative(),
+  stationsDealt: z.number().int().min(0).max(PetCardRaceStationCount),
+  stationsTotal: z.literal(PetCardRaceStationCount),
+  /** Server-approved events since the previous call, in animation order. */
+  events: z.array(PetCardRaceEventSchema),
+  /** Remaining wait before the next selection is accepted. */
+  cooldownRemainingMs: z.number().int().min(0),
+  nextRivalTickInMs: z.number().int().min(0).nullable(),
+  combosPlayed: z.number().int().nonnegative(),
+  tacticsPlayed: z.number().int().nonnegative(),
+  result: PetCardRaceRaceResultSchema.nullable(),
+});
+export type PetCardRaceRaceView = z.infer<typeof PetCardRaceRaceViewSchema>;
+
+export const PetCardRaceMeetResultSchema = z.object({
+  totalScore: z.number().int().min(0).max(PetCardRaceMaxAcceptedScore),
+  bestPosition: z.number().int().min(1).max(4),
+  wins: z.number().int().min(0).max(PetCardRaceRacesPerMeet),
+  races: z.array(PetCardRaceRaceResultSchema).max(PetCardRaceRacesPerMeet),
+});
+export type PetCardRaceMeetResult = z.infer<typeof PetCardRaceMeetResultSchema>;
+
+export const PetCardRaceMeetViewSchema = z.object({
+  attemptId: z.string().min(1),
+  attemptNumber: z.number().int().min(1).max(PetCardRaceDailyLimit),
+  meetPhase: PetCardRaceMeetPhaseSchema,
+  raceNumber: z.number().int().min(1).max(PetCardRaceRacesPerMeet),
+  racesTotal: z.literal(PetCardRaceRacesPerMeet),
+  usedRacerIds: z.array(PetCardRaceRacerIdSchema).max(PetCardRaceRacesPerMeet),
+  availableRacerIds: z.array(PetCardRaceRacerIdSchema),
+  currentRace: PetCardRaceRaceViewSchema.nullable(),
+  completedRaces: z.array(PetCardRaceRaceResultSchema).max(PetCardRaceRacesPerMeet),
+  meetScore: z.number().int().min(0).max(PetCardRaceMaxAcceptedScore),
+  result: PetCardRaceMeetResultSchema.nullable(),
+});
+export type PetCardRaceMeetView = z.infer<typeof PetCardRaceMeetViewSchema>;
+
+export const PetCardRaceLeaderboardEntrySchema = z.object({
+  rank: z.number().int().positive(),
+  playerLabel: z.string().min(1),
+  score: z.number().int().nonnegative(),
+});
+export type PetCardRaceLeaderboardEntry = z.infer<typeof PetCardRaceLeaderboardEntrySchema>;
+
+/** Prizes, currencies, and pet progression for this game are undefined — see open-questions.md. */
+export const PetCardRaceRewardStatusSchema = z.literal('REWARD_RULES_PENDING_OWNER_DECISION');
+export type PetCardRaceRewardStatus = z.infer<typeof PetCardRaceRewardStatusSchema>;
+
+export const PetCardRaceStatusResponseSchema = z.object({
+  gameId: PetCardRaceGameId,
+  dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dailyAttemptLimit: z.literal(PetCardRaceDailyLimit),
+  attemptsUsedToday: z.number().int().min(0).max(PetCardRaceDailyLimit),
+  attemptsRemainingToday: z.number().int().min(0).max(PetCardRaceDailyLimit),
+  racesPerMeet: z.literal(PetCardRaceRacesPerMeet),
+  bestScore: z.number().int().nonnegative(),
+  bestRank: z.number().int().positive().nullable(),
+  rewardStatus: PetCardRaceRewardStatusSchema,
+  rewardNote: z.string().min(1),
+  leaderboard: z.array(PetCardRaceLeaderboardEntrySchema).max(PetCardRaceLeaderboardSize),
+  roster: z.array(PetCardRaceRacerSchema).length(4),
+  serverTime: z.string(),
+});
+export type PetCardRaceStatusResponse = z.infer<typeof PetCardRaceStatusResponseSchema>;
+
+export const StartPetCardRaceMeetRequestSchema = z.object({
+  championRacerId: PetCardRaceRacerIdSchema,
+});
+export type StartPetCardRaceMeetRequest = z.infer<typeof StartPetCardRaceMeetRequestSchema>;
+
+export const StartNextPetCardRaceRequestSchema = z.object({
+  championRacerId: PetCardRaceRacerIdSchema,
+});
+export type StartNextPetCardRaceRequest = z.infer<typeof StartNextPetCardRaceRequestSchema>;
+
+export const PlayPetCardRaceCardsRequestSchema = z.object({
+  cardIds: z.array(z.string().min(1)).min(1).max(PetCardRaceMaxSelectionSize),
+  targetRacerId: PetCardRaceRacerIdSchema.optional(),
+});
+export type PlayPetCardRaceCardsRequest = z.infer<typeof PlayPetCardRaceCardsRequestSchema>;
+
+export const PetCardRaceResponseSchema = z.object({
+  meet: PetCardRaceMeetViewSchema,
+  status: PetCardRaceStatusResponseSchema,
+});
+export type PetCardRaceResponse = z.infer<typeof PetCardRaceResponseSchema>;
+
 export const AvatarTierSchema = z.enum(['BASIC', 'ELITE', 'LEGENDARY']);
 export type AvatarTier = z.infer<typeof AvatarTierSchema>;
 
