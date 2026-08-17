@@ -200,7 +200,7 @@ describe('Voxora Pet Card Race (e2e)', () => {
     const started = await startMeet(token).expect(201);
     const attemptId = started.body.meet.attemptId as string;
 
-    await new Promise((resolve) => setTimeout(resolve, 2_600));
+    await new Promise((resolve) => setTimeout(resolve, 3_200));
 
     const synced = await request(app.getHttpServer())
       .post(`/v1/games/pet-card-race/meets/${attemptId}/sync`)

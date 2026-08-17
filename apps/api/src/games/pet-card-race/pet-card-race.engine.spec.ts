@@ -63,6 +63,18 @@ function laneStep(meet: PetCardRaceMeetState, racerId: PetCardRaceRacerId) {
   return race(meet).lanes[racerId]?.step ?? 0;
 }
 
+/**
+ * Step the champion reached on its last card play. Read from the event rather than the lane
+ * because opening a station lets the rival trainers answer immediately afterwards.
+ */
+function stepAfterLastPlay(meet: PetCardRaceMeetState) {
+  const advances = race(meet).pendingEvents.filter(
+    (event) => event.type === 'CHAMPION_ADVANCE' && event.racerId === race(meet).championRacerId,
+  );
+
+  return advances[advances.length - 1]?.step ?? 0;
+}
+
 function play(
   meet: PetCardRaceMeetState,
   cards: PetCardRaceCard[],
@@ -132,11 +144,13 @@ describe('pet card race card plays', () => {
     setHand(meet, [rank('3', 'MOON'), rank('3', 'STAR')]);
 
     play(meet, [rank('3', 'MOON'), rank('3', 'STAR')], T0);
-    expect(laneStep(meet, 'moonlit-wolf')).toBe(3);
+    expect(stepAfterLastPlay(meet)).toBe(3);
 
     setHand(meet, [rank('K', 'MOON'), rank('K', 'STAR')]);
     play(meet, [rank('K', 'MOON'), rank('K', 'STAR')], T0 + PetCardRacePlayCooldownMs);
-    expect(laneStep(meet, 'moonlit-wolf')).toBe(8);
+
+    // Three for the pair plus one for each king.
+    expect(stepAfterLastPlay(meet)).toBe(8);
     expect(race(meet).combosPlayed).toBe(2);
   });
 
@@ -172,7 +186,7 @@ describe('pet card race card plays', () => {
     setHand(meet, [rank('Q', 'MOON'), joker]);
     play(meet, [rank('Q', 'MOON'), joker], T0);
 
-    expect(laneStep(meet, 'moonlit-wolf')).toBe(5);
+    expect(stepAfterLastPlay(meet)).toBe(5);
   });
 });
 

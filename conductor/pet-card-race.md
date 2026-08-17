@@ -13,7 +13,7 @@ does **not** create a second avatar, pet, or reward system.
 
 ## 1. What the game is
 
-Four pets race along a 14-step track. The player picks one pet as their champion; the other three
+Four pets race along an 11-step track. The player picks one pet as their champion; the other three
 run as rivals. Cards do the running:
 
 - the player's champion advances only when the player plays cards;
@@ -32,7 +32,7 @@ Meet score is the sum of the three race scores, and the daily leaderboard uses t
 - The server reserves the meet before the first race starts; a reserved meet is consumed even if it
   is abandoned or forfeited.
 - **3 races per meet, a different pet each race.** The server rejects a repeated pet.
-- Each race has **four card stations**, opened when the leading racer reaches steps 0, 5, 9, and 12.
+- Each race has **four card stations**, opened when the leading racer reaches steps 0, 4, 7, and 9.
   Stations one to three deal **3 cards**; the **final station deals 4** — 13 cards per race.
 - Unplayed cards stay in hand, so combinations can be assembled across stations.
 - **Five seconds between card selections.** The server enforces the wait (250 ms latency
@@ -139,12 +139,24 @@ shared redeem-code architecture in `game-system.md` — never a Pet-Card-Race-sp
 
 ---
 
-## 7. Provisional rules an owner may want to change
+## 7. Provisional balance values an owner may want to change
 
-These were chosen to make the game playable and are recorded as questions rather than settled
-product rules (see `open-questions.md`): track length 14; station steps 0/5/9/12; deal sizes 3/3/3/4;
-the 2.5 s rival tick; combination step values; the score weights; and the rule that rival trainers
-answer each station with one tactic.
+The owner-stated rules are fixed: three races, a different pet each race, four stations dealing
+3/3/3/4 cards, five seconds between selections, fast 10/J/Q/K cards, the combination list, two
+jokers, and the five tactic cards. Everything below was chosen to make those rules play well and is
+recorded as a question rather than a settled product rule (see `open-questions.md`): track length 11,
+station steps 0/4/7/9, the 2 s rival tick, the combination step values, the score weights, and the
+rule that rival trainers answer each station with one tactic.
+
+**Why the track is 11 steps.** A race deals 13 cards. Roughly two of them are tactic cards, and the
+rank cards average a little over one step each when spent as singles, so a player who spends their
+hand sensibly has about 14 to 18 steps of movement available. Rival tactics take about three steps
+back off the champion. A 14-step track left an average player stranded one step short of the line
+with an empty hand; 11 steps leaves room to absorb the rival tactics and still reward good play.
+
+**Why rivals tick every 2 seconds.** The three rivals share one run-card stream, so each advances on
+roughly every third tick. At two seconds the leading rival reaches the line at about the same time as
+a player spending cards steadily, which is what makes slowing rivals down worth a play.
 
 ---
 
@@ -166,12 +178,35 @@ Each race is reproducible from the server-held seed for audit. Delivered animati
 best-effort detail; the lane snapshot in every response is authoritative, so a dropped response
 cannot desynchronise a race.
 
-**Known limitation:** the client polls the sync endpoint every 2.5 s to observe rival advances.
-A push transport is the natural improvement when the Phase 13 Games Platform is built.
+**Known limitation:** the client polls the sync endpoint on the rival tick interval to observe rival
+advances. A push transport is the natural improvement when the Phase 13 Games Platform is built.
 
 ---
 
-## 9. Implementation map
+## 9. Runtime validation (2026-08-17)
+
+Verified against a real PostgreSQL database and a running API, not only unit tests.
+
+| Check | Result |
+|-------|--------|
+| Migration `20260817203000_game_attempt_progress_state` applied by `prisma migrate deploy` | pass |
+| API end-to-end suite (`petCardRace.e2e.spec.ts`, 8 cases) plus the existing 26 e2e cases | pass |
+| Draw pile, rival schedule, and shuffle seed absent from every response payload | pass |
+| Ten meets reserved per UTC day, eleventh rejected with 409 | pass |
+| Five second cooldown rejected with 409 and an honest message | pass |
+| Card that was never dealt rejected with 400 | pass |
+| Another player's meet rejected with 403 | pass |
+| Rivals advanced on the server clock while the client only synced | pass |
+| Full three-race meets played through HTTP by a scripted player | 4 meets, 12 races completed; meets scored 43–167 |
+
+The scripted playthroughs are what retuned the balance: on a 14-step track an average player ran out
+of cards one step short of the line and lost every race, so the track is now 11 steps and rivals tick
+every 2 s. The last two playthroughs won 5 of 6 races, including one photo finish and one second
+place, with race scores spread across 29–59 — a race that can be lost, and a score worth improving.
+
+---
+
+## 10. Implementation map
 
 | Concern | Location |
 |---------|----------|

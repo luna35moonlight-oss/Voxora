@@ -378,10 +378,13 @@ export type PetCardRaceGameId = z.infer<typeof PetCardRaceGameId>;
 export const PetCardRaceDailyLimit = 10;
 /** Races in one meet — a different pet must be chosen for each. */
 export const PetCardRaceRacesPerMeet = 3;
-/** Steps from the starting line to the finish line. */
-export const PetCardRaceTrackLength = 14;
+/**
+ * Steps from the starting line to the finish line. Tuned against the 13 cards a race deals:
+ * sensible play covers the track with room for the tactics rivals aim at the champion.
+ */
+export const PetCardRaceTrackLength = 11;
 /** Track step of the leading racer that opens each card station. */
-export const PetCardRaceStationSteps = [0, 5, 9, 12] as const;
+export const PetCardRaceStationSteps = [0, 4, 7, 9] as const;
 /** Cards dealt at each station — the final station deals one extra card. */
 export const PetCardRaceStationDealSizes = [3, 3, 3, 4] as const;
 export const PetCardRaceStationCount = 4;
@@ -389,8 +392,12 @@ export const PetCardRaceStationCount = 4;
 export const PetCardRacePlayCooldownMs = 5_000;
 /** Latency allowance so an honest client is never rejected for being milliseconds early. */
 export const PetCardRacePlayCooldownToleranceMs = 250;
-/** A rival racer advances one run card on every tick of the server clock. */
-export const PetCardRaceRivalTickMs = 2_500;
+/**
+ * One rival run card is revealed on every tick of the server clock, so the three rivals share
+ * the stream and each advances roughly every third tick. Tuned so the leading rival reaches the
+ * line at about the same time as a player who spends their cards sensibly.
+ */
+export const PetCardRaceRivalTickMs = 2_000;
 /** Wild cards in a race deck. */
 export const PetCardRaceJokerCount = 2;
 export const PetCardRaceMaxRaceScore = 100;
