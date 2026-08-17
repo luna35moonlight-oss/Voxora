@@ -6,7 +6,12 @@ import type {
   CurrentAvatarResponse,
   EquipAvatarItemRequest,
   LoginResponse,
+  PetCardRaceResponse,
+  PetCardRaceStatusResponse,
+  PlayPetCardRaceCardsRequest,
   SelectAvatarRequest,
+  StartNextPetCardRaceRequest,
+  StartPetCardRaceMeetRequest,
   StartWhiteWolfAttemptResponse,
   UnequipAvatarItemRequest,
   WhiteWolfGameStatusResponse,
@@ -204,6 +209,46 @@ export const apiClient = {
         body: JSON.stringify(body),
       },
     ),
+  petCardRaceStatus: (accessToken: string) =>
+    request<PetCardRaceStatusResponse>('/games/pet-card-race/me', {
+      headers: auth(accessToken),
+    }),
+  startPetCardRaceMeet: (accessToken: string, body: StartPetCardRaceMeetRequest) =>
+    request<PetCardRaceResponse>('/games/pet-card-race/meets/start', {
+      method: 'POST',
+      headers: auth(accessToken),
+      body: JSON.stringify(body),
+    }),
+  syncPetCardRace: (accessToken: string, attemptId: string) =>
+    request<PetCardRaceResponse>(`/games/pet-card-race/meets/${attemptId}/sync`, {
+      method: 'POST',
+      headers: auth(accessToken),
+    }),
+  playPetCardRaceCards: (
+    accessToken: string,
+    attemptId: string,
+    body: PlayPetCardRaceCardsRequest,
+  ) =>
+    request<PetCardRaceResponse>(`/games/pet-card-race/meets/${attemptId}/plays`, {
+      method: 'POST',
+      headers: auth(accessToken),
+      body: JSON.stringify(body),
+    }),
+  startNextPetCardRace: (
+    accessToken: string,
+    attemptId: string,
+    body: StartNextPetCardRaceRequest,
+  ) =>
+    request<PetCardRaceResponse>(`/games/pet-card-race/meets/${attemptId}/races/next`, {
+      method: 'POST',
+      headers: auth(accessToken),
+      body: JSON.stringify(body),
+    }),
+  forfeitPetCardRace: (accessToken: string, attemptId: string) =>
+    request<PetCardRaceResponse>(`/games/pet-card-race/meets/${attemptId}/forfeit`, {
+      method: 'POST',
+      headers: auth(accessToken),
+    }),
   avatarMe: (accessToken: string) =>
     request<CurrentAvatarResponse>('/avatars/me', {
       headers: auth(accessToken),
