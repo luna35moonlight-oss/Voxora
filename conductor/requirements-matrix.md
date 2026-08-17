@@ -70,6 +70,26 @@ Deferred commercial formulas remain in `open-questions.md`.
 
 ---
 
+## Voxora Pet Card Race — card-driven pet race slice (ADR-028)
+
+| ID | Requirement | UI | Service/API | Database | Tests | Status |
+|----|-------------|----|-------------|----------|-------|--------|
+| REQ-PCR-001 | Card game with pets as the racers, inside Voxora | Mobile home race card with four lanes | `GET /v1/games/pet-card-race/me` | — | Mobile helper tests | IMPLEMENTED FOR OWNER REVIEW |
+| REQ-PCR-002 | 10 meets per user per UTC server day | Meets remaining display | Atomic daily counter increment | `GameDailyCounter` unique user/game/day | Engine + service tests | IMPLEMENTED |
+| REQ-PCR-003 | Three races per meet, a different pet each race | Champion picker filtered to unused pets | `POST /meets/:attemptId/races/next` | `GameAttempt.progressState` | Engine meet-completion tests | IMPLEMENTED |
+| REQ-PCR-004 | Four stations per race: 3 cards, 4 at the final station | Hand and station counter | Server deal from a server-held draw pile | `GameAttempt.progressState` | Engine station tests | IMPLEMENTED |
+| REQ-PCR-005 | Five seconds between card selections | Countdown on the run button | Server compares its own last-play timestamp | — | Engine cooldown test | IMPLEMENTED |
+| REQ-PCR-006 | Combinations, jokers, and faster 10/J/Q/K cards | Live selection preview | Server re-evaluates every selection | — | `packages/domain` combination tests | IMPLEMENTED |
+| REQ-PCR-007 | Five tactic cards: chaser, weights, mud, shield, sprint | Tactic cards and target picker | Engine tactic effects and rival answers | `GameAttempt.progressState` | Engine tactic tests | IMPLEMENTED |
+| REQ-PCR-008 | Rival racers advance on the server clock | Animated lanes plus sync polling | `POST /meets/:attemptId/sync` | — | Engine rival tick test | IMPLEMENTED — polling transport is a known limitation |
+| REQ-PCR-009 | Score is server-computed; the client cannot submit one | Score breakdown display | No score field exists in any request | `GameAttempt.score` | Engine score tests | IMPLEMENTED |
+| REQ-PCR-010 | Leaderboard by best meet score, ties by earliest completion | Leaderboard list | Service ranking | completed `GameAttempt` rows | Leaderboard service test | IMPLEMENTED |
+| REQ-PCR-011 | No rewards, currencies, redeem codes, or pet progression | Honest reward-status copy | `REWARD_RULES_PENDING_OWNER_DECISION` | No ledger or prize writes | Documentation review | OWNER DECISION REQUIRED |
+| REQ-PCR-012 | Racers are game-local, not pet or avatar records | Race roster only | Roster constant in contracts | No pet or avatar tables touched | Documentation review | IMPLEMENTED |
+| REQ-PCR-013 | Balance values confirmed by the owner | — | — | — | Documentation review | PROVISIONAL — OWNER CONFIRMATION REQUESTED |
+
+---
+
 ## Phase 3 — Scene Engine and living avatar foundation
 
 | ID | Requirement | UI | Service/API | Database | Tests | Status |

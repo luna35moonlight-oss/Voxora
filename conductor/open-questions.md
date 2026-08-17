@@ -95,6 +95,11 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 | OQ-PET-014 | Pet skill level thresholds / maxima / species multipliers? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
 | OQ-PET-015 | Pet Skill-Up Shard rarity / shards-per-level / upgrade probability? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
 | OQ-GAME-WHEEL-001 | Spinning Wheel spins, reset rules, probabilities, quantities? | OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
+| OQ-PCR-001 | Pet Card Race rewards / prizes / competition (currently none are awarded)? | **OWNER DECISION REQUIRED BEFORE ANY PET CARD RACE REWARD** |
+| OQ-PCR-002 | Pet Card Race balance values — track length 14, station steps 0/5/9/12, deal sizes 3/3/3/4, 2.5 s rival tick, combination step values, score weights? | PROVISIONAL — OWNER CONFIRMATION REQUESTED (see `pet-card-race.md` §7) |
+| OQ-PCR-003 | Should the rival trainers keep answering every station after the first with one tactic aimed at the champion? | PROVISIONAL — OWNER CONFIRMATION REQUESTED |
+| OQ-PCR-004 | Which real pet species should the four racers map onto once Phase 4 Pet Foundation exists? | DEFERRED — OWNER DECISION REQUIRED (racers are game-local until then) |
+| OQ-PCR-005 | Should Pet Card Race results ever contribute pet skill progression like Rock Paper Scissors? | DEFERRED — OWNER DECISION REQUIRED; nothing is written today |
 
 **Confirmed (not inventable):** Rock Paper Scissors is a future game (10 tries/user/UTC day) that contributes server-approved progression points toward pet skill development. Pet Skill-Up Shards are a confirmed reward type. Exact formulas remain deferred. See `game-system.md` / ADR-027. Do not implement RPS, Wheel, Coins, Diamonds, or shard economies in Phase 3.
 

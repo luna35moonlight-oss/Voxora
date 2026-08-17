@@ -22,6 +22,8 @@ Expo template attribution (not a Voxora MIT grant) lives at [`apps/mobile/THIRD_
 
 **Phase 2**, **Phase 2.5 (Moon Dash)**, **Phase 3 Avatar Foundation**, and the **Games & Rewards documentation addendum** are integrated on the Phase 3 final-integration working branch for Owner review. See [`conductor/`](./conductor/).
 
+**Voxora Pet Card Race** (ADR-028) is implemented for Owner review as a second early game slice: a card game with pets as the racers, server-authoritative and reward-free. See [`conductor/pet-card-race.md`](./conductor/pet-card-race.md).
+
 **Do not begin Phase 4 until the Product Owner explicitly authorises it.**
 
 Phase documents live in [`conductor/`](./conductor/):
@@ -41,6 +43,7 @@ Phase documents live in [`conductor/`](./conductor/):
 | [pet-battle-system.md](./conductor/pet-battle-system.md) | Server-authoritative battles |
 | [game-system.md](./conductor/game-system.md) | Modular games & rewards architecture |
 | [moon-dash.md](./conductor/moon-dash.md) | White Wolf Moon Dash Phase 2.5 vertical slice |
+| [pet-card-race.md](./conductor/pet-card-race.md) | Voxora Pet Card Race — card-driven pet race slice |
 | [alpha-architecture.md](./conductor/alpha-architecture.md) | One Alpha intelligence |
 | [bondfire.md](./conductor/bondfire.md) | Alpha Bondfire |
 | [integrations.md](./conductor/integrations.md) | Provider adapters |

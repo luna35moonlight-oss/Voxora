@@ -83,6 +83,7 @@ Distinct from entitlements.
 - `game_definitions` — metadata contract fields (must support Moon Dash / RPS / Wheel differences — not score-only)  
 - `game_sessions`, `game_results`  
 - `play_limit_policies` / attempt counters — reusable UTC-day policies where appropriate (configurable per game; do not assume every game is 10/day)  
+- attempt records carry a nullable server-owned `progressState` for multi-step games (Pet Card Race meets hold their deck, deal, hand, lanes, and rival schedule there). Never accepted from a client; never returned in full to a client  
 - `battles` — players, pets, seed, start_stats, winner, status  
 - `battle_events` — append-only action/damage/effect log  
 - `reward_ledger` — tx id, user, pet?, source, source_event_id, reward_type, amount, reason, idempotency_key UNIQUE, status, audit  

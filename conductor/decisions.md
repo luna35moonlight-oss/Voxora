@@ -255,6 +255,18 @@
 - **Documents:** `game-system.md`, `moon-dash.md`, `pet-system.md`, `avatar-system.md`, `open-questions.md`
 - **Owner review:** Requirements approved for recording
 
+### ADR-028 — Voxora Pet Card Race (card-driven pet race slice)
+- **Status:** IMPLEMENTED FOR OWNER REVIEW (owner request, 2026-08-17)
+- **Decision:** Voxora Pet Card Race is recorded as a second early game slice: a card game in which pets are the racers. One attempt is a **three-race meet** and each race requires a **different pet**.
+- **Rules locked:** 10 meets per user per UTC server day; four card stations per race (3 cards each, **4 at the final station**); unplayed cards stay in hand; **five seconds between card selections**, enforced by the server; 10/J/Q/K run faster than other cards; pairs, two pair, three of a kind, run of four, three pair, full house, and four of a kind advance further; two jokers act as wild cards; the five tactic cards are trail chaser, heavy paws, mud stretch, moon shield, and star sprint; rivals advance one run card per server tick.
+- **Server authority:** the shuffle, every deal, rival advances, the cooldown, combination rulings, finishing order, race score, and meet score are server-owned. The client has no score field to submit and never receives the draw pile, the rival deck, or the seed. In-progress state persists in a new nullable `GameAttempt.progressState` column, reusing the existing attempt and daily-counter tables rather than a game-specific schema.
+- **Reward posture:** **no** prizes, redeem codes, Coins, Diamonds, Pet Skill-Up Shards, or pet progression are awarded, and nothing is written to a reward ledger. Reward status is reported as `REWARD_RULES_PENDING_OWNER_DECISION`. Any future reward must route through the central Reward Service / Reward Ledger and the shared redeem-code architecture of ADR-027 — never a Pet-Card-Race-specific reward system.
+- **Pet boundary:** the four racers are race-local definitions, not `pet_species` records, catalogue templates, or user-owned pets. Phase 4 Pet Foundation remains the owner of real pets and may later map these racers onto real species.
+- **Scope boundary:** this does not authorise the full Games Platform (Phase 13), Rock Paper Scissors, the Spinning Wheel, currencies, shard economies, or starting Phase 4.
+- **Shared rules package:** card combination and race-score rules live in the ADR-014 approved `packages/domain` package so the client preview and the server ruling cannot drift; the server still evaluates every play independently.
+- **Owner review:** pending. Provisional balance values (track length, station steps, tick rate, score weights) are recorded as open questions rather than settled product rules.
+- **Document:** `pet-card-race.md`
+
 ---
 
 ## Process gate
@@ -268,3 +280,4 @@
 | Phase 2.5 White Wolf Moon Dash vertical slice | **INTEGRATED** (source PR #4) — full Games still Phase 13 |
 | Phase 3 Scene Engine and living avatar foundation | **INTEGRATED** (source PR #5) — Rive native validation + final Owner review pending |
 | Games & Rewards Addendum | **INTEGRATED / DOCUMENTED ONLY** (source PR #6 / ADR-027) — RPS, Wheel, currencies NOT implemented; do not start Phase 4 |
+| Voxora Pet Card Race slice | **IMPLEMENTED FOR OWNER REVIEW** (ADR-028) — server-authoritative game and leaderboard only; no rewards, no pets, full Games still Phase 13 |
