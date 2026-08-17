@@ -163,8 +163,12 @@ export function evaluatePetCardRaceSelection(
     return invalidSelection(`A race deck holds only ${PetCardRaceJokerCount} jokers`);
   }
 
-  let best: { kind: PetCardRaceComboKind; baseSteps: number; fastBonus: number; steps: number } | null =
-    null;
+  let best: {
+    kind: PetCardRaceComboKind;
+    baseSteps: number;
+    fastBonus: number;
+    steps: number;
+  } | null = null;
 
   for (const wildRanks of jokerAssignments(jokers)) {
     const ranks = [...fixedRanks, ...wildRanks];
@@ -300,7 +304,9 @@ function isRunOfFour(ranks: readonly PetCardRaceRank[]): boolean {
     return false;
   }
 
-  return indexes.every((value, position) => position === 0 || value === (indexes[position - 1] ?? 0) + 1);
+  return indexes.every(
+    (value, position) => position === 0 || value === (indexes[position - 1] ?? 0) + 1,
+  );
 }
 
 function jokerAssignments(jokers: number): PetCardRaceRank[][] {

@@ -147,13 +147,16 @@ describe('pet card race selections', () => {
   });
 
   it('turns jokers into whichever card helps the selection most', () => {
-    expect(
-      evaluatePetCardRaceSelection([rankCard('7', 'MOON'), jokerCard(0)]),
-    ).toMatchObject({ kind: 'PAIR', steps: 3 });
+    expect(evaluatePetCardRaceSelection([rankCard('7', 'MOON'), jokerCard(0)])).toMatchObject({
+      kind: 'PAIR',
+      steps: 3,
+    });
 
-    expect(
-      evaluatePetCardRaceSelection([rankCard('10', 'MOON'), jokerCard(0)]),
-    ).toMatchObject({ kind: 'PAIR', fastBonus: 2, steps: 5 });
+    expect(evaluatePetCardRaceSelection([rankCard('10', 'MOON'), jokerCard(0)])).toMatchObject({
+      kind: 'PAIR',
+      fastBonus: 2,
+      steps: 5,
+    });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -182,9 +185,10 @@ describe('pet card race selections', () => {
       kind: 'TACTIC',
       steps: 0,
     });
-    expect(
-      evaluatePetCardRaceSelection([tacticCard(), rankCard('5', 'MOON')]),
-    ).toMatchObject({ valid: false, reason: 'A tactic card is played on its own' });
+    expect(evaluatePetCardRaceSelection([tacticCard(), rankCard('5', 'MOON')])).toMatchObject({
+      valid: false,
+      reason: 'A tactic card is played on its own',
+    });
   });
 });
 

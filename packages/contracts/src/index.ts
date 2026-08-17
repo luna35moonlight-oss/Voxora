@@ -384,7 +384,7 @@ export const PetCardRaceTrackLength = 14;
 export const PetCardRaceStationSteps = [0, 5, 9, 12] as const;
 /** Cards dealt at each station — the final station deals one extra card. */
 export const PetCardRaceStationDealSizes = [3, 3, 3, 4] as const;
-export const PetCardRaceStationCount = PetCardRaceStationSteps.length;
+export const PetCardRaceStationCount = 4;
 /** Waiting period between card selections. */
 export const PetCardRacePlayCooldownMs = 5_000;
 /** Latency allowance so an honest client is never rejected for being milliseconds early. */
@@ -488,13 +488,7 @@ export const PetCardRaceFastRankStepBonus = 1;
 export const PetCardRaceSuitSchema = z.enum(['MOON', 'STAR', 'CRYSTAL', 'FLAME']);
 export type PetCardRaceSuit = z.infer<typeof PetCardRaceSuitSchema>;
 
-export const PetCardRaceTacticKindSchema = z.enum([
-  'CHASER',
-  'WEIGHTS',
-  'MUD',
-  'SHIELD',
-  'SPRINT',
-]);
+export const PetCardRaceTacticKindSchema = z.enum(['CHASER', 'WEIGHTS', 'MUD', 'SHIELD', 'SPRINT']);
 export type PetCardRaceTacticKind = z.infer<typeof PetCardRaceTacticKindSchema>;
 
 export const PetCardRaceTacticTargetSchema = z.enum([
@@ -514,8 +508,8 @@ export const PetCardRaceTacticDefinitionSchema = z.object({
 });
 export type PetCardRaceTacticDefinition = z.infer<typeof PetCardRaceTacticDefinitionSchema>;
 
-/** Steps a rival loses to weights or a chaser. */
-export const PetCardRaceSlowCards = 1;
+/** Steps a rival loses to weights, mud, or a chaser. */
+export const PetCardRaceSlowSteps = 1;
 /** Steps a sprint card adds to the champion. */
 export const PetCardRaceSprintSteps = 1;
 /** Steps ahead of the champion where a mud stretch is laid down. */
@@ -629,8 +623,8 @@ export const PetCardRaceLaneSchema = z.object({
   racerId: PetCardRaceRacerIdSchema,
   isChampion: z.boolean(),
   step: z.number().int().min(0).max(PetCardRaceTrackLength),
-  /** Run cards this racer will lose to weights, mud, or a chaser before moving again. */
-  slowedCards: z.number().int().min(0),
+  /** Steps this racer loses to weights, mud, or a chaser before it moves again. */
+  slowedSteps: z.number().int().min(0),
   shielded: z.boolean(),
   finishPosition: z.number().int().min(1).max(4).nullable(),
 });
@@ -639,6 +633,7 @@ export type PetCardRaceLane = z.infer<typeof PetCardRaceLaneSchema>;
 export const PetCardRaceEventTypeSchema = z.enum([
   'RACE_START',
   'STATION_DEAL',
+  'CARDS_PLAYED',
   'CHAMPION_ADVANCE',
   'RIVAL_ADVANCE',
   'SLOWED',
