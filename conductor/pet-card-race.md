@@ -18,7 +18,7 @@ run as rivals. Cards do the running:
 
 - every race opens with the same **mixed deal of 8 cards**, and four stations deal more along the way;
 - the player's champion advances only when the player plays cards;
-- rivals advance one run card per **server** tick (every 1.3 s), shared between the three of them, so standing still costs ground;
+- rivals advance one run card per **server** tick (every 2.5 s), shared between the three of them, so standing still costs ground;
 - one attempt is a **meet of three races** and each race needs a **different pet**.
 
 Meet score is the sum of the three race scores, and the daily leaderboard uses the best meet score.
@@ -40,7 +40,7 @@ Meet score is the sum of the three race scores, and the daily leaderboard uses t
 - Unplayed cards stay in hand, so combinations can be assembled across stations.
 - **Five seconds between card selections.** The server enforces the wait (250 ms latency
   allowance) and the client shows the countdown.
-- Rival racers advance on the server clock, one run card every 1.3 s, drawn from a shuffled deck
+- Rival racers advance on the server clock, one run card every 2.5 s, drawn from a shuffled deck
   that holds an equal number of cards per rival. No racer has better odds than another.
 - A race ends when the champion crosses the line, or when all three rivals have crossed.
 - The meet ends after the third race, on forfeit, or on attempt expiry (45 minutes).
@@ -80,6 +80,11 @@ per selection. A joker that stands in for a high rank counts as a high card.
 Steps = base steps + one per high card, and the high-card bonus is capped at two, so four kings is the
 jackpot play at 8 steps on a 14-step track rather than an instant win. Any selection that is not one
 of the combinations above is rejected, and the client shows why before the player commits.
+
+A hand reaches twenty-one cards, which is a lot to scan against a five-second clock, so the client
+offers a **Best play** control that selects the strongest legal combination for the player. It is a
+convenience only: it can never select a card the player was not dealt, and the server still rules on
+whatever is actually played.
 
 ### Tactic cards
 
@@ -150,7 +155,7 @@ four stations dealing 3/3/3/4 extra cards, five seconds between selections, fast
 combination list, two jokers, and the five tactic cards. Everything below was chosen to make those
 rules play well and is recorded as a question rather than a settled product rule (see
 `open-questions.md`): track length 14, station steps 3/6/9/12, the 6-run-card and 2-tactic-card split
-inside the opening deal, the 1.3 s rival tick, the combination step values and the two-step cap on the
+inside the opening deal, the 2.5 s rival tick, the combination step values and the two-step cap on the
 high-card bonus, the two-step cost of a slow effect, the score weights, and the rule that rivals
 answer the second, third, and final stations.
 
@@ -159,8 +164,12 @@ rather than guessing them. A race deals 21 cards, of which about four are tactic
 spending them sensibly produces roughly 20 steps of movement across ten to twelve plays — a little
 over a minute at five seconds a selection. The tactics rivals aim at the champion take about four to
 six steps back off that. A 14-step track sits inside what those 21 cards can cover while leaving the
-rival tactics room to hurt, and at a 1.3 s tick the leading rival arrives at about the same time as a
-player spending cards steadily.
+rival tactics room to hurt.
+
+The rival tick is set for a **person**, not a script. A script plays the instant the cooldown expires;
+someone reading a real hand of cards takes a few seconds longer, and a browser play-test showed a
+tick tuned against the script left a human-paced player with only four or five plays a race and no
+chance of winning. At 2.5 s a player who keeps moving wins most races and a distracted one loses.
 
 Earlier attempts show why this needed measuring rather than guessing: a 14-step track with only 13
 cards a race left the player stranded short of the line every time, an 11-step track with the 8-card
@@ -208,12 +217,22 @@ Verified against a real PostgreSQL database and a running API, not only unit tes
 | Card that was never dealt rejected with 400 | pass |
 | Another player's meet rejected with 403 | pass |
 | Rivals advanced on the server clock while the client only synced | pass |
-| Full three-race meets played through HTTP by a scripted player | 27 races across 9 meets while tuning |
+| Meets played end to end through HTTP by a scripted player | 33 races across 11 meets while tuning |
+| The real mobile card played in a browser against the real API | 2 races played by hand; see below |
 
-The final settings were confirmed over nine consecutive races: **three firsts, three seconds, one
-third, two fourths, and one photo finish**, with meet scores of 56, 122, and 144. Races ran ten to
-twelve plays, about a minute each, and the scripted player used most of its 21 cards. That spread —
-winnable, losable, and scored differently each time — is the outcome the balance was tuned for.
+**Scripted play at a human pace** (a selection roughly every eight seconds) wins 4 of 6 races with
+meet scores of 135 and 171, so the race is winnable by someone who keeps moving and losable by someone
+who does not.
+
+**Hand-played browser check.** The React Native card was rendered in a browser through
+react-native-web against the live API and played by hand. This is what caught the pacing problem: a
+rival tick tuned against a script that plays the instant the cooldown expires left a slower,
+hand-played race with four or five plays and no chance of winning. The tick was slowed to 2.5 s and a
+**Best play** control was added so a twenty-one card hand can be played inside the five second window.
+The same check confirmed the countdown behaves, the hand wraps rather than overflowing, and the lane
+figures move without clipping; it also surfaced three fixes that are now in: the panther was too dark
+against its lane, the racer figures needed an outline to read against the track, and the hand area
+needed a reserved height so a station deal does not shove the button down the screen.
 
 ---
 
@@ -227,6 +246,7 @@ winnable, losable, and scored differently each time — is the outcome the balan
 | Reservation, persistence, finalisation, leaderboard | `apps/api/src/games/pet-card-race/pet-card-race.service.ts` |
 | Endpoints under `/v1/games/pet-card-race` | `apps/api/src/games/pet-card-race/pet-card-race.controller.ts` |
 | Mobile card, lanes, hand, pet figures | `apps/mobile/src/games/PetCardRaceCard.tsx`, `petCardRace.ts`, `PetRacerFigure.tsx` |
+| Best-play suggestion (client convenience, shared rules) | `findBestPetCardRaceSelection` in `packages/domain/src/petCardRace.ts` |
 | Server-owned in-progress state column | `GameAttempt.progressState` (nullable JSON) |
 
 The combination rules live in one shared module so the client preview and the server ruling can

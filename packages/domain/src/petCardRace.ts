@@ -205,6 +205,113 @@ export function evaluatePetCardRaceSelection(
   };
 }
 
+/**
+ * Highest-value legal selection in a hand.
+ *
+ * A hand can reach twenty-one cards, which is a lot to scan against a five second clock, so the
+ * client offers this as a suggestion. It only ever proposes a selection the player could have made
+ * themselves, and the server still rules on whatever is actually played.
+ */
+export function findBestPetCardRaceSelection(
+  cards: readonly PetCardRaceCard[],
+): PetCardRaceCard[] | null {
+  const runCards = cards.filter((card) => card.type !== 'TACTIC');
+  const jokers = runCards.filter((card) => card.type === 'JOKER');
+  const byRank = new Map<PetCardRaceRank, PetCardRaceCard[]>();
+
+  for (const card of runCards) {
+    if (!card.rank) {
+      continue;
+    }
+
+    // Fast cards first, so a chosen group carries as much high-card bonus as it can.
+    const group = byRank.get(card.rank) ?? [];
+    group.push(card);
+    group.sort((a, b) => Number(b.fast) - Number(a.fast));
+    byRank.set(card.rank, group);
+  }
+
+  const candidates: PetCardRaceCard[][] = [];
+  const ranksBySize = [...byRank.entries()].sort(
+    (a, b) => b[1].length - a[1].length || rankIndex(b[0]) - rankIndex(a[0]),
+  );
+
+  // Same-rank groups, optionally topped up with wild cards.
+  for (const [, group] of ranksBySize) {
+    for (let size = 2; size <= 4; size += 1) {
+      for (let wilds = 0; wilds <= jokers.length; wilds += 1) {
+        const natural = group.filter((card) => card.type === 'RANK').slice(0, size - wilds);
+        if (natural.length + wilds === size) {
+          candidates.push([...natural, ...jokers.slice(0, wilds)]);
+        }
+      }
+    }
+  }
+
+  const pairs = ranksBySize
+    .filter(([, group]) => group.filter((card) => card.type === 'RANK').length >= 2)
+    .map(([, group]) => group.filter((card) => card.type === 'RANK').slice(0, 2));
+  const trips = ranksBySize
+    .filter(([, group]) => group.filter((card) => card.type === 'RANK').length >= 3)
+    .map(([, group]) => group.filter((card) => card.type === 'RANK').slice(0, 3));
+
+  if (pairs.length >= 2) {
+    candidates.push([...(pairs[0] ?? []), ...(pairs[1] ?? [])]);
+  }
+
+  if (pairs.length >= 3) {
+    candidates.push([...(pairs[0] ?? []), ...(pairs[1] ?? []), ...(pairs[2] ?? [])]);
+  }
+
+  for (const trip of trips) {
+    const pair = pairs.find((candidate) => candidate[0]?.rank !== trip[0]?.rank);
+    if (pair) {
+      candidates.push([...trip, ...pair]);
+    }
+  }
+
+  // Runs of four consecutive ranks, with wild cards filling any single gaps.
+  for (let start = 0; start + 4 <= PET_CARD_RACE_RANK_ORDER.length; start += 1) {
+    const window = PET_CARD_RACE_RANK_ORDER.slice(start, start + 4);
+    const run: PetCardRaceCard[] = [];
+    let missing = 0;
+    for (const rank of window) {
+      const card = byRank.get(rank)?.find((entry) => entry.type === 'RANK');
+      if (card) {
+        run.push(card);
+      } else {
+        missing += 1;
+      }
+    }
+
+    if (missing <= jokers.length) {
+      candidates.push([...run, ...jokers.slice(0, missing)]);
+    }
+  }
+
+  for (const card of runCards) {
+    candidates.push([card]);
+  }
+
+  let best: { cards: PetCardRaceCard[]; steps: number } | null = null;
+  for (const candidate of candidates) {
+    if (new Set(candidate.map((card) => card.cardId)).size !== candidate.length) {
+      continue;
+    }
+
+    const evaluation = evaluatePetCardRaceSelection(candidate);
+    if (evaluation.valid && (!best || evaluation.steps > best.steps)) {
+      best = { cards: candidate, steps: evaluation.steps };
+    }
+  }
+
+  return best?.cards ?? null;
+}
+
+function rankIndex(rank: PetCardRaceRank): number {
+  return PET_CARD_RACE_RANK_ORDER.indexOf(rank);
+}
+
 /** Race score. Only the server calls this: the client never submits its own score. */
 export function scorePetCardRace(input: {
   championPosition: number;

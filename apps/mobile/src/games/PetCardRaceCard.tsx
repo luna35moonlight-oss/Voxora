@@ -28,6 +28,7 @@ import {
   petCardRaceRacerName,
   petCardRaceSelectionNeedsTarget,
   reconcilePetCardRaceLanes,
+  suggestPetCardRaceSelection,
   summarisePetCardRaceSelection,
 } from './petCardRace';
 
@@ -142,7 +143,9 @@ export function PetCardRaceCard() {
       <View style={styles.meetStrip}>
         <Text style={styles.meetStripText}>
           Race {meet?.raceNumber ?? 1} of {meet?.racesTotal ?? 3}
-          {race ? ` · station ${race.stationsDealt}/${PetCardRaceStationCount}` : ''}
+          {race
+            ? ` · station ${race.stationsDealt}/${PetCardRaceStationCount} · ${race.cardsLeftToDeal} to deal`
+            : ''}
         </Text>
         <Text style={styles.meetStripText}>Meet score {meet?.meetScore ?? 0}</Text>
       </View>
@@ -173,7 +176,17 @@ export function PetCardRaceCard() {
         <>
           <View style={styles.handHeader}>
             <Text style={styles.sectionTitle}>Your hand ({hand.length})</Text>
-            <Text style={styles.sectionMeta}>{race?.cardsLeftToDeal ?? 0} still to deal</Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy || hand.length === 0}
+              onPress={() => {
+                setSelectedIds(suggestPetCardRaceSelection(hand));
+                setTargetRacerId(null);
+              }}
+              style={styles.suggestButton}
+            >
+              <Text style={styles.suggestButtonText}>Best play</Text>
+            </Pressable>
           </View>
 
           <View style={styles.hand}>
@@ -297,14 +310,16 @@ export function PetCardRaceCard() {
         </Text>
       ) : null}
 
-      <View style={styles.infoBox}>
-        <Text style={styles.sectionTitle}>Tactic cards in the deck</Text>
-        {PET_CARD_RACE_TACTIC_DEFINITIONS.map((definition) => (
-          <Text key={definition.kind} style={styles.infoText}>
-            {definition.title}: {definition.description}
-          </Text>
-        ))}
-      </View>
+      {racing ? null : (
+        <View style={styles.infoBox}>
+          <Text style={styles.sectionTitle}>Tactic cards in the deck</Text>
+          {PET_CARD_RACE_TACTIC_DEFINITIONS.map((definition) => (
+            <Text key={definition.kind} style={styles.infoText}>
+              {definition.title}: {definition.description}
+            </Text>
+          ))}
+        </View>
+      )}
 
       <View style={styles.infoBox}>
         <Text style={styles.sectionTitle}>Today</Text>
@@ -521,15 +536,18 @@ function Lane({
         </Text>
       </View>
       <View style={styles.laneTrack} accessibilityLabel={`${name} on step ${lane.step}`}>
-        {mudSteps.map((step, index) => (
-          <View
-            key={`mud-${step}-${index}`}
-            style={[styles.mud, { left: `${petCardRaceLaneProgress(step, trackLength) * 100}%` }]}
-          />
-        ))}
         <View style={styles.finishLine} />
-        <View style={[styles.racerMarker, { left: `${progress * 100}%` }]}>
-          <PetRacerFigure racerId={lane.racerId} faded={lane.finishPosition !== null} />
+        {/* Rail is inset by a figure width so a racer is fully visible at both ends. */}
+        <View style={styles.markerRail}>
+          {mudSteps.map((step, index) => (
+            <View
+              key={`mud-${step}-${index}`}
+              style={[styles.mud, { left: `${petCardRaceLaneProgress(step, trackLength) * 100}%` }]}
+            />
+          ))}
+          <View style={[styles.racerMarker, { left: `${progress * 100}%` }]}>
+            <PetRacerFigure racerId={lane.racerId} faded={lane.finishPosition !== null} />
+          </View>
         </View>
       </View>
       <View style={styles.laneFlags}>
@@ -712,11 +730,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  markerRail: {
+    bottom: 0,
+    justifyContent: 'center',
+    left: 2,
+    position: 'absolute',
+    right: 38,
+    top: 0,
+  },
   mud: {
     backgroundColor: '#7A5A2E',
     borderRadius: 3,
     height: 22,
-    marginLeft: -3,
+    marginLeft: 12,
     opacity: 0.85,
     position: 'absolute',
     width: 6,
@@ -725,12 +751,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.pink,
     bottom: 0,
     position: 'absolute',
-    right: 0,
+    right: 6,
     top: 0,
     width: 3,
   },
   racerMarker: {
-    marginLeft: -30,
     position: 'absolute',
   },
   laneFlags: {
@@ -782,6 +807,21 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
     marginTop: spacing.xs,
+    // Room for two rows up front, so a station deal does not shove the button down the screen.
+    minHeight: 104,
+  },
+  suggestButton: {
+    backgroundColor: colors.background.soft,
+    borderColor: colors.brand.blue,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+  },
+  suggestButtonText: {
+    color: colors.brand.blue,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   handCard: {
     alignItems: 'center',
@@ -789,9 +829,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border.strong,
     borderRadius: radius.sm,
     borderWidth: 1,
-    minWidth: 58,
+    minWidth: 46,
     paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   fastCard: {
     borderColor: colors.brand.blue,
@@ -802,7 +842,7 @@ const styles = StyleSheet.create({
   tacticCard: {
     backgroundColor: '#2A1B44',
     borderColor: colors.brand.purple,
-    minWidth: 104,
+    minWidth: 92,
   },
   handCardSelected: {
     backgroundColor: colors.brand.purple,
@@ -810,8 +850,8 @@ const styles = StyleSheet.create({
   },
   handCardLabel: {
     color: colors.text.primary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
     textAlign: 'center',
   },
   handCardTag: {

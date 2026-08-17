@@ -5,7 +5,7 @@ import type {
   PetCardRaceRacer,
   PetCardRaceRacerId,
 } from '@voxora/contracts';
-import { evaluatePetCardRaceSelection } from '@voxora/domain';
+import { evaluatePetCardRaceSelection, findBestPetCardRaceSelection } from '@voxora/domain';
 
 export type PetCardRaceSelectionSummary = {
   valid: boolean;
@@ -86,6 +86,11 @@ export function summarisePetCardRaceSelection(
 
 export function petCardRaceSelectionNeedsTarget(cards: readonly PetCardRaceCard[]): boolean {
   return cards.length === 1 && cards[0]?.tactic === 'CHASER';
+}
+
+/** Card ids of the strongest legal play in a hand, for the suggestion control. */
+export function suggestPetCardRaceSelection(cards: readonly PetCardRaceCard[]): string[] {
+  return (findBestPetCardRaceSelection(cards) ?? []).map((card) => card.cardId);
 }
 
 export function formatPetCardRacePosition(position: number): string {

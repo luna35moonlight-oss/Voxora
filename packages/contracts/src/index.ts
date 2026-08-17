@@ -400,10 +400,10 @@ export const PetCardRacePlayCooldownMs = 5_000;
 export const PetCardRacePlayCooldownToleranceMs = 250;
 /**
  * One rival run card is revealed on every tick of the server clock, so the three rivals share
- * the stream and each advances roughly every third tick. Tuned so the leading rival reaches the
- * line at about the same time as a player who spends their cards sensibly.
+ * the stream and each advances roughly every third tick. Paced for a person reading a real hand
+ * of cards, not for a script that plays the instant the cooldown ends.
  */
-export const PetCardRaceRivalTickMs = 1_300;
+export const PetCardRaceRivalTickMs = 2_500;
 /**
  * How often the client asks the server what the rivals did. Deliberately slower than the tick:
  * a sync returns every rival card that fell due and the client animates them in order.

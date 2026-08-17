@@ -12,11 +12,12 @@ type Palette = {
 
 /** Lane-sized racer figures tinted to match the Voxora pet art. */
 const palettes: Record<PetCardRaceRacerId, Palette> = {
+  // Lifted well off true black so the panther still reads against the dark lane behind it.
   'shadow-panther': {
-    body: '#1C1230',
-    shade: '#2E1F4D',
-    accent: '#8B5CF6',
-    eye: '#C4B5FD',
+    body: '#4A3680',
+    shade: '#6B51B0',
+    accent: '#C4B5FD',
+    eye: '#F5F3FF',
     crest: 'POINTED_EARS',
   },
   'star-kitten': {
@@ -123,8 +124,11 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 6,
   },
+  // A hairline outline keeps every racer readable against the dark lane.
   body: {
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     borderRadius: 9,
+    borderWidth: 1,
     bottom: 6,
     height: 13,
     left: 8,
@@ -142,7 +146,9 @@ const styles = StyleSheet.create({
   },
   head: {
     alignItems: 'center',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     borderRadius: 8,
+    borderWidth: 1,
     height: 14,
     justifyContent: 'center',
     position: 'absolute',

@@ -3,6 +3,7 @@ import type { PetCardRaceCard, PetCardRaceRank, PetCardRaceSuit } from '@voxora/
 import {
   buildPetCardRaceDeck,
   evaluatePetCardRaceSelection,
+  findBestPetCardRaceSelection,
   scorePetCardRace,
   sortPetCardRaceHand,
 } from './petCardRace';
@@ -233,6 +234,57 @@ describe('pet card race scoring', () => {
         photoFinish: true,
       }).total,
     ).toBe(100);
+  });
+});
+
+describe('pet card race best play suggestion', () => {
+  it('finds the highest scoring combination hiding in a large hand', () => {
+    const hand = [
+      rankCard('3', 'MOON'),
+      rankCard('9', 'STAR'),
+      rankCard('K', 'MOON'),
+      rankCard('K', 'STAR'),
+      rankCard('K', 'CRYSTAL'),
+      rankCard('4', 'FLAME'),
+      tacticCard(),
+    ];
+
+    const best = findBestPetCardRaceSelection(hand);
+
+    expect(best?.map((card) => card.rank)).toEqual(['K', 'K', 'K']);
+    expect(evaluatePetCardRaceSelection(best ?? [])).toMatchObject({
+      kind: 'THREE_OF_A_KIND',
+      steps: 5,
+    });
+  });
+
+  it('prefers a full house over the pair it contains', () => {
+    const best = findBestPetCardRaceSelection([
+      rankCard('5', 'MOON'),
+      rankCard('5', 'STAR'),
+      rankCard('5', 'CRYSTAL'),
+      rankCard('8', 'MOON'),
+      rankCard('8', 'STAR'),
+    ]);
+
+    expect(evaluatePetCardRaceSelection(best ?? [])).toMatchObject({ kind: 'FULL_HOUSE' });
+  });
+
+  it('spends jokers to complete a run of four', () => {
+    const best = findBestPetCardRaceSelection([
+      rankCard('5', 'MOON'),
+      rankCard('6', 'STAR'),
+      rankCard('8', 'CRYSTAL'),
+      jokerCard(0),
+    ]);
+
+    expect(evaluatePetCardRaceSelection(best ?? [])).toMatchObject({ kind: 'RUN_OF_FOUR' });
+  });
+
+  it('falls back to a single card and gives up on a hand of only tactic cards', () => {
+    expect(findBestPetCardRaceSelection([rankCard('2', 'MOON')])?.[0]?.rank).toBe('2');
+    expect(findBestPetCardRaceSelection([tacticCard()])).toBeNull();
+    expect(findBestPetCardRaceSelection([])).toBeNull();
   });
 });
 
