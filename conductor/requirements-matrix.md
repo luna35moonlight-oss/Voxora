@@ -70,6 +70,36 @@ Deferred commercial formulas remain in `open-questions.md`.
 
 ---
 
+## Voxora Pet Card Race — live race with cards as influence (ADR-028, corrected 2026-08-18)
+
+| ID | Requirement | UI | Service/API | Database | Tests | Status |
+|----|-------------|----|-------------|----------|-------|--------|
+| REQ-PCR-001 | All four pets run continuously; cards influence the race | Live race arena with four running pets | Continuous server simulation | `GameAttempt.progressState` | Engine continuous-run tests, e2e all-pets-move | IMPLEMENTED |
+| REQ-PCR-002 | 10 meets per user per UTC server day | Meets remaining display | Atomic daily counter increment | `GameDailyCounter` unique user/game/day | Engine + e2e daily limit | IMPLEMENTED |
+| REQ-PCR-003 | Three races per meet, a different pet each race | Pet selection between races | `POST /meets/:attemptId/races/next` | `GameAttempt.progressState` | Engine meet-completion test | IMPLEMENTED |
+| REQ-PCR-004 | Opening deal of 8 shaped by the chosen pet's race profile | Starting grid states the mix is provisional | `petCardRaceProfileFor` drives the deal | `GameAttempt.progressState` | Domain profile tests, e2e opening deal | IMPLEMENTED (weightings unapproved) |
+| REQ-PCR-005 | Four checkpoints of +3 cards then a final +4, delivered mid-race | Progress rail and hand growth | Checkpoints trigger on the player's pet progress | `GameAttempt.progressState` | Engine checkpoint test, e2e checkpoint shape | IMPLEMENTED |
+| REQ-PCR-006 | Countdown 3 → 2 → 1 → GO before the pets launch | Countdown overlay | Race phase COUNTDOWN until GO | — | Engine countdown test, e2e reject-before-GO | IMPLEMENTED |
+| REQ-PCR-007 | Five seconds between committed plays, not between card selections | Countdown on the commit button | Server compares its own last-play timestamp | — | Engine cooldown test, e2e 409 | IMPLEMENTED |
+| REQ-PCR-008 | Combinations, jokers and fast 10/J/Q/K grant speed | Live selection preview in pace terms | Server re-evaluates every selection | — | Domain combination tests | IMPLEMENTED |
+| REQ-PCR-009 | Five tactic cards as visible race events | Mud on track, shield ring, speed trail, status chips | Engine effects and obstacles | `GameAttempt.progressState` | Engine tactic tests | IMPLEMENTED (placeholder visuals) |
+| REQ-PCR-010 | Positions from race progress, updating on overtakes | Position badges and progress rail | Server ranking by distance | — | Engine + client ordering tests | IMPLEMENTED |
+| REQ-PCR-011 | Continuous, interpolated movement rather than tile hops | Client interpolation from position + speed | Server reports live speed and server time | — | Client interpolation tests | IMPLEMENTED |
+| REQ-PCR-012 | Voxora avatar enters and stays paired with the pet | Trainer row, starting grid, lane identity | `trainerAvatar` + `trainerAvatarId` recorded | `UserAvatarSelection` (existing) | e2e avatar linkage | IMPLEMENTED |
+| REQ-PCR-013 | Rivals are Voxora house trainers, never presented as real players | House trainer labels | `trainerKind: 'HOUSE'` | — | e2e competitor shape | IMPLEMENTED |
+| REQ-PCR-014 | Player chooses their own combination | Manual card selection only | — | — | UI review | IMPLEMENTED |
+| REQ-PCR-015 | Score is server-computed; the client cannot submit one | Score breakdown display | No score field in any request | `GameAttempt.score` | Engine score tests | IMPLEMENTED |
+| REQ-PCR-016 | Race result and meet result are separate; standings update | Result panel plus standings | Engine per-race and per-meet results | `GameAttempt.progressState` | Engine meet tests | IMPLEMENTED |
+| REQ-PCR-017 | Leaderboard by best meet score, ties by earliest completion | Leaderboard list | Service ranking | Completed `GameAttempt` rows | Leaderboard service test | IMPLEMENTED |
+| REQ-PCR-018 | Pets are the actual racers, visually distinct per species | Four silhouettes with own gait | Pet identity carries silhouette and palette | — | Domain identity test, e2e silhouettes | IMPLEMENTED (placeholder art) |
+| REQ-PCR-019 | Race consumes a pet identity so Pet Foundation becomes the source | Honest placeholder wording | `source: DEVELOPMENT_PLACEHOLDER`, `petFoundationIntegrated: false` | No pet tables touched | e2e status test | IMPLEMENTED — PET FOUNDATION INTEGRATION PENDING |
+| REQ-PCR-020 | Capability for future per-pet characteristics without inventing them | Profile note says values are provisional | Data-driven race profiles | — | Domain profile test | CAPABILITY BUILT — RULES NOT INVENTED |
+| REQ-PCR-021 | No rewards, currencies, redeem codes, or pet progression | Honest reward-status copy | `REWARD_RULES_PENDING_OWNER_DECISION` | No ledger or prize writes | Documentation review | OWNER DECISION REQUIRED |
+| REQ-PCR-022 | Produced 3D/Rive pets, following camera, full animation sets | — | — | — | — | ART PIPELINE REQUIRED (ADR-004) |
+| REQ-PCR-023 | Balance values approved by the owner | — | Single `PET_CARD_RACE_BALANCE` table | — | Documentation review | PROVISIONAL — OWNER APPROVAL REQUESTED |
+
+---
+
 ## Phase 3 — Scene Engine and living avatar foundation
 
 | ID | Requirement | UI | Service/API | Database | Tests | Status |

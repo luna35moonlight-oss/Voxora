@@ -13,6 +13,7 @@
 | Experience | Status | Notes |
 |------------|--------|-------|
 | **White Wolf Moon Dash** | Approved Phase 2.5 vertical slice | 10 tries/user/UTC day; server attempt reservation; high score; leaderboard; First/Second prize-position support; manual Legendary Avatar redeem-code process. See `moon-dash.md`. Do not redesign Moon Dash because of this addendum. |
+| **Voxora Pet Card Race** | Corrected and implemented for owner review (ADR-028) | Live race: all four pets run continuously under server simulation and cards influence the race. 10 meets/user/UTC day; three races per meet with a different pet each race; avatar enters the pet; opening deal of 8 shaped by the pet’s race profile; four checkpoints of +3 then a final +4; five seconds between committed plays; combinations, jokers, fast 10/J/Q/K; five tactic cards as visible race events. Server owns simulation, shuffle, deal, and score. **No rewards, currencies, redeem codes, or pet progression.** See `pet-card-race.md`. |
 | **Rock Paper Scissors** | Confirmed **future** game | 10 tries/user/UTC day (UTC server day). Progression purpose includes **server-approved points toward pet skill development**. Implementation belongs with Phase 13 (not Phase 3/4). |
 | **Spinning Wheel** | Confirmed **future** reward/game mechanic | Server-authoritative outcomes. May award Pet Skill-Up Shards, Voxora Diamonds, Voxora Coins, Avatar Skin redeem codes. Attempt/spin rules **not yet defined**. |
 | Future Voxora games | Placeholder | Game Runtime must not be hard-coded around Moon Dash only. |
@@ -42,6 +43,9 @@ Do not force every game into a score-only model.
 ### Moon Dash
 - run; score; high score; attempt; leaderboard
 
+### Pet Card Race
+- continuous race simulation for four avatar+pet competitors; meet of three races; per-race pet selection; server-held card deal at checkpoints; play cooldown; combination ruling as speed influence; race positions; race score; meet score and standings; leaderboard
+
 ### Rock Paper Scissors
 - match/round; user choice; server/opponent outcome; result; pet-skill reward/progression (via Reward Ledger)
 
@@ -61,6 +65,8 @@ Moon Dash and Rock Paper Scissors both use:
 - The **server** determines the UTC day.  
 - Do **not** use device date, device clock, user-selected time zone, or local midnight as the authoritative reset boundary.  
 - Changing the phone clock must never create additional attempts.
+
+Voxora Pet Card Race follows the same principle with **10 meets per user per UTC server day**.
 
 Architecture should prefer a reusable server-authoritative play-limit / attempt-policy component where appropriate, with **configurable per-game policy**.
 

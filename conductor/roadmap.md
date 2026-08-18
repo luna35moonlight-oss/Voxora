@@ -75,6 +75,21 @@ See `moon-dash.md`.
 
 ---
 
+## Voxora Pet Card Race — owner-requested card race slice — IMPLEMENTED FOR OWNER REVIEW
+
+A live race in which pets are the racers, requested by the Product Owner on 2026-08-17 and corrected
+on 2026-08-18. All four pets run continuously under server simulation and the player's cards influence
+the race. One attempt is a three-race meet with a different pet per race; the server owns the
+simulation, the shuffle, the checkpoint deals, the five-second play cooldown, and the score.
+
+This slice awards nothing (no prizes, currencies, redeem codes, or pet progression), creates no pet
+or avatar records, and does **not** change the phase order below. Rock Paper Scissors and the
+Spinning Wheel remain unbuilt, and the full Games Platform remains **Phase 13**.
+
+See `pet-card-race.md`.
+
+---
+
 ## Phase 3 — Scene Engine and living avatar foundation — INTEGRATED FOR OWNER REVIEW
 
 - Scene Engine (Rive primary; Skia/native may supplement)  

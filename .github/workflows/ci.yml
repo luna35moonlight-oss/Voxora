@@ -66,7 +66,7 @@ jobs:
       - name: Format check
         run: pnpm format:check
       - name: Build packages
-        run: pnpm --filter @voxora/contracts --filter @voxora/config --filter @voxora/design-system --filter @voxora/testing run build
+        run: pnpm --filter @voxora/contracts --filter @voxora/config --filter @voxora/design-system --filter @voxora/domain --filter @voxora/testing run build
       - name: Prisma generate + migrate
         run: |
           pnpm --filter @voxora/api prisma:generate

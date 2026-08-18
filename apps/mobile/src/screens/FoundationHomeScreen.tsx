@@ -6,6 +6,7 @@ import { apiClient } from '../services/apiClient';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { notificationArchitecture } from '../services/notificationArchitecture';
 import { WhiteWolfMoonDashCard } from '../games/WhiteWolfMoonDashCard';
+import { PetCardRaceCard } from '../games/PetCardRaceCard';
 import { AvatarFoundationCard } from '../components/AvatarFoundationCard';
 
 export function FoundationHomeScreen({
@@ -67,6 +68,7 @@ export function FoundationHomeScreen({
 
       <AvatarFoundationCard />
       <WhiteWolfMoonDashCard />
+      <PetCardRaceCard />
 
       <View style={styles.panel}>
         <Text style={styles.label}>Signed in as</Text>

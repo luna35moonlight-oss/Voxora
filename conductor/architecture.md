@@ -141,6 +141,8 @@ Server evaluates capabilities (`bondfire.messageQuota`, `pet.battle`, etc.). UI 
 
 All progression rewards write immutable ledger entries with idempotency. Details: `pet-battle-system.md`, `game-system.md`.
 
+**Voxora Pet Card Race (ADR-028, corrected 2026-08-18):** a live race where four avatar+pet competitors run continuously under server simulation and the player's cards influence the race. Server-owned simulation, shuffle, checkpoint deals, play cooldown and score; in-progress state lives in `GameAttempt.progressState`; card rules are shared through `packages/domain`; the racing pet identity is consumed from a pet interface so Phase 4 Pet Foundation becomes the source. It awards nothing and writes no pet or avatar record. See `pet-card-race.md`.
+
 **Games & Rewards Addendum (recorded):** Moon Dash, future Rock Paper Scissors, and Spinning Wheel must use the central Reward Ledger. Confirmed separate reward/currency types include Pet Skill-Up Shards, Voxora Coins, and Voxora Diamonds. Full Games Platform remains Phase 13 — do not implement RPS/Wheel prematurely. See ADR-027.
 
 ### 6.5 Provider Adapter Layer

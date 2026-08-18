@@ -343,6 +343,8 @@ model GameAttempt {
   attemptNumber    Int
   status           String    @default("RESERVED")
   startState       Json?
+  /// Server-owned in-progress game state for multi-step games. Never accepted from a client.
+  progressState    Json?
   completionState  String?
   validationStatus String    @default("RESERVED")
   score            Int?
