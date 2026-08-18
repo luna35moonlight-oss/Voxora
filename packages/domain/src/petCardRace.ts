@@ -1,24 +1,18 @@
 import {
-  PET_CARD_RACE_COMBO_BASE_STEPS,
+  PET_CARD_RACE_BALANCE,
   PET_CARD_RACE_COMBO_LABELS,
   PET_CARD_RACE_FAST_RANKS,
-  PET_CARD_RACE_POSITION_POINTS,
-  PET_CARD_RACE_RANK_ORDER,
+  PET_CARD_RACE_PETS,
+  PET_CARD_RACE_RACE_PROFILES,
   PET_CARD_RACE_TACTIC_DEFINITIONS,
-  PetCardRaceComboScoreCap,
-  PetCardRaceComboScorePoints,
-  PetCardRaceFastBonusCap,
-  PetCardRaceFastRankStepBonus,
   PetCardRaceJokerCount,
-  PetCardRaceMarginBonusCap,
-  PetCardRaceMarginBonusPerStep,
   PetCardRaceMaxRaceScore,
   PetCardRaceMaxSelectionSize,
-  PetCardRacePhotoFinishBonus,
-  PetCardRaceTacticScoreCap,
-  PetCardRaceTacticScorePoints,
   type PetCardRaceCard,
   type PetCardRaceComboKind,
+  type PetCardRacePet,
+  type PetCardRacePetId,
+  type PetCardRaceRaceProfile,
   type PetCardRaceRank,
   type PetCardRaceScoreBreakdown,
   type PetCardRaceSelectionPreview,
@@ -26,7 +20,7 @@ import {
   type PetCardRaceTacticKind,
 } from '@voxora/contracts';
 
-/** Copies of each tactic card in a race deck. */
+/** Copies of each tactic card in a race pool. */
 export const PET_CARD_RACE_TACTIC_COPIES = 2;
 
 const SUIT_GLYPHS: Readonly<Record<PetCardRaceSuit, string>> = {
@@ -55,16 +49,39 @@ export function petCardRaceTacticDefinition(kind: PetCardRaceTacticKind) {
   return definition;
 }
 
+export function petCardRacePet(petId: PetCardRacePetId): PetCardRacePet {
+  const pet = PET_CARD_RACE_PETS.find((entry) => entry.petId === petId);
+  if (!pet) {
+    throw new Error(`Unknown pet card race racer: ${petId}`);
+  }
+
+  return pet;
+}
+
+/** Pet → race profile → opening hand influence. */
+export function petCardRaceProfileFor(petId: PetCardRacePetId): PetCardRaceRaceProfile {
+  const pet = petCardRacePet(petId);
+  const profile = PET_CARD_RACE_RACE_PROFILES.find(
+    (entry) => entry.profileKey === pet.raceProfileKey,
+  );
+
+  if (!profile) {
+    throw new Error(`Pet ${petId} references unknown race profile ${pet.raceProfileKey}`);
+  }
+
+  return profile;
+}
+
 /**
- * Builds one race deck in a fixed order: 52 rank cards, two jokers, and two copies of each
- * tactic card. Shuffling belongs to the server so the order here is never the dealt order.
+ * Builds one race card pool in a fixed order: 52 rank cards, two jokers, and two copies of each
+ * tactic card. Shuffling belongs to the server so this order is never the dealt order.
  */
 export function buildPetCardRaceDeck(cardIdPrefix: string): PetCardRaceCard[] {
   const deck: PetCardRaceCard[] = [];
   const nextId = () => `${cardIdPrefix}-${String(deck.length + 1).padStart(2, '0')}`;
 
   for (const suit of SUIT_ORDER) {
-    for (const rank of PET_CARD_RACE_RANK_ORDER) {
+    for (const rank of PET_CARD_RACE_RANK_ORDER_LOCAL) {
       deck.push({
         cardId: nextId(),
         type: 'RANK',
@@ -107,10 +124,11 @@ export function buildPetCardRaceDeck(cardIdPrefix: string): PetCardRaceCard[] {
 }
 
 /**
- * Evaluates a card selection into the steps a champion gains.
+ * Evaluates a card selection into the speed boost it grants the pet.
  *
- * A jokers stands in for whichever rank helps the selection most, and every 10, J, Q, or K in
- * the selection adds a step because high cards run faster than the rest of the deck.
+ * The pets are already running: a combination makes the player's pet run faster for a while, it does
+ * not move the pet along the course. A joker stands in for whichever rank helps most, and every 10,
+ * J, Q, or K in the selection adds a little more speed up to the configured ceiling.
  */
 export function evaluatePetCardRaceSelection(
   cards: readonly PetCardRaceCard[],
@@ -134,13 +152,16 @@ export function evaluatePetCardRaceSelection(
       return invalidSelection('A tactic card is played on its own');
     }
 
+    const definition = petCardRaceTacticDefinition(tactic.tactic);
+    const tuning = PET_CARD_RACE_BALANCE.tactics[tactic.tactic];
+
     return {
       valid: true,
       kind: 'TACTIC',
-      label: petCardRaceTacticDefinition(tactic.tactic).title,
-      baseSteps: 0,
-      fastBonus: 0,
-      steps: 0,
+      label: definition.title,
+      speedMultiplier: 'multiplier' in tuning ? tuning.multiplier : 1,
+      fastCardBonus: 0,
+      durationMs: 'durationMs' in tuning ? tuning.durationMs : 0,
       reason: null,
     };
   }
@@ -161,32 +182,38 @@ export function evaluatePetCardRaceSelection(
   }
 
   if (jokers > PetCardRaceJokerCount) {
-    return invalidSelection(`A race deck holds only ${PetCardRaceJokerCount} jokers`);
+    return invalidSelection(`A race pool holds only ${PetCardRaceJokerCount} jokers`);
   }
 
   let best: {
     kind: PetCardRaceComboKind;
-    baseSteps: number;
-    fastBonus: number;
-    steps: number;
+    speedMultiplier: number;
+    fastCardBonus: number;
+    durationMs: number;
   } | null = null;
 
   for (const wildRanks of jokerAssignments(jokers)) {
     const ranks = [...fixedRanks, ...wildRanks];
     const kind = classifyRanks(ranks);
-    if (!kind) {
+    if (!kind || kind === 'TACTIC') {
       continue;
     }
 
-    const baseSteps = PET_CARD_RACE_COMBO_BASE_STEPS[kind];
-    const fastBonus = Math.min(
-      ranks.filter((rank) => isPetCardRaceFastRank(rank)).length * PetCardRaceFastRankStepBonus,
-      PetCardRaceFastBonusCap,
+    const boost = PET_CARD_RACE_BALANCE.comboBoosts[kind];
+    const fastCardBonus = Math.min(
+      ranks.filter((rank) => isPetCardRaceFastRank(rank)).length *
+        PET_CARD_RACE_BALANCE.fastCardBonusPerCard,
+      PET_CARD_RACE_BALANCE.fastCardBonusCap,
     );
-    const steps = baseSteps + fastBonus;
+    const speedMultiplier = round2(boost.multiplier + fastCardBonus);
 
-    if (!best || steps > best.steps) {
-      best = { kind, baseSteps, fastBonus, steps };
+    if (!best || speedMultiplier > best.speedMultiplier) {
+      best = {
+        kind,
+        speedMultiplier,
+        fastCardBonus: round2(fastCardBonus),
+        durationMs: boost.durationMs,
+      };
     }
   }
 
@@ -198,154 +225,45 @@ export function evaluatePetCardRaceSelection(
     valid: true,
     kind: best.kind,
     label: PET_CARD_RACE_COMBO_LABELS[best.kind],
-    baseSteps: best.baseSteps,
-    fastBonus: best.fastBonus,
-    steps: best.steps,
+    speedMultiplier: best.speedMultiplier,
+    fastCardBonus: best.fastCardBonus,
+    durationMs: best.durationMs,
     reason: null,
   };
 }
 
-/**
- * Highest-value legal selection in a hand.
- *
- * A hand can reach twenty-one cards, which is a lot to scan against a five second clock, so the
- * client offers this as a suggestion. It only ever proposes a selection the player could have made
- * themselves, and the server still rules on whatever is actually played.
- */
-export function findBestPetCardRaceSelection(
-  cards: readonly PetCardRaceCard[],
-): PetCardRaceCard[] | null {
-  const runCards = cards.filter((card) => card.type !== 'TACTIC');
-  const jokers = runCards.filter((card) => card.type === 'JOKER');
-  const byRank = new Map<PetCardRaceRank, PetCardRaceCard[]>();
-
-  for (const card of runCards) {
-    if (!card.rank) {
-      continue;
-    }
-
-    // Fast cards first, so a chosen group carries as much high-card bonus as it can.
-    const group = byRank.get(card.rank) ?? [];
-    group.push(card);
-    group.sort((a, b) => Number(b.fast) - Number(a.fast));
-    byRank.set(card.rank, group);
-  }
-
-  const candidates: PetCardRaceCard[][] = [];
-  const ranksBySize = [...byRank.entries()].sort(
-    (a, b) => b[1].length - a[1].length || rankIndex(b[0]) - rankIndex(a[0]),
-  );
-
-  // Same-rank groups, optionally topped up with wild cards.
-  for (const [, group] of ranksBySize) {
-    for (let size = 2; size <= 4; size += 1) {
-      for (let wilds = 0; wilds <= jokers.length; wilds += 1) {
-        const natural = group.filter((card) => card.type === 'RANK').slice(0, size - wilds);
-        if (natural.length + wilds === size) {
-          candidates.push([...natural, ...jokers.slice(0, wilds)]);
-        }
-      }
-    }
-  }
-
-  const pairs = ranksBySize
-    .filter(([, group]) => group.filter((card) => card.type === 'RANK').length >= 2)
-    .map(([, group]) => group.filter((card) => card.type === 'RANK').slice(0, 2));
-  const trips = ranksBySize
-    .filter(([, group]) => group.filter((card) => card.type === 'RANK').length >= 3)
-    .map(([, group]) => group.filter((card) => card.type === 'RANK').slice(0, 3));
-
-  if (pairs.length >= 2) {
-    candidates.push([...(pairs[0] ?? []), ...(pairs[1] ?? [])]);
-  }
-
-  if (pairs.length >= 3) {
-    candidates.push([...(pairs[0] ?? []), ...(pairs[1] ?? []), ...(pairs[2] ?? [])]);
-  }
-
-  for (const trip of trips) {
-    const pair = pairs.find((candidate) => candidate[0]?.rank !== trip[0]?.rank);
-    if (pair) {
-      candidates.push([...trip, ...pair]);
-    }
-  }
-
-  // Runs of four consecutive ranks, with wild cards filling any single gaps.
-  for (let start = 0; start + 4 <= PET_CARD_RACE_RANK_ORDER.length; start += 1) {
-    const window = PET_CARD_RACE_RANK_ORDER.slice(start, start + 4);
-    const run: PetCardRaceCard[] = [];
-    let missing = 0;
-    for (const rank of window) {
-      const card = byRank.get(rank)?.find((entry) => entry.type === 'RANK');
-      if (card) {
-        run.push(card);
-      } else {
-        missing += 1;
-      }
-    }
-
-    if (missing <= jokers.length) {
-      candidates.push([...run, ...jokers.slice(0, missing)]);
-    }
-  }
-
-  for (const card of runCards) {
-    candidates.push([card]);
-  }
-
-  let best: { cards: PetCardRaceCard[]; steps: number } | null = null;
-  for (const candidate of candidates) {
-    if (new Set(candidate.map((card) => card.cardId)).size !== candidate.length) {
-      continue;
-    }
-
-    const evaluation = evaluatePetCardRaceSelection(candidate);
-    if (evaluation.valid && (!best || evaluation.steps > best.steps)) {
-      best = { cards: candidate, steps: evaluation.steps };
-    }
-  }
-
-  return best?.cards ?? null;
-}
-
-function rankIndex(rank: PetCardRaceRank): number {
-  return PET_CARD_RACE_RANK_ORDER.indexOf(rank);
-}
-
 /** Race score. Only the server calls this: the client never submits its own score. */
 export function scorePetCardRace(input: {
-  championPosition: number;
+  position: number;
   combosPlayed: number;
   effectiveTactics: number;
-  marginSteps: number;
+  marginMetres: number;
   photoFinish: boolean;
 }): PetCardRaceScoreBreakdown {
-  const positionPoints = PET_CARD_RACE_POSITION_POINTS[input.championPosition - 1] ?? 0;
-  const comboPoints = Math.min(
-    input.combosPlayed * PetCardRaceComboScorePoints,
-    PetCardRaceComboScoreCap,
-  );
+  const scoring = PET_CARD_RACE_BALANCE.scoring;
+  const positionPoints = scoring.positionPoints[input.position - 1] ?? 0;
+  const comboPoints = Math.min(input.combosPlayed * scoring.comboPoints, scoring.comboPointsCap);
   const tacticPoints = Math.min(
-    input.effectiveTactics * PetCardRaceTacticScorePoints,
-    PetCardRaceTacticScoreCap,
+    input.effectiveTactics * scoring.tacticPoints,
+    scoring.tacticPointsCap,
   );
-  const marginBonus =
-    input.championPosition === 1
+  const marginPoints =
+    input.position === 1
       ? Math.min(
-          Math.max(input.marginSteps, 0) * PetCardRaceMarginBonusPerStep,
-          PetCardRaceMarginBonusCap,
+          Math.floor(Math.max(input.marginMetres, 0) / 10) * scoring.marginPointsPerTenMetres,
+          scoring.marginPointsCap,
         )
       : 0;
-  const photoFinishBonus = input.photoFinish ? PetCardRacePhotoFinishBonus : 0;
+  const photoFinishPoints = input.photoFinish ? scoring.photoFinishPoints : 0;
 
   return {
     positionPoints,
     comboPoints,
     tacticPoints,
-    marginBonus,
-    photoFinishBonus,
+    marginPoints,
+    photoFinishPoints,
     total: Math.min(
-      positionPoints + comboPoints + tacticPoints + marginBonus + photoFinishBonus,
+      positionPoints + comboPoints + tacticPoints + marginPoints + photoFinishPoints,
       PetCardRaceMaxRaceScore,
     ),
   };
@@ -355,6 +273,22 @@ export function scorePetCardRace(input: {
 export function sortPetCardRaceHand(cards: readonly PetCardRaceCard[]): PetCardRaceCard[] {
   return [...cards].sort((a, b) => typeWeight(a) - typeWeight(b) || rankWeight(a) - rankWeight(b));
 }
+
+const PET_CARD_RACE_RANK_ORDER_LOCAL: readonly PetCardRaceRank[] = [
+  'A',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10',
+  'J',
+  'Q',
+  'K',
+];
 
 function typeWeight(card: PetCardRaceCard): number {
   switch (card.type) {
@@ -368,7 +302,7 @@ function typeWeight(card: PetCardRaceCard): number {
 }
 
 function rankWeight(card: PetCardRaceCard): number {
-  return card.rank ? PET_CARD_RACE_RANK_ORDER.indexOf(card.rank) : 0;
+  return card.rank ? PET_CARD_RACE_RANK_ORDER_LOCAL.indexOf(card.rank) : 0;
 }
 
 function classifyRanks(ranks: readonly PetCardRaceRank[]): PetCardRaceComboKind | null {
@@ -407,7 +341,7 @@ function classifyRanks(ranks: readonly PetCardRaceRank[]): PetCardRaceComboKind 
 
 function isRunOfFour(ranks: readonly PetCardRaceRank[]): boolean {
   const indexes = [...new Set(ranks)]
-    .map((rank) => PET_CARD_RACE_RANK_ORDER.indexOf(rank))
+    .map((rank) => PET_CARD_RACE_RANK_ORDER_LOCAL.indexOf(rank))
     .sort((a, b) => a - b);
 
   if (indexes.length !== 4) {
@@ -425,7 +359,7 @@ function jokerAssignments(jokers: number): PetCardRaceRank[][] {
   }
 
   const assignments: PetCardRaceRank[][] = [];
-  for (const rank of PET_CARD_RACE_RANK_ORDER) {
+  for (const rank of PET_CARD_RACE_RANK_ORDER_LOCAL) {
     for (const rest of jokerAssignments(jokers - 1)) {
       assignments.push([rank, ...rest]);
     }
@@ -441,7 +375,7 @@ function describeUnplayableSize(size: number): string {
     case 3:
       return 'Three cards must make three of a kind';
     case 4:
-      return 'Four cards must make two pair, a run of four, or four of a kind';
+      return 'Four cards must make two pair, a sequence of four, or four of a kind';
     case 5:
       return 'Five cards must make a full house';
     case 6:
@@ -456,9 +390,13 @@ function invalidSelection(reason: string): PetCardRaceSelectionPreview {
     valid: false,
     kind: null,
     label: 'No combination',
-    baseSteps: 0,
-    fastBonus: 0,
-    steps: 0,
+    speedMultiplier: 1,
+    fastCardBonus: 0,
+    durationMs: 0,
     reason,
   };
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }

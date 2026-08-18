@@ -1,223 +1,345 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { PetCardRaceRacerId } from '@voxora/contracts';
+import type { PetCardRacePet, PetCardRaceSilhouette } from '@voxora/contracts';
 
-type Palette = {
-  body: string;
-  shade: string;
-  accent: string;
-  eye: string;
-  crest: 'POINTED_EARS' | 'TALL_EARS' | 'WOLF_EARS' | 'DRAGON_CREST';
+type Geometry = {
+  legHeight: number;
+  bodyWidth: number;
+  bodyHeight: number;
+  bodyLeft: number;
+  headSize: number;
+  headDrop: number;
+  earHeight: number;
+  earWidth: number;
+  tailWidth: number;
+  tailHeight: number;
+  tailLift: number;
+  neckLift: number;
 };
 
-/** Lane-sized racer figures tinted to match the Voxora pet art. */
-const palettes: Record<PetCardRaceRacerId, Palette> = {
-  // Lifted well off true black so the panther still reads against the dark lane behind it.
-  'shadow-panther': {
-    body: '#4A3680',
-    shade: '#6B51B0',
-    accent: '#C4B5FD',
-    eye: '#F5F3FF',
-    crest: 'POINTED_EARS',
-  },
-  'star-kitten': {
-    body: '#E6D8FF',
-    shade: '#F7EDFF',
-    accent: '#FF9BD2',
-    eye: '#6D28D9',
-    crest: 'TALL_EARS',
-  },
-  'moonlit-wolf': {
-    body: '#EEF3FF',
-    shade: '#CBD8FF',
-    accent: '#A5B4FC',
-    eye: '#6D28D9',
-    crest: 'WOLF_EARS',
-  },
-  'aurora-dragon': {
-    body: '#1F9E93',
-    shade: '#2DD4BF',
-    accent: '#86EFAC',
-    eye: '#0B4F45',
-    crest: 'DRAGON_CREST',
-  },
-};
-
+/**
+ * A racing pet drawn from its own species silhouette.
+ *
+ * Placeholder art until the Pet Foundation and the Rive pipeline provide produced pets, but the
+ * shapes are deliberately different per species: the panther is long and low, the wolf stands taller
+ * on longer legs, the small mystic creature is compact with oversized ears and a big tail, and the
+ * dragon carries a crest and a wing. One movement system, four different bodies.
+ *
+ * Geometry is measured from the ground line up, so heads, ears and tails stay attached at any size.
+ */
 export function PetRacerFigure({
-  racerId,
+  pet,
+  size = 44,
+  gaitPhase = 0,
+  running = false,
   faded = false,
+  effort = 1,
 }: {
-  racerId: PetCardRaceRacerId;
+  pet: PetCardRacePet;
+  size?: number;
+  /** 0..1 through the stride cycle. */
+  gaitPhase?: number;
+  running?: boolean;
   faded?: boolean;
+  /** Below 1 the pet labours, above 1 it stretches out. */
+  effort?: number;
 }) {
-  const palette = palettes[racerId];
+  const unit = size / 44;
+  const geometry = geometryFor(pet.silhouette, unit);
+  const { palette } = pet;
+
+  const stretch = Math.min(Math.max(effort, 0.8), 1.3);
+  const swing = running ? Math.sin(gaitPhase * Math.PI * 2) : 0;
+  const bounce = running ? Math.abs(Math.sin(gaitPhase * Math.PI * 2)) * 1.6 * unit : 0;
+
+  const bodyBottom = geometry.legHeight + bounce;
+  const headBottom = bodyBottom + geometry.bodyHeight - geometry.headDrop + geometry.neckLift;
+  const earBottom = headBottom + geometry.headSize - 2 * unit;
+  const outline = 'rgba(255,255,255,0.38)';
 
   return (
-    <View style={[styles.figure, faded && styles.faded]}>
+    <View
+      accessibilityLabel={`${pet.displayName}, ${pet.speciesFamily}`}
+      style={[styles.figure, { height: 44 * unit, width: 56 * unit, opacity: faded ? 0.5 : 1 }]}
+    >
+      {/* Tail */}
       <View
-        style={[
-          styles.tail,
-          { backgroundColor: palette.accent },
-          palette.crest === 'TALL_EARS' && styles.fluffyTail,
-        ]}
+        style={{
+          position: 'absolute',
+          left: geometry.bodyLeft - geometry.tailWidth * 0.7,
+          bottom: bodyBottom + geometry.tailLift,
+          width: geometry.tailWidth,
+          height: geometry.tailHeight,
+          borderRadius: geometry.tailHeight,
+          backgroundColor: palette.accent,
+          transform: [{ rotate: `${-14 + swing * 10}deg` }],
+        }}
       />
-      <View style={[styles.body, { backgroundColor: palette.body }]} />
-      <View style={[styles.haunch, { backgroundColor: palette.shade }]} />
-      {palette.crest === 'DRAGON_CREST' ? (
+
+      {/* Back leg then front leg, swinging in opposition */}
+      <View
+        style={{
+          position: 'absolute',
+          left: geometry.bodyLeft + geometry.bodyWidth * 0.18,
+          bottom: 0,
+          width: 4 * unit,
+          height: geometry.legHeight + bounce,
+          borderRadius: 2 * unit,
+          backgroundColor: palette.shade,
+          transform: [{ rotate: `${-swing * 22 * stretch}deg` }],
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          left: geometry.bodyLeft + geometry.bodyWidth * 0.7,
+          bottom: 0,
+          width: 4 * unit,
+          height: geometry.legHeight + bounce,
+          borderRadius: 2 * unit,
+          backgroundColor: palette.shade,
+          transform: [{ rotate: `${swing * 22 * stretch}deg` }],
+        }}
+      />
+
+      {/* Body */}
+      <View
+        style={{
+          position: 'absolute',
+          left: geometry.bodyLeft,
+          bottom: bodyBottom,
+          width: geometry.bodyWidth,
+          height: geometry.bodyHeight,
+          borderRadius: geometry.bodyHeight * 0.55,
+          backgroundColor: palette.body,
+          borderColor: outline,
+          borderWidth: 1,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          left: geometry.bodyLeft + geometry.bodyWidth * 0.16,
+          bottom: bodyBottom + geometry.bodyHeight * 0.15,
+          width: geometry.bodyWidth * 0.45,
+          height: geometry.bodyHeight * 0.5,
+          borderRadius: geometry.bodyHeight * 0.3,
+          backgroundColor: palette.shade,
+          opacity: 0.6,
+        }}
+      />
+
+      {/* Species marking on the flank */}
+      <View
+        style={{
+          position: 'absolute',
+          left: geometry.bodyLeft + geometry.bodyWidth * 0.62,
+          bottom: bodyBottom + geometry.bodyHeight * 0.45,
+          width: 4 * unit,
+          height: 4 * unit,
+          borderRadius: 1 * unit,
+          backgroundColor: palette.accent,
+          transform: [{ rotate: '45deg' }],
+        }}
+      />
+
+      {pet.silhouette === 'DRAGON' ? (
+        <View
+          style={{
+            position: 'absolute',
+            left: geometry.bodyLeft + geometry.bodyWidth * 0.3,
+            bottom: bodyBottom + geometry.bodyHeight * 0.7,
+            width: geometry.bodyWidth * 0.5,
+            height: 9 * unit,
+            borderRadius: 5 * unit,
+            backgroundColor: palette.accent,
+            opacity: 0.85,
+            transform: [{ rotate: `${-20 + swing * 8}deg` }],
+          }}
+        />
+      ) : null}
+
+      {/* Head */}
+      <View
+        style={{
+          position: 'absolute',
+          right: 2 * unit,
+          bottom: headBottom,
+          width: geometry.headSize * (pet.silhouette === 'DRAGON' ? 1.15 : 1),
+          height: geometry.headSize,
+          borderRadius: geometry.headSize * 0.5,
+          backgroundColor: palette.body,
+          borderColor: outline,
+          borderWidth: 1,
+        }}
+      >
+        <View
+          style={{
+            position: 'absolute',
+            right: geometry.headSize * 0.24,
+            top: geometry.headSize * 0.3,
+            width: 3 * unit,
+            height: 3 * unit,
+            borderRadius: 2 * unit,
+            backgroundColor: palette.eye,
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            right: 0,
+            bottom: geometry.headSize * 0.16,
+            width: geometry.headSize * 0.48,
+            height: geometry.headSize * 0.3,
+            borderRadius: geometry.headSize * 0.2,
+            backgroundColor: palette.shade,
+          }}
+        />
+      </View>
+
+      {/* Ears, or a dragon crest */}
+      {pet.silhouette === 'DRAGON' ? (
         <>
-          <View
-            style={[styles.crestSpike, styles.crestBack, { borderBottomColor: palette.accent }]}
+          <Spike
+            bottom={earBottom - 2 * unit}
+            colour={palette.accent}
+            height={geometry.earHeight}
+            right={8 * unit}
+            width={geometry.earWidth}
           />
-          <View
-            style={[styles.crestSpike, styles.crestFront, { borderBottomColor: palette.accent }]}
+          <Spike
+            bottom={earBottom - 2 * unit}
+            colour={palette.accent}
+            height={geometry.earHeight * 0.7}
+            right={14 * unit}
+            width={geometry.earWidth}
           />
         </>
       ) : (
         <>
-          <View
-            style={[
-              styles.ear,
-              styles.earBack,
-              { borderBottomColor: palette.body },
-              palette.crest === 'TALL_EARS' && styles.tallEar,
-            ]}
+          <Spike
+            bottom={earBottom}
+            colour={palette.body}
+            height={geometry.earHeight}
+            right={4 * unit}
+            width={geometry.earWidth}
           />
-          <View
-            style={[
-              styles.ear,
-              styles.earFront,
-              { borderBottomColor: palette.body },
-              palette.crest === 'TALL_EARS' && styles.tallEar,
-            ]}
+          <Spike
+            bottom={earBottom}
+            colour={palette.body}
+            height={geometry.earHeight}
+            right={12 * unit}
+            width={geometry.earWidth}
           />
         </>
       )}
-      <View style={[styles.head, { backgroundColor: palette.body }]}>
-        <View style={[styles.eye, { backgroundColor: palette.eye }]} />
-        <View style={[styles.muzzle, { backgroundColor: palette.shade }]} />
-      </View>
-      <View style={[styles.gem, { backgroundColor: palette.accent }]} />
-      <View style={[styles.leg, styles.frontLeg, { backgroundColor: palette.shade }]} />
-      <View style={[styles.leg, styles.backLeg, { backgroundColor: palette.shade }]} />
     </View>
   );
 }
 
+function Spike({
+  bottom,
+  colour,
+  height,
+  right,
+  width,
+}: {
+  bottom: number;
+  colour: string;
+  height: number;
+  right: number;
+  width: number;
+}) {
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        right,
+        bottom,
+        width: 0,
+        height: 0,
+        borderLeftWidth: width / 2,
+        borderRightWidth: width / 2,
+        borderBottomWidth: height,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderBottomColor: colour,
+      }}
+    />
+  );
+}
+
+function geometryFor(silhouette: PetCardRaceSilhouette, unit: number): Geometry {
+  switch (silhouette) {
+    case 'PANTHER':
+      // Long, low and level: a stalker at full stretch.
+      return {
+        legHeight: 9 * unit,
+        bodyWidth: 34 * unit,
+        bodyHeight: 12 * unit,
+        bodyLeft: 8 * unit,
+        headSize: 13 * unit,
+        headDrop: 5 * unit,
+        earHeight: 6 * unit,
+        earWidth: 6 * unit,
+        tailWidth: 18 * unit,
+        tailHeight: 4 * unit,
+        tailLift: 4 * unit,
+        neckLift: 0,
+      };
+    case 'WOLF':
+      // Taller on the leg with upright ears and a bushy tail.
+      return {
+        legHeight: 12 * unit,
+        bodyWidth: 29 * unit,
+        bodyHeight: 13 * unit,
+        bodyLeft: 10 * unit,
+        headSize: 14 * unit,
+        headDrop: 4 * unit,
+        earHeight: 9 * unit,
+        earWidth: 7 * unit,
+        tailWidth: 15 * unit,
+        tailHeight: 8 * unit,
+        tailLift: 3 * unit,
+        neckLift: 2 * unit,
+      };
+    case 'SMALL_MYSTIC':
+      // Compact and fluffy: oversized ears and a comet tail.
+      return {
+        legHeight: 8 * unit,
+        bodyWidth: 23 * unit,
+        bodyHeight: 14 * unit,
+        bodyLeft: 13 * unit,
+        headSize: 15 * unit,
+        headDrop: 3 * unit,
+        earHeight: 12 * unit,
+        earWidth: 7 * unit,
+        tailWidth: 17 * unit,
+        tailHeight: 12 * unit,
+        tailLift: 2 * unit,
+        neckLift: 1 * unit,
+      };
+    case 'DRAGON':
+      // Low reptile stance, crest and wing, long heavy tail.
+      return {
+        legHeight: 9 * unit,
+        bodyWidth: 31 * unit,
+        bodyHeight: 13 * unit,
+        bodyLeft: 9 * unit,
+        headSize: 13 * unit,
+        headDrop: 4 * unit,
+        earHeight: 9 * unit,
+        earWidth: 7 * unit,
+        tailWidth: 20 * unit,
+        tailHeight: 5 * unit,
+        tailLift: 3 * unit,
+        neckLift: 0,
+      };
+  }
+}
+
 const styles = StyleSheet.create({
   figure: {
-    height: 30,
-    width: 34,
+    position: 'relative',
   },
-  faded: {
-    opacity: 0.45,
-  },
-  tail: {
-    borderRadius: 4,
-    height: 5,
-    left: 0,
-    position: 'absolute',
-    top: 9,
-    transform: [{ rotate: '-24deg' }],
-    width: 14,
-  },
-  fluffyTail: {
-    height: 8,
-    borderRadius: 6,
-  },
-  // A hairline outline keeps every racer readable against the dark lane.
-  body: {
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 9,
-    borderWidth: 1,
-    bottom: 6,
-    height: 13,
-    left: 8,
-    position: 'absolute',
-    width: 20,
-  },
-  haunch: {
-    borderRadius: 6,
-    bottom: 8,
-    height: 9,
-    left: 10,
-    opacity: 0.7,
-    position: 'absolute',
-    width: 9,
-  },
-  head: {
-    alignItems: 'center',
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 14,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 0,
-    top: 5,
-    width: 14,
-  },
-  eye: {
-    borderRadius: 2,
-    height: 3,
-    position: 'absolute',
-    right: 4,
-    top: 4,
-    width: 3,
-  },
-  muzzle: {
-    borderRadius: 3,
-    bottom: 2,
-    height: 4,
-    position: 'absolute',
-    right: 1,
-    width: 6,
-  },
-  ear: {
-    borderBottomWidth: 7,
-    borderLeftColor: 'transparent',
-    borderLeftWidth: 3,
-    borderRightColor: 'transparent',
-    borderRightWidth: 3,
-    height: 0,
-    position: 'absolute',
-    top: 0,
-    width: 0,
-  },
-  earBack: { right: 10 },
-  earFront: { right: 2 },
-  tallEar: {
-    borderBottomWidth: 10,
-    top: -3,
-  },
-  crestSpike: {
-    borderBottomWidth: 8,
-    borderLeftColor: 'transparent',
-    borderLeftWidth: 3,
-    borderRightColor: 'transparent',
-    borderRightWidth: 3,
-    height: 0,
-    position: 'absolute',
-    top: -2,
-    width: 0,
-  },
-  crestBack: { right: 11 },
-  crestFront: { right: 3 },
-  gem: {
-    borderRadius: 2,
-    bottom: 12,
-    height: 4,
-    position: 'absolute',
-    right: 12,
-    transform: [{ rotate: '45deg' }],
-    width: 4,
-  },
-  leg: {
-    borderRadius: 2,
-    bottom: 1,
-    height: 6,
-    position: 'absolute',
-    width: 4,
-  },
-  frontLeg: { right: 6 },
-  backLeg: { left: 10 },
 });

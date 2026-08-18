@@ -27,8 +27,8 @@ export class PetCardRaceController {
     @Req() req: AuthenticatedRequest,
     @Body(new ZodValidationPipe(StartPetCardRaceMeetRequestSchema)) body: unknown,
   ) {
-    const { championRacerId } = StartPetCardRaceMeetRequestSchema.parse(body);
-    return this.petCardRace.startMeet(req.user!.userId, championRacerId);
+    const { petId } = StartPetCardRaceMeetRequestSchema.parse(body);
+    return this.petCardRace.startMeet(req.user!.userId, petId);
   }
 
   /** Brings the client up to date with rival advances that happened on the server clock. */
@@ -59,8 +59,8 @@ export class PetCardRaceController {
     @Body(new ZodValidationPipe(StartNextPetCardRaceRequestSchema)) body: unknown,
   ) {
     const { attemptId } = AttemptIdParamSchema.parse(params);
-    const { championRacerId } = StartNextPetCardRaceRequestSchema.parse(body);
-    return this.petCardRace.startNextRace(req.user!.userId, attemptId, championRacerId);
+    const { petId } = StartNextPetCardRaceRequestSchema.parse(body);
+    return this.petCardRace.startNextRace(req.user!.userId, attemptId, petId);
   }
 
   @Post('meets/:attemptId/forfeit')

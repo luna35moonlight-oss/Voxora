@@ -95,11 +95,16 @@ Commercial intention (not hard-coded into entitlement logic): Level 1 R15 / Leve
 | OQ-PET-014 | Pet skill level thresholds / maxima / species multipliers? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
 | OQ-PET-015 | Pet Skill-Up Shard rarity / shards-per-level / upgrade probability? | DEFERRED — OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
 | OQ-GAME-WHEEL-001 | Spinning Wheel spins, reset rules, probabilities, quantities? | OWNER DECISION REQUIRED BEFORE IMPLEMENTATION |
-| OQ-PCR-001 | Pet Card Race rewards / prizes / competition (currently none are awarded)? | **OWNER DECISION REQUIRED BEFORE ANY PET CARD RACE REWARD** |
-| OQ-PCR-002 | Pet Card Race balance values — track length 14, station steps 3/6/9/12, the 6 run / 2 tactic split inside the 8-card opening deal, 2.5 s rival tick, combination step values and the two-step high-card cap, the two-step slow cost, score weights? (owner-stated rules — three races, the 8-card opening deal, 3/3/3/4 station deals, five second wait, fast 10/J/Q/K, combinations, jokers, five tactic cards — are not in question) | PROVISIONAL — OWNER CONFIRMATION REQUESTED (see `pet-card-race.md` §7) |
-| OQ-PCR-003 | Should the rival trainers keep answering every station after the first with one tactic aimed at the champion? | PROVISIONAL — OWNER CONFIRMATION REQUESTED |
-| OQ-PCR-004 | Which real pet species should the four racers map onto once Phase 4 Pet Foundation exists? | DEFERRED — OWNER DECISION REQUIRED (racers are game-local until then) |
-| OQ-PCR-005 | Should Pet Card Race results ever contribute pet skill progression like Rock Paper Scissors? | DEFERRED — OWNER DECISION REQUIRED; nothing is written today |
+| OQ-PCR-001 | Pet Card Race rewards / prizes / competition (none are awarded today)? | **OWNER DECISION REQUIRED BEFORE ANY PET CARD RACE REWARD** |
+| OQ-PCR-002 | Balance values in `PET_CARD_RACE_BALANCE`: course length 700 m, base pace 8 m/s, house pace variation, 3.2 s countdown, checkpoint positions, combination multipliers and durations, tactic strengths, mud size, score weights, race-end grace? | PROVISIONAL — OWNER APPROVAL REQUESTED (see `pet-card-race.md` §8) |
+| OQ-PCR-003 | Should Voxora house trainers use tactics against the player, and how often (currently from checkpoint 2 onward)? | PROVISIONAL — OWNER CONFIRMATION REQUESTED |
+| OQ-PCR-004 | Per-pet opening-card weightings and racing personalities (capability built, values undefined)? | OWNER DECISION REQUIRED — every pet currently shares one neutral profile |
+| OQ-PCR-005 | Future pet characteristics (speed/defensive/tactical tendency, card affinity, sprint, resistance, special skill, progression bonuses)? | CAPABILITY ONLY — OWNER DECISION REQUIRED BEFORE ANY ARE DEFINED |
+| OQ-PCR-006 | Must a Voxora avatar be selected before a meet can start? | PROVISIONAL — racing is allowed today and the card prompts for an avatar |
+| OQ-PCR-007 | Produced 3D/Rive pets, following camera, and per-species animation sets (idle, launch, sprint, mud, chased, shielded, win, lose)? | ART PIPELINE REQUIRED — ADR-004 gate |
+| OQ-PCR-008 | Rewards rail shown in the owner reference presentation? | BLOCKED BY OQ-PCR-001 — no rewards defined, so none are drawn |
+| OQ-PCR-009 | When does Pet Foundation integration replace the development placeholder racers? | PHASE 4 DEPENDENCY — race already consumes a pet identity |
+| OQ-PCR-010 | Real multiplayer opposition instead of Voxora house trainers? | LATER PHASE — house racers are labelled honestly today |
 
 **Confirmed (not inventable):** Rock Paper Scissors is a future game (10 tries/user/UTC day) that contributes server-approved progression points toward pet skill development. Pet Skill-Up Shards are a confirmed reward type. Exact formulas remain deferred. See `game-system.md` / ADR-027. Do not implement RPS, Wheel, Coins, Diamonds, or shard economies in Phase 3.
 

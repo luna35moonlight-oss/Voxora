@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  PetCardRaceCardsPerRace,
+  PET_CARD_RACE_BALANCE,
+  PetCardRaceCheckpointCount,
   PetCardRaceOpeningDealSize,
   PetCardRacePlayCooldownMs,
-  PetCardRaceRivalTickMs,
-  PetCardRaceSlowSteps,
-  PetCardRaceSprintSteps,
-  PetCardRaceStationCount,
-  PetCardRaceStationSteps,
-  PetCardRaceTrackLength,
   type PetCardRaceCard,
-  type PetCardRaceRacerId,
+  type PetCardRacePetId,
   type PetCardRaceRank,
   type PetCardRaceSuit,
   type PetCardRaceTacticKind,
@@ -19,15 +14,18 @@ import { buildPetCardRaceDeck } from '@voxora/domain';
 import {
   createPetCardRaceMeet,
   forfeitPetCardRaceMeet,
-  PetCardRaceRuleError,
+  PET_CARD_RACE_YOU_COMPETITOR_ID,
   playPetCardRaceCards,
+  simulatePetCardRace,
   startNextPetCardRace,
-  syncPetCardRace,
   takePetCardRaceMeetView,
   type PetCardRaceMeetState,
 } from './pet-card-race.engine';
 
-const T0 = Date.UTC(2026, 7, 17, 12, 0, 0);
+const T0 = Date.UTC(2026, 7, 18, 12, 0, 0);
+const balance = PET_CARD_RACE_BALANCE;
+/** First moment the pets are running. */
+const GO = T0 + balance.countdownMs;
 const deck = buildPetCardRaceDeck('spec');
 
 function rank(value: PetCardRaceRank, suit: PetCardRaceSuit): PetCardRaceCard {
@@ -48,8 +46,14 @@ function tactic(kind: PetCardRaceTacticKind): PetCardRaceCard {
   return card;
 }
 
-function meetWithChampion(championRacerId: PetCardRaceRacerId = 'moonlit-wolf') {
-  return createPetCardRaceMeet({ seed: 'seed-pet-card-race', championRacerId, nowMs: T0 });
+function meetWithPet(petId: PetCardRacePetId = 'moonlit-wolf') {
+  return createPetCardRaceMeet({
+    seed: 'seed-pet-card-race',
+    petId,
+    nowMs: T0,
+    trainerAvatarId: 'voxora-guide',
+    trainerAvatarName: 'Voxora Guide',
+  });
 }
 
 function race(meet: PetCardRaceMeetState) {
@@ -61,332 +65,292 @@ function race(meet: PetCardRaceMeetState) {
   return current;
 }
 
+function you(meet: PetCardRaceMeetState) {
+  const competitor = race(meet).competitors.find((entry) => entry.isYou);
+  if (!competitor) {
+    throw new Error('No player competitor');
+  }
+
+  return competitor;
+}
+
+function rivals(meet: PetCardRaceMeetState) {
+  return race(meet).competitors.filter((entry) => !entry.isYou);
+}
+
 function setHand(meet: PetCardRaceMeetState, cards: PetCardRaceCard[]) {
   race(meet).hand = [...cards];
-}
-
-function resetChampionLane(meet: PetCardRaceMeetState) {
-  const lane = race(meet).lanes[race(meet).championRacerId];
-  if (lane) {
-    lane.step = 0;
-    lane.slowedSteps = 0;
-  }
-}
-
-function laneStep(meet: PetCardRaceMeetState, racerId: PetCardRaceRacerId) {
-  return race(meet).lanes[racerId]?.step ?? 0;
-}
-
-/**
- * Step the champion reached on its last card play. Read from the event rather than the lane
- * because opening a station lets the rival trainers answer immediately afterwards.
- */
-function stepAfterLastPlay(meet: PetCardRaceMeetState) {
-  const advances = race(meet).pendingEvents.filter(
-    (event) => event.type === 'CHAMPION_ADVANCE' && event.racerId === race(meet).championRacerId,
-  );
-
-  return advances[advances.length - 1]?.step ?? 0;
 }
 
 function play(
   meet: PetCardRaceMeetState,
   cards: PetCardRaceCard[],
   nowMs: number,
-  targetRacerId?: PetCardRaceRacerId,
+  targetCompetitorId?: string,
 ) {
-  playPetCardRaceCards(meet, { cardIds: cards.map((card) => card.cardId), targetRacerId }, nowMs);
+  playPetCardRaceCards(
+    meet,
+    { cardIds: cards.map((card) => card.cardId), targetCompetitorId },
+    nowMs,
+  );
 }
 
-/**
- * Parks the champion one step from the line with a clean lane. Every station is opened first,
- * because each one lets the rival trainers answer with a tactic that moves or slows the champion.
- */
-function parkChampionOnTheLine(meet: PetCardRaceMeetState, nowMs: number) {
-  const current = race(meet);
-  const lane = current.lanes[current.championRacerId];
-  if (!lane) {
-    throw new Error('No champion lane');
-  }
-
-  for (let pass = 0; pass < 10 && current.stationsDealt < PetCardRaceStationCount; pass += 1) {
-    lane.step = PetCardRaceTrackLength - 1;
-    lane.slowedSteps = 0;
-    syncPetCardRace(meet, nowMs);
-  }
-
-  lane.step = PetCardRaceTrackLength - 1;
-  lane.slowedSteps = 0;
-}
-
-describe('pet card race meet setup', () => {
-  it('starts every race with the same mixed deal of eight cards', () => {
-    const view = takePetCardRaceMeetView(
-      meetWithChampion(),
-      { attemptId: 'a1', attemptNumber: 1 },
-      T0,
-    );
-    const hand = view.currentRace?.hand ?? [];
+describe('pet card race start', () => {
+  it('lines up four competitors, counts down, and deals the opening hand', () => {
+    const meet = meetWithPet();
+    const view = takePetCardRaceMeetView(meet, { attemptId: 'a1', attemptNumber: 1 }, T0);
+    const current = view.currentRace;
 
     expect(view.meetPhase).toBe('RACING');
-    expect(view.raceNumber).toBe(1);
-    expect(view.racesTotal).toBe(3);
-    expect(hand).toHaveLength(PetCardRaceOpeningDealSize);
-    expect(hand.filter((card) => card.type === 'TACTIC')).toHaveLength(2);
-    expect(hand.filter((card) => card.type !== 'TACTIC')).toHaveLength(6);
-    expect(view.currentRace?.stationsDealt).toBe(0);
-    expect(view.currentRace?.cardsLeftToDeal).toBe(13);
-    expect(view.currentRace?.lanes.map((lane) => lane.step)).toEqual([0, 0, 0, 0]);
-    expect(view.currentRace?.lanes.filter((lane) => lane.isChampion)).toHaveLength(1);
-    expect(view.availableRacerIds).not.toContain('moonlit-wolf');
+    expect(current?.phase).toBe('COUNTDOWN');
+    expect(current?.countdownRemainingMs).toBe(balance.countdownMs);
+    expect(current?.competitors).toHaveLength(4);
+    expect(current?.competitors.filter((competitor) => competitor.isYou)).toHaveLength(1);
+    expect(current?.competitors.every((competitor) => competitor.progressMetres === 0)).toBe(true);
+    expect(current?.hand).toHaveLength(PetCardRaceOpeningDealSize);
+    expect(current?.checkpoints).toHaveLength(PetCardRaceCheckpointCount);
+    expect(current?.checkpoints.filter((checkpoint) => checkpoint.isFinal)).toHaveLength(1);
+    expect(current?.checkpoints.map((checkpoint) => checkpoint.cardsAwarded)).toEqual([
+      3, 3, 3, 3, 4,
+    ]);
   });
 
-  it('deals every racer a different opening mix', () => {
-    const first = meetWithChampion('moonlit-wolf');
-    const second = createPetCardRaceMeet({
-      seed: 'another-seed',
-      championRacerId: 'star-kitten',
-      nowMs: T0,
-    });
+  it('pairs the player avatar with the pet and gives every rival a different pet', () => {
+    const meet = meetWithPet('aurora-dragon');
+    const view = takePetCardRaceMeetView(meet, { attemptId: 'a1', attemptNumber: 1 }, T0);
+    const competitors = view.currentRace?.competitors ?? [];
+    const yours = competitors.find((competitor) => competitor.isYou);
 
-    expect(race(first).hand.map((card) => card.label)).not.toEqual(
-      race(second).hand.map((card) => card.label),
+    expect(yours?.pet.petId).toBe('aurora-dragon');
+    expect(yours?.trainerAvatarName).toBe('Voxora Guide');
+    expect(new Set(competitors.map((competitor) => competitor.pet.petId)).size).toBe(4);
+    expect(
+      competitors
+        .filter((competitor) => !competitor.isYou)
+        .every((competitor) => competitor.trainerKind === 'HOUSE'),
+    ).toBe(true);
+  });
+
+  it('keeps the pets still until GO', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, T0 + balance.countdownMs - 100);
+
+    expect(race(meet).phase).toBe('COUNTDOWN');
+    expect(race(meet).competitors.every((competitor) => competitor.progressMetres === 0)).toBe(
+      true,
     );
-  });
-
-  it('deals three extra cards at each station and four at the final one', () => {
-    const meet = meetWithChampion();
-    const current = race(meet);
-    const dealtPerStation: number[] = [];
-
-    // Walk the champion up the track so every station opens.
-    for (const step of PetCardRaceStationSteps) {
-      const lane = current.lanes[current.championRacerId];
-      if (lane) {
-        lane.step = step;
-        lane.slowedSteps = 0;
-      }
-
-      const before = current.hand.length;
-      syncPetCardRace(meet, T0);
-      dealtPerStation.push(current.hand.length - before);
-    }
-
-    expect(dealtPerStation).toEqual([3, 3, 3, 4]);
-    expect(current.stationsDealt).toBe(4);
-    expect(current.hand).toHaveLength(PetCardRaceCardsPerRace);
+    expect(() => play(meet, [rank('2', 'MOON')], T0)).toThrowError(/Wait for GO/);
   });
 });
 
-describe('pet card race card plays', () => {
-  it('advances the champion by the combination value and adds a step per fast card', () => {
-    const meet = meetWithChampion();
-    setHand(meet, [rank('3', 'MOON'), rank('3', 'STAR')]);
+describe('pets run continuously', () => {
+  it('advances every pet on the server clock without any card being played', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO + 5_000);
 
-    play(meet, [rank('3', 'MOON'), rank('3', 'STAR')], T0);
-    expect(stepAfterLastPlay(meet)).toBe(2);
-
-    // Back to the line so the station tactic that answered the first play cannot skew the second.
-    resetChampionLane(meet);
-    setHand(meet, [rank('K', 'MOON'), rank('K', 'STAR')]);
-    play(meet, [rank('K', 'MOON'), rank('K', 'STAR')], T0 + PetCardRacePlayCooldownMs);
-
-    // Two for the pair plus the capped high-card bonus.
-    expect(stepAfterLastPlay(meet)).toBe(4);
-    expect(race(meet).combosPlayed).toBe(2);
+    expect(race(meet).phase).toBe('RUNNING');
+    expect(you(meet).progressMetres).toBeGreaterThan(0);
+    for (const rival of rivals(meet)) {
+      expect(rival.progressMetres).toBeGreaterThan(0);
+    }
   });
 
-  it('holds the player to a five second wait between selections', () => {
-    const meet = meetWithChampion();
+  it('runs the player pet at the base pace when no cards are played', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO + 10_000);
+
+    expect(you(meet).progressMetres).toBeCloseTo(balance.baseSpeedMetresPerSecond * 10, 0);
+  });
+
+  it('reports live speed so the client can interpolate between syncs', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO + 2_000);
+    const view = takePetCardRaceMeetView(meet, { attemptId: 'a1', attemptNumber: 1 }, GO + 2_000);
+    const yours = view.currentRace?.competitors.find((competitor) => competitor.isYou);
+
+    expect(yours?.speedMetresPerSecond).toBeGreaterThan(0);
+    expect(view.currentRace?.serverTimeMs).toBe(GO + 2_000);
+  });
+});
+
+describe('cards influence the running race', () => {
+  it('makes the pet faster for the duration of a combination instead of moving it', () => {
+    const boosted = meetWithPet();
+    const plain = meetWithPet();
+    simulatePetCardRace(boosted, GO);
+    simulatePetCardRace(plain, GO);
+
+    setHand(boosted, [rank('K', 'MOON'), rank('K', 'STAR')]);
+    const before = you(boosted).progressMetres;
+    play(boosted, [rank('K', 'MOON'), rank('K', 'STAR')], GO);
+
+    // The play itself moves nothing: it changes the pace from here on.
+    expect(you(boosted).progressMetres).toBe(before);
+
+    simulatePetCardRace(boosted, GO + 4_000);
+    simulatePetCardRace(plain, GO + 4_000);
+    expect(you(boosted).progressMetres).toBeGreaterThan(you(plain).progressMetres);
+  });
+
+  it('holds the player to a five second wait between committed plays', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
     setHand(meet, [rank('4', 'MOON'), rank('5', 'MOON'), rank('6', 'MOON')]);
 
-    play(meet, [rank('4', 'MOON')], T0);
-
-    expect(() => play(meet, [rank('5', 'MOON')], T0 + 1_000)).toThrowError(PetCardRaceRuleError);
-    expect(() => play(meet, [rank('5', 'MOON')], T0 + 1_000)).toThrowError(/Wait 4s/);
-    expect(() => play(meet, [rank('5', 'MOON')], T0 + PetCardRacePlayCooldownMs)).not.toThrow();
+    play(meet, [rank('4', 'MOON')], GO);
+    expect(() => play(meet, [rank('5', 'MOON')], GO + 1_000)).toThrowError(/Wait 4s/);
+    expect(() => play(meet, [rank('5', 'MOON')], GO + PetCardRacePlayCooldownMs)).not.toThrow();
   });
 
-  it('rejects cards that are not in hand and selections that are not combinations', () => {
-    const meet = meetWithChampion();
+  it('rejects cards that were never dealt and selections that are not combinations', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
     setHand(meet, [rank('4', 'MOON'), rank('9', 'STAR')]);
 
-    expect(() => play(meet, [rank('2', 'FLAME')], T0)).toThrowError(/not in your hand/);
-    expect(() => play(meet, [rank('4', 'MOON'), rank('9', 'STAR')], T0)).toThrowError(
+    expect(() => play(meet, [rank('2', 'FLAME')], GO)).toThrowError(/not in your hand/);
+    expect(() => play(meet, [rank('4', 'MOON'), rank('9', 'STAR')], GO)).toThrowError(
       /must make a pair/,
     );
-    expect(laneStep(meet, 'moonlit-wolf')).toBe(0);
   });
 
-  it('lets a joker stand in for a fast card', () => {
-    const meet = meetWithChampion();
-    const joker = deck.filter((card) => card.type === 'JOKER')[0];
-    if (!joker) {
-      throw new Error('Missing joker');
-    }
+  it('delivers checkpoint cards into the hand while the race keeps running', () => {
+    const meet = meetWithPet();
+    const firstCheckpointMetres = balance.courseMetres * balance.checkpointFractions[0]!;
+    const secondsToFirstCheckpoint = firstCheckpointMetres / balance.baseSpeedMetresPerSecond + 0.5;
 
-    setHand(meet, [rank('Q', 'MOON'), joker]);
-    play(meet, [rank('Q', 'MOON'), joker], T0);
+    simulatePetCardRace(meet, GO + secondsToFirstCheckpoint * 1_000);
 
-    expect(stepAfterLastPlay(meet)).toBe(4);
+    expect(race(meet).checkpointsReached).toBe(1);
+    expect(race(meet).hand.length).toBe(PetCardRaceOpeningDealSize + 3);
+    expect(race(meet).phase).toBe('RUNNING');
+    expect(race(meet).pendingEvents.some((event) => event.type === 'CHECKPOINT_CARDS')).toBe(true);
   });
 });
 
-describe('pet card race tactic cards', () => {
-  it('slows every rival with heavy paws so their next run card is lost', () => {
-    const meet = meetWithChampion();
+describe('tactic cards are visible race events', () => {
+  it('sprints the pet with a burst of speed', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
+    setHand(meet, [tactic('SPRINT')]);
+
+    play(meet, [tactic('SPRINT')], GO);
+
+    expect(you(meet).effects.some((effect) => effect.kind === 'SPRINT')).toBe(true);
+    expect(race(meet).pendingEvents.some((event) => event.type === 'SPRINT')).toBe(true);
+  });
+
+  it('weighs down every rival', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
     setHand(meet, [tactic('WEIGHTS')]);
 
-    play(meet, [tactic('WEIGHTS')], T0);
+    play(meet, [tactic('WEIGHTS')], GO);
 
-    const rivals = ['shadow-panther', 'star-kitten', 'aurora-dragon'] as const;
-    expect(rivals.map((id) => race(meet).lanes[id]?.slowedSteps)).toEqual([
-      PetCardRaceSlowSteps,
-      PetCardRaceSlowSteps,
-      PetCardRaceSlowSteps,
-    ]);
-    expect(race(meet).effectiveTactics).toBe(1);
-
-    syncPetCardRace(meet, T0 + PetCardRaceRivalTickMs * 3);
-
-    const rivalSteps = rivals.map((id) => laneStep(meet, id));
-    expect(rivalSteps.reduce((total, step) => total + step, 0)).toBeLessThan(3);
+    expect(
+      rivals(meet).every((rival) => rival.effects.some((effect) => effect.kind === 'WEIGHTS')),
+    ).toBe(true);
+    expect(race(meet).pendingEvents.some((event) => event.type === 'WEIGHTS')).toBe(true);
   });
 
-  it('chases one named rival back a step and refuses an untargeted or self target', () => {
-    const meet = meetWithChampion();
+  it('chases one named rival and refuses a missing or self target', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
     setHand(meet, [tactic('CHASER'), tactic('CHASER')]);
-    syncPetCardRace(meet, T0 + PetCardRaceRivalTickMs * 6);
+    const target = rivals(meet)[0]!;
 
-    const target = (['shadow-panther', 'star-kitten', 'aurora-dragon'] as const).find(
-      (id) => laneStep(meet, id) > 0,
+    expect(() => play(meet, [tactic('CHASER')], GO)).toThrowError(/Choose which rival/);
+    expect(() => play(meet, [tactic('CHASER')], GO, PET_CARD_RACE_YOU_COMPETITOR_ID)).toThrowError(
+      /cannot be sent after your own pet/,
     );
-    expect(target).toBeDefined();
-    const before = laneStep(meet, target!);
 
-    expect(() => play(meet, [tactic('CHASER')], T0 + PetCardRaceRivalTickMs * 6)).toThrowError(
-      /Choose which rival/,
-    );
-    expect(() =>
-      play(meet, [tactic('CHASER')], T0 + PetCardRaceRivalTickMs * 6, 'moonlit-wolf'),
-    ).toThrowError(/cannot be sent after your own pet/);
+    play(meet, [tactic('CHASER')], GO, target.competitorId);
 
-    play(meet, [tactic('CHASER')], T0 + PetCardRaceRivalTickMs * 6, target);
-    expect(laneStep(meet, target!)).toBe(before - 1);
+    expect(target.effects.some((effect) => effect.kind === 'CHASED')).toBe(true);
+    expect(race(meet).pendingEvents.some((event) => event.type === 'CHASER')).toBe(true);
   });
 
-  it('blocks the next rival tactic with a moon shield', () => {
-    const meet = meetWithChampion();
+  it('puts mud on the course that only hinders rivals', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
+    setHand(meet, [tactic('MUD')]);
+
+    play(meet, [tactic('MUD')], GO);
+    const obstacle = race(meet).obstacles[0];
+
+    expect(obstacle).toMatchObject({ kind: 'MUD', affectsYou: false });
+    expect(obstacle!.endMetres).toBeGreaterThan(obstacle!.startMetres);
+    expect(race(meet).pendingEvents.some((event) => event.type === 'MUD_PLACED')).toBe(true);
+  });
+
+  it('raises a shield that blocks the next house tactic', () => {
+    const meet = meetWithPet();
+    simulatePetCardRace(meet, GO);
     setHand(meet, [tactic('SHIELD')]);
-    play(meet, [tactic('SHIELD')], T0);
-    expect(race(meet).lanes['moonlit-wolf']?.shielded).toBe(true);
+    play(meet, [tactic('SHIELD')], GO);
 
-    const lane = race(meet).lanes['moonlit-wolf'];
-    if (lane) {
-      // Far enough for the second station, which is the first one the rivals answer.
-      lane.step = 7;
-    }
+    expect(you(meet).shielded).toBe(true);
 
-    syncPetCardRace(meet, T0 + PetCardRaceRivalTickMs);
+    // Run far enough for the second checkpoint, which is the first the house answers.
+    const secondCheckpointMetres = balance.courseMetres * balance.checkpointFractions[1]!;
+    simulatePetCardRace(
+      meet,
+      GO + (secondCheckpointMetres / balance.baseSpeedMetresPerSecond + 1) * 1_000,
+    );
 
-    expect(race(meet).stationsDealt).toBe(2);
-    expect(race(meet).lanes['moonlit-wolf']?.shielded).toBe(false);
-    expect(race(meet).lanes['moonlit-wolf']?.slowedSteps).toBe(0);
+    expect(race(meet).checkpointsReached).toBeGreaterThanOrEqual(2);
     expect(race(meet).pendingEvents.some((event) => event.type === 'SHIELD_BLOCKED')).toBe(true);
   });
-
-  it('sprints the champion forward without spending a run card', () => {
-    const meet = meetWithChampion();
-    setHand(meet, [tactic('SPRINT')]);
-    play(meet, [tactic('SPRINT')], T0);
-
-    expect(laneStep(meet, 'moonlit-wolf')).toBe(PetCardRaceSprintSteps);
-  });
 });
 
-describe('pet card race rivals', () => {
-  it('advances rivals on the server clock, one run card per tick', () => {
-    const meet = meetWithChampion();
-    syncPetCardRace(meet, T0 + PetCardRaceRivalTickMs * 4);
+describe('race and meet completion', () => {
+  it('records placements as pets cross the line and scores the race', () => {
+    const meet = meetWithPet();
+    const raceSeconds = balance.courseMetres / balance.baseSpeedMetresPerSecond + 20;
+    simulatePetCardRace(meet, GO + raceSeconds * 1_000);
 
-    const rivalTotal = (['shadow-panther', 'star-kitten', 'aurora-dragon'] as const)
-      .map((id) => laneStep(meet, id))
-      .reduce((total, step) => total + step, 0);
-
-    expect(rivalTotal).toBe(4);
-    expect(laneStep(meet, 'moonlit-wolf')).toBe(0);
+    const result = meet.completedRaces[0];
+    expect(race(meet).phase).toBe('FINISHED');
+    expect(result).toBeDefined();
+    expect(result?.order).toHaveLength(4);
+    expect(result?.order.map((entry) => entry.position)).toEqual([1, 2, 3, 4]);
+    expect(result?.yourPosition).toBeGreaterThanOrEqual(1);
+    expect(result?.score).toBeGreaterThan(0);
+    expect(meet.meetPhase).toBe('RACE_RESULT');
+    expect(meet.standings.reduce((total, standing) => total + standing.points, 0)).toBeGreaterThan(
+      0,
+    );
   });
-});
 
-describe('pet card race meet completion', () => {
-  it('scores a race the champion wins and requires a different pet for the next race', () => {
-    const meet = meetWithChampion();
-    parkChampionOnTheLine(meet, T0);
+  it('requires a different pet for the next race and completes the meet after three', () => {
+    const meet = meetWithPet('moonlit-wolf');
+    const raceMs = (balance.courseMetres / balance.baseSpeedMetresPerSecond + 20) * 1_000;
+    simulatePetCardRace(meet, GO + raceMs);
 
-    setHand(meet, [rank('2', 'MOON')]);
-    play(meet, [rank('2', 'MOON')], T0);
-
-    expect(meet.meetPhase).toBe('RACE_INTERMISSION');
-    expect(meet.completedRaces).toHaveLength(1);
-    expect(meet.completedRaces[0]).toMatchObject({
-      raceNumber: 1,
-      championRacerId: 'moonlit-wolf',
-      championPosition: 1,
-      championCrossedLine: true,
-      score: 50,
-    });
-    expect(meet.completedRaces[0]?.order).toHaveLength(4);
-
-    expect(() => startNextPetCardRace(meet, 'moonlit-wolf', T0 + 1_000)).toThrowError(
+    expect(() => startNextPetCardRace(meet, 'moonlit-wolf', GO + raceMs)).toThrowError(
       /already raced in this meet/,
     );
 
-    startNextPetCardRace(meet, 'aurora-dragon', T0 + 1_000);
-    expect(race(meet).raceNumber).toBe(2);
-    expect(race(meet).championRacerId).toBe('aurora-dragon');
-    expect(meet.usedRacerIds).toEqual(['moonlit-wolf', 'aurora-dragon']);
-  });
+    startNextPetCardRace(meet, 'aurora-dragon', GO + raceMs);
+    simulatePetCardRace(meet, GO + raceMs * 2 + balance.countdownMs);
+    startNextPetCardRace(meet, 'star-kitten', GO + raceMs * 2 + balance.countdownMs);
+    simulatePetCardRace(meet, GO + raceMs * 3 + balance.countdownMs * 2);
 
-  it('completes the meet after three races and totals the score', () => {
-    const meet = meetWithChampion();
-    const champions: PetCardRaceRacerId[] = ['moonlit-wolf', 'aurora-dragon', 'star-kitten'];
-
-    champions.forEach((championRacerId, index) => {
-      if (index > 0) {
-        startNextPetCardRace(meet, championRacerId, T0 + index * 1_000);
-      }
-
-      parkChampionOnTheLine(meet, T0 + index * 1_000);
-      setHand(meet, [rank('2', 'MOON')]);
-      play(meet, [rank('2', 'MOON')], T0 + index * 1_000);
-    });
-
+    expect(meet.completedRaces).toHaveLength(3);
     expect(meet.meetPhase).toBe('COMPLETE');
-    expect(meet.totalScore).toBe(150);
+    expect(meet.usedPetIds).toEqual(['moonlit-wolf', 'aurora-dragon', 'star-kitten']);
 
-    const view = takePetCardRaceMeetView(meet, { attemptId: 'a1', attemptNumber: 2 }, T0);
-    expect(view.result).toMatchObject({ totalScore: 150, wins: 3, bestPosition: 1 });
-    expect(view.completedRaces).toHaveLength(3);
-    expect(view.availableRacerIds).toEqual(['shadow-panther']);
-  });
-
-  it('places the champion last when every rival crosses the line first', () => {
-    const meet = meetWithChampion();
-    syncPetCardRace(meet, T0 + PetCardRaceRivalTickMs * 200);
-
-    expect(meet.completedRaces[0]).toMatchObject({
-      championPosition: 4,
-      championCrossedLine: false,
-    });
-    expect(meet.completedRaces[0]?.breakdown.marginBonus).toBe(0);
+    const view = takePetCardRaceMeetView(meet, { attemptId: 'a1', attemptNumber: 1 }, GO);
+    expect(view.result?.races).toHaveLength(3);
+    expect(view.result?.standings).toHaveLength(4);
+    expect(view.selectablePetIds).toEqual(['shadow-panther']);
   });
 
   it('forfeits a meet without scoring it', () => {
-    const meet = meetWithChampion();
-    forfeitPetCardRaceMeet(meet, T0 + 1_000);
+    const meet = meetWithPet();
+    forfeitPetCardRaceMeet(meet, GO + 1_000);
 
     expect(meet.meetPhase).toBe('FORFEITED');
     expect(meet.totalScore).toBe(0);
-    expect(() => forfeitPetCardRaceMeet(meet, T0 + 2_000)).toThrowError(/already finished/);
+    expect(() => forfeitPetCardRaceMeet(meet, GO + 2_000)).toThrowError(/already finished/);
   });
 });

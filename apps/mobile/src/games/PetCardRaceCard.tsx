@@ -1,18 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import {
-  PET_CARD_RACE_ROSTER,
+  PET_CARD_RACE_PETS,
   PET_CARD_RACE_TACTIC_DEFINITIONS,
-  PetCardRaceOpeningDealSize,
   PetCardRacePlayCooldownMs,
-  PetCardRaceStationCount,
   PetCardRaceSyncIntervalMs,
   type PetCardRaceCard as PetCardRaceCardModel,
-  type PetCardRaceEvent,
-  type PetCardRaceLane,
+  type PetCardRaceCheckpoint,
+  type PetCardRaceCompetitor,
   type PetCardRaceMeetView,
-  type PetCardRaceRacerId,
+  type PetCardRaceObstacle,
+  type PetCardRacePet,
+  type PetCardRacePetId,
   type PetCardRaceRaceResult,
   type PetCardRaceResponse,
   type PetCardRaceStatusResponse,
@@ -21,43 +21,41 @@ import { apiClient } from '../services/apiClient';
 import { secureSessionStore } from '../services/secureSessionStore';
 import { PetRacerFigure } from './PetRacerFigure';
 import {
-  applyPetCardRaceEvent,
+  describePetCardRaceStatus,
   formatPetCardRaceCooldown,
   formatPetCardRacePosition,
-  petCardRaceLaneProgress,
-  petCardRaceRacerName,
+  interpolatePetCardRaceProgress,
+  orderPetCardRaceLiveRacers,
+  petCardRaceCountdownLabel,
+  petCardRaceGaitPhase,
   petCardRaceSelectionNeedsTarget,
-  reconcilePetCardRaceLanes,
-  suggestPetCardRaceSelection,
   summarisePetCardRaceSelection,
 } from './petCardRace';
 
-const revealIntervalMs = 320;
-const logLength = 4;
+const frameIntervalMs = 60;
+const logLength = 3;
 
 export function PetCardRaceCard() {
   const [status, setStatus] = useState<PetCardRaceStatusResponse | null>(null);
   const [meet, setMeet] = useState<PetCardRaceMeetView | null>(null);
-  const [lanes, setLanes] = useState<PetCardRaceLane[]>([]);
-  const [log, setLog] = useState<string[]>([]);
+  const [petChoice, setPetChoice] = useState<PetCardRacePetId | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [targetRacerId, setTargetRacerId] = useState<PetCardRaceRacerId | null>(null);
-  const [championChoice, setChampionChoice] = useState<PetCardRaceRacerId | null>(null);
-  const [cooldownMs, setCooldownMs] = useState(0);
+  const [targetCompetitorId, setTargetCompetitorId] = useState<string | null>(null);
+  const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [, setFrame] = useState(0);
 
-  const queue = useRef<PetCardRaceEvent[]>([]);
   const meetRef = useRef<PetCardRaceMeetView | null>(null);
   const busyRef = useRef(false);
-  const raceKey = useRef<string | null>(null);
-  const needsReconcile = useRef(false);
+  const snapshotAtRef = useRef(Date.now());
+  const raceKeyRef = useRef<string | null>(null);
 
-  const roster = status?.roster ?? [...PET_CARD_RACE_ROSTER];
   const race = meet?.currentRace ?? null;
+  const racing = race?.phase === 'RUNNING' || race?.phase === 'COUNTDOWN';
+  const pets = status?.pets ?? [...PET_CARD_RACE_PETS];
   const hand = race?.hand ?? [];
-  const racing = meet?.meetPhase === 'RACING' && race?.phase === 'RUNNING';
-  const lastResult = meet?.completedRaces[meet.completedRaces.length - 1] ?? null;
+  const sinceSnapshotMs = racing ? Math.max(0, Date.now() - snapshotAtRef.current) : 0;
 
   const selectedCards = useMemo(
     () => selectedIds.flatMap((id) => hand.filter((card) => card.cardId === id)),
@@ -65,66 +63,108 @@ export function PetCardRaceCard() {
   );
   const summary = useMemo(() => summarisePetCardRaceSelection(selectedCards), [selectedCards]);
   const needsTarget = petCardRaceSelectionNeedsTarget(selectedCards);
-  const rivals = lanes.filter((lane) => !lane.isChampion && lane.finishPosition === null);
+
+  const liveRacers = useMemo(
+    () =>
+      race ? orderPetCardRaceLiveRacers(race.competitors, sinceSnapshotMs, race.courseMetres) : [],
+    [race, sinceSnapshotMs],
+  );
+  const liveById = useMemo(
+    () => new Map(liveRacers.map((racer) => [racer.competitorId, racer])),
+    [liveRacers],
+  );
+
+  const cooldownRemainingMs = Math.max(0, (race?.cooldownRemainingMs ?? 0) - sinceSnapshotMs);
+  const countdownRemainingMs = Math.max(0, (race?.countdownRemainingMs ?? 0) - sinceSnapshotMs);
+  const yourCompetitor = race?.competitors.find((competitor) => competitor.isYou) ?? null;
+  const yourPosition = yourCompetitor
+    ? (liveById.get(yourCompetitor.competitorId)?.position ?? yourCompetitor.position)
+    : null;
+  const lastResult = meet?.completedRaces[meet.completedRaces.length - 1] ?? null;
   const attemptsRemaining = status?.attemptsRemainingToday ?? 0;
 
-  const championPickerRacers = useMemo(() => {
+  const selectablePets = useMemo(() => {
     if (!meet || meet.meetPhase === 'COMPLETE' || meet.meetPhase === 'FORFEITED') {
-      return roster;
+      return pets;
     }
 
-    return roster.filter((racer) => meet.availableRacerIds.includes(racer.racerId));
-  }, [meet, roster]);
+    return pets.filter((pet) => meet.selectablePetIds.includes(pet.petId));
+  }, [meet, pets]);
 
-  useEffect(() => {
-    void refreshStatus();
+  const ingest = useCallback((response: PetCardRaceResponse) => {
+    setStatus(response.status);
+    setMeet(response.meet);
+    meetRef.current = response.meet;
+    snapshotAtRef.current = Date.now();
+
+    const current = response.meet.currentRace;
+    if (!current) {
+      raceKeyRef.current = null;
+      return;
+    }
+
+    const key = `${response.meet.attemptId}:${current.raceNumber}`;
+    if (raceKeyRef.current !== key) {
+      raceKeyRef.current = key;
+      setSelectedIds([]);
+      setTargetCompetitorId(null);
+      setLog([]);
+    }
+
+    if (current.events.length > 0) {
+      setLog((entries) =>
+        [...current.events.map((event) => event.message).reverse(), ...entries].slice(0, logLength),
+      );
+    }
   }, []);
 
-  // Reveals server events one at a time so rival run cards animate instead of jumping.
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const next = queue.current.shift();
-      if (next) {
-        setLanes((current) => applyPetCardRaceEvent(current, next));
-        setLog((current) => [next.message, ...current].slice(0, logLength));
+  const syncRace = useCallback(async () => {
+    const current = meetRef.current;
+    if (!current || busyRef.current || current.currentRace === null) {
+      return;
+    }
+
+    if (current.currentRace.phase !== 'RUNNING' && current.currentRace.phase !== 'COUNTDOWN') {
+      return;
+    }
+
+    try {
+      const token = await secureSessionStore.getAccessToken();
+      if (!token) {
         return;
       }
 
-      if (needsReconcile.current) {
-        needsReconcile.current = false;
-        const snapshot = meetRef.current?.currentRace?.lanes;
-        if (snapshot) {
-          setLanes(reconcilePetCardRaceLanes(snapshot));
-        }
-      }
-    }, revealIntervalMs);
-
-    return () => clearInterval(timer);
-  }, []);
+      ingest(await apiClient.syncPetCardRace(token, current.attemptId));
+    } catch {
+      // A missed background sync is harmless: the next snapshot carries authoritative positions.
+    }
+  }, [ingest]);
 
   useEffect(() => {
-    const timer = setInterval(
-      () => setCooldownMs((remaining) => (remaining > 0 ? Math.max(0, remaining - 250) : 0)),
-      250,
-    );
+    void guard(async (token) => {
+      setStatus(await apiClient.petCardRaceStatus(token));
+    });
+  }, []);
 
+  // Keeps the pets moving on screen between server snapshots.
+  useEffect(() => {
+    const timer = setInterval(() => setFrame((frame) => frame + 1), frameIntervalMs);
     return () => clearInterval(timer);
   }, []);
 
-  // The server advances rivals on its own clock, so the client keeps asking what happened.
   useEffect(() => {
     const timer = setInterval(() => {
       void syncRace();
     }, PetCardRaceSyncIntervalMs);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [syncRace]);
 
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
-          <Text style={styles.kicker}>Card race</Text>
+          <Text style={styles.kicker}>Live card race</Text>
           <Text style={styles.title}>Voxora Pet Card Race</Text>
         </View>
         <View style={styles.badge}>
@@ -132,61 +172,73 @@ export function PetCardRaceCard() {
         </View>
       </View>
 
-      <Text style={styles.intro}>
-        Three races, a different pet each race. Every race opens with the same mixed deal of{' '}
-        {PetCardRaceOpeningDealSize} cards and four stations deal more along the way. Cards run your
-        champion: singles crawl, pairs and full houses surge, and 10, J, Q, and K run faster than
-        the rest. Rivals move on the server clock while you wait{' '}
-        {Math.round(PetCardRacePlayCooldownMs / 1000)} seconds between selections.
-      </Text>
-
-      <View style={styles.meetStrip}>
-        <Text style={styles.meetStripText}>
-          Race {meet?.raceNumber ?? 1} of {meet?.racesTotal ?? 3}
-          {race
-            ? ` · station ${race.stationsDealt}/${PetCardRaceStationCount} · ${race.cardsLeftToDeal} to deal`
-            : ''}
-        </Text>
-        <Text style={styles.meetStripText}>Meet score {meet?.meetScore ?? 0}</Text>
-      </View>
-
-      <View style={styles.track}>
-        {(lanes.length > 0 ? lanes : placeholderLanes()).map((lane) => (
-          <Lane
-            key={lane.racerId}
-            lane={lane}
-            mudSteps={race?.mudSteps ?? []}
-            name={petCardRaceRacerName(roster, lane.racerId)}
-            trackLength={race?.trackLength ?? 14}
-          />
-        ))}
-      </View>
-
-      {log.length > 0 ? (
-        <View style={styles.logBox} accessibilityLiveRegion="polite">
-          {log.map((entry, index) => (
-            <Text key={`${entry}-${index}`} style={index === 0 ? styles.logLead : styles.logText}>
-              {entry}
-            </Text>
-          ))}
-        </View>
-      ) : null}
-
-      {racing ? (
+      {racing && race ? (
         <>
+          <View style={styles.meetStrip}>
+            <Text style={styles.meetStripText}>
+              Race {meet?.raceNumber ?? 1} of {meet?.racesTotal ?? 3} ·{' '}
+              {yourPosition ? formatPetCardRacePosition(yourPosition) : '—'}
+            </Text>
+            <Text style={styles.meetStripText}>
+              Checkpoint {race.checkpointsReached}/{race.checkpoints.length} · wins{' '}
+              {status?.raceWins ?? 0}
+            </Text>
+          </View>
+
+          <ProgressRail
+            checkpoints={race.checkpoints}
+            competitors={race.competitors}
+            courseMetres={race.courseMetres}
+            progressOf={(competitorId) => liveById.get(competitorId)?.progressFraction ?? 0}
+          />
+
+          <View style={styles.arena}>
+            {race.competitors.map((competitor) => (
+              <RaceLane
+                key={competitor.competitorId}
+                competitor={competitor}
+                courseMetres={race.courseMetres}
+                obstacles={race.obstacles}
+                position={liveById.get(competitor.competitorId)?.position ?? competitor.position}
+                progressFraction={
+                  liveById.get(competitor.competitorId)?.progressFraction ??
+                  competitor.progressFraction
+                }
+                progressMetres={interpolatePetCardRaceProgress(
+                  competitor,
+                  sinceSnapshotMs,
+                  race.courseMetres,
+                )}
+                running={race.phase === 'RUNNING' && competitor.finishPosition === null}
+              />
+            ))}
+
+            {race.phase === 'COUNTDOWN' ? (
+              <View style={styles.countdownOverlay}>
+                <Text style={styles.countdownText}>
+                  {petCardRaceCountdownLabel(countdownRemainingMs)}
+                </Text>
+                <Text style={styles.countdownHint}>All four pets launch on GO</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {log.length > 0 ? (
+            <View style={styles.logBox} accessibilityLiveRegion="polite">
+              {log.map((entry, index) => (
+                <Text
+                  key={`${entry}-${index}`}
+                  style={index === 0 ? styles.logLead : styles.logText}
+                >
+                  {entry}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+
           <View style={styles.handHeader}>
-            <Text style={styles.sectionTitle}>Your hand ({hand.length})</Text>
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy || hand.length === 0}
-              onPress={() => {
-                setSelectedIds(suggestPetCardRaceSelection(hand));
-                setTargetRacerId(null);
-              }}
-              style={styles.suggestButton}
-            >
-              <Text style={styles.suggestButtonText}>Best play</Text>
-            </Pressable>
+            <Text style={styles.sectionTitle}>Your cards ({hand.length})</Text>
+            <Text style={styles.sectionMeta}>{race.cardsLeftToDeal} still to come</Text>
           </View>
 
           <View style={styles.hand}>
@@ -194,54 +246,50 @@ export function PetCardRaceCard() {
               <HandCard
                 key={card.cardId}
                 card={card}
-                disabled={busy}
+                disabled={busy || race.phase !== 'RUNNING'}
                 onPress={() => toggleCard(card)}
                 selected={selectedIds.includes(card.cardId)}
               />
             ))}
-            {hand.length === 0 ? (
-              <Text style={styles.sectionMeta}>
-                Your hand is empty until the pack reaches the next station.
-              </Text>
-            ) : null}
           </View>
 
-          <View style={styles.summaryBox}>
-            <Text style={summary.valid ? styles.summaryValid : styles.summaryInvalid}>
-              {summary.headline}
-            </Text>
-            {summary.detail ? <Text style={styles.summaryDetail}>{summary.detail}</Text> : null}
-          </View>
+          <Text style={summary.valid ? styles.summaryValid : styles.summaryInvalid}>
+            {summary.headline}
+          </Text>
+          {summary.detail ? <Text style={styles.summaryDetail}>{summary.detail}</Text> : null}
 
           {needsTarget ? (
             <View style={styles.targetRow}>
               <Text style={styles.sectionMeta}>Send the chaser after</Text>
               <View style={styles.chipRow}>
-                {rivals.map((lane) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={lane.racerId}
-                    onPress={() => setTargetRacerId(lane.racerId)}
-                    style={[styles.chip, targetRacerId === lane.racerId && styles.chipSelected]}
-                  >
-                    <Text style={styles.chipText}>
-                      {petCardRaceRacerName(roster, lane.racerId)}
-                    </Text>
-                  </Pressable>
-                ))}
+                {race.competitors
+                  .filter((competitor) => !competitor.isYou && competitor.finishPosition === null)
+                  .map((competitor) => (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={competitor.competitorId}
+                      onPress={() => setTargetCompetitorId(competitor.competitorId)}
+                      style={[
+                        styles.chip,
+                        targetCompetitorId === competitor.competitorId && styles.chipSelected,
+                      ]}
+                    >
+                      <Text style={styles.chipText}>{competitor.pet.displayName}</Text>
+                    </Pressable>
+                  ))}
               </View>
             </View>
           ) : null}
 
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: runDisabled() }}
-            disabled={runDisabled()}
-            onPress={() => void playSelection()}
-            style={[styles.primaryButton, runDisabled() && styles.disabledButton]}
+            accessibilityState={{ disabled: commitDisabled() }}
+            disabled={commitDisabled()}
+            onPress={() => void commitPlay()}
+            style={[styles.primaryButton, commitDisabled() && styles.disabledButton]}
           >
             <Text style={styles.primaryButtonText}>
-              {cooldownMs > 0 ? formatPetCardRaceCooldown(cooldownMs) : 'Run these cards'}
+              {formatPetCardRaceCooldown(cooldownRemainingMs)}
             </Text>
           </Pressable>
 
@@ -251,12 +299,19 @@ export function PetCardRaceCard() {
             onPress={() => void forfeitMeet()}
             style={[styles.secondaryButton, busy && styles.disabledButton]}
           >
-            <Text style={styles.secondaryButtonText}>Forfeit this meet</Text>
+            <Text style={styles.secondaryButtonText}>Leave this meet</Text>
           </Pressable>
         </>
       ) : (
         <>
-          {lastResult ? <RaceResultPanel result={lastResult} roster={roster} /> : null}
+          <Text style={styles.intro}>
+            Three races, a different pet each race. All four pets run the whole way: your cards make
+            your pet faster, slow the rivals, put mud on the course, or shield your pet. You wait{' '}
+            {Math.round(PetCardRacePlayCooldownMs / 1000)} seconds between plays while the race
+            keeps going.
+          </Text>
+
+          {lastResult ? <RaceResultPanel result={lastResult} /> : null}
 
           {meet?.result ? (
             <View style={styles.resultBox}>
@@ -266,31 +321,57 @@ export function PetCardRaceCard() {
                 {meet.result.wins === 1 ? '' : 's'} · best finish{' '}
                 {formatPetCardRacePosition(meet.result.bestPosition)}
               </Text>
+              {meet.result.standings.map((standing) => (
+                <Text key={standing.competitorId} style={styles.resultText}>
+                  {standing.isYou ? 'You' : standing.trainerName}: {standing.points} points
+                </Text>
+              ))}
             </View>
           ) : null}
 
+          <View style={styles.trainerRow}>
+            {status?.trainerAvatar ? (
+              <>
+                <View style={styles.trainerBadge}>
+                  <Text style={styles.trainerInitial}>
+                    {status.trainerAvatar.displayName.slice(0, 1)}
+                  </Text>
+                </View>
+                <Text style={styles.trainerText}>
+                  {status.trainerAvatar.displayName}, your Voxora avatar, enters the pet below
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.trainerText}>
+                Pick your Voxora avatar in the avatar card — your avatar enters the race with your
+                pet
+              </Text>
+            )}
+          </View>
+
           <Text style={styles.sectionTitle}>
-            {meet?.meetPhase === 'RACE_INTERMISSION'
-              ? `Choose your pet for race ${(meet.completedRaces.length ?? 0) + 1}`
+            {meet?.meetPhase === 'RACE_RESULT'
+              ? `Choose your pet for race ${meet.completedRaces.length + 1}`
               : 'Choose the pet for race 1'}
           </Text>
-          <View style={styles.chipRow}>
-            {championPickerRacers.map((racer) => (
+
+          <View style={styles.petGrid}>
+            {selectablePets.map((pet) => (
               <Pressable
                 accessibilityRole="button"
                 disabled={busy}
-                key={racer.racerId}
-                onPress={() => setChampionChoice(racer.racerId)}
-                style={[styles.petChip, championChoice === racer.racerId && styles.chipSelected]}
+                key={pet.petId}
+                onPress={() => setPetChoice(pet.petId)}
+                style={[styles.petCard, petChoice === pet.petId && styles.petCardSelected]}
               >
-                <PetRacerFigure racerId={racer.racerId} />
-                <View style={styles.petChipText}>
-                  <Text style={styles.chipText}>{racer.displayName}</Text>
-                  <Text style={styles.petChipMeta}>{racer.speciesFamily}</Text>
-                </View>
+                <PetRacerFigure pet={pet} size={52} />
+                <Text style={styles.petName}>{pet.displayName}</Text>
+                <Text style={styles.petMeta}>{pet.speciesFamily}</Text>
               </Pressable>
             ))}
           </View>
+
+          {petChoice ? <StartingGrid petId={petChoice} pets={pets} status={status} /> : null}
 
           <Pressable
             accessibilityRole="button"
@@ -301,6 +382,15 @@ export function PetCardRaceCard() {
           >
             <Text style={styles.primaryButtonText}>{startLabel()}</Text>
           </Pressable>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.sectionTitle}>Tactic cards in the pool</Text>
+            {PET_CARD_RACE_TACTIC_DEFINITIONS.map((definition) => (
+              <Text key={definition.kind} style={styles.infoText}>
+                {definition.title}: {definition.description}
+              </Text>
+            ))}
+          </View>
         </>
       )}
 
@@ -310,22 +400,11 @@ export function PetCardRaceCard() {
         </Text>
       ) : null}
 
-      {racing ? null : (
-        <View style={styles.infoBox}>
-          <Text style={styles.sectionTitle}>Tactic cards in the deck</Text>
-          {PET_CARD_RACE_TACTIC_DEFINITIONS.map((definition) => (
-            <Text key={definition.kind} style={styles.infoText}>
-              {definition.title}: {definition.description}
-            </Text>
-          ))}
-        </View>
-      )}
-
       <View style={styles.infoBox}>
         <Text style={styles.sectionTitle}>Today</Text>
         <Text style={styles.infoText}>
-          Meets used: {status?.attemptsUsedToday ?? 0}/{status?.dailyAttemptLimit ?? 10} · best meet
-          score: {status?.bestScore ?? 0} · your rank:{' '}
+          Meets used: {status?.attemptsUsedToday ?? 0}/{status?.dailyAttemptLimit ?? 10} · races
+          won: {status?.raceWins ?? 0} · best meet score: {status?.bestScore ?? 0} · rank:{' '}
           {status?.bestRank ? `#${status.bestRank}` : 'not ranked yet'}
         </Text>
         {status?.leaderboard.map((entry) => (
@@ -337,28 +416,29 @@ export function PetCardRaceCard() {
       </View>
 
       <Text style={styles.finePrint}>
-        Voxora shuffles the deck, deals every station, moves the rivals, and calculates the score.
-        The app never awards prizes, currencies, or pet progression for this race.
+        Voxora runs the race: the shuffle, every pet position, the cooldown and the score are
+        server-owned. These racers are development placeholders until the Pet Foundation provides
+        real pets, and no prizes, currencies, or pet progression are awarded.
       </Text>
     </View>
   );
 
-  function runDisabled(): boolean {
+  function commitDisabled(): boolean {
     return (
-      busy || !racing || !summary.valid || cooldownMs > 0 || (needsTarget && targetRacerId === null)
+      busy ||
+      race?.phase !== 'RUNNING' ||
+      !summary.valid ||
+      cooldownRemainingMs > 0 ||
+      (needsTarget && targetCompetitorId === null)
     );
   }
 
   function startDisabled(): boolean {
-    if (busy || championChoice === null) {
+    if (busy || petChoice === null) {
       return true;
     }
 
-    if (meet?.meetPhase === 'RACE_INTERMISSION') {
-      return false;
-    }
-
-    return attemptsRemaining <= 0;
+    return meet?.meetPhase === 'RACE_RESULT' ? false : attemptsRemaining <= 0;
   }
 
   function startLabel(): string {
@@ -366,20 +446,18 @@ export function PetCardRaceCard() {
       return 'Syncing…';
     }
 
-    if (meet?.meetPhase === 'RACE_INTERMISSION') {
+    const chosen = petChoice ? pets.find((pet) => pet.petId === petChoice)?.displayName : null;
+
+    if (meet?.meetPhase === 'RACE_RESULT') {
       const nextRace = meet.completedRaces.length + 1;
-      return championChoice
-        ? `Start race ${nextRace} with ${petCardRaceRacerName(roster, championChoice)}`
-        : `Choose a pet for race ${nextRace}`;
+      return chosen ? `Race ${nextRace}: line up ${chosen}` : `Choose a pet for race ${nextRace}`;
     }
 
     if (attemptsRemaining <= 0) {
       return 'Daily meet limit reached';
     }
 
-    return championChoice
-      ? `Start meet with ${petCardRaceRacerName(roster, championChoice)}`
-      : 'Choose your first pet';
+    return chosen ? `Start the meet with ${chosen}` : 'Choose your pet';
   }
 
   function toggleCard(card: PetCardRaceCardModel) {
@@ -388,34 +466,26 @@ export function PetCardRaceCard() {
         ? current.filter((id) => id !== card.cardId)
         : [...current, card.cardId],
     );
-    setTargetRacerId(null);
-  }
-
-  async function refreshStatus() {
-    await guard(async (token) => {
-      setStatus(await apiClient.petCardRaceStatus(token));
-    });
+    setTargetCompetitorId(null);
   }
 
   async function startRace() {
-    if (!championChoice) {
+    if (!petChoice) {
       return;
     }
 
     await guard(async (token) => {
       const response =
-        meet && meet.meetPhase === 'RACE_INTERMISSION'
-          ? await apiClient.startNextPetCardRace(token, meet.attemptId, {
-              championRacerId: championChoice,
-            })
-          : await apiClient.startPetCardRaceMeet(token, { championRacerId: championChoice });
+        meet && meet.meetPhase === 'RACE_RESULT'
+          ? await apiClient.startNextPetCardRace(token, meet.attemptId, { petId: petChoice })
+          : await apiClient.startPetCardRaceMeet(token, { petId: petChoice });
 
       ingest(response);
-      setChampionChoice(null);
+      setPetChoice(null);
     });
   }
 
-  async function playSelection() {
+  async function commitPlay() {
     if (!meet || selectedCards.length === 0) {
       return;
     }
@@ -423,12 +493,12 @@ export function PetCardRaceCard() {
     await guard(async (token) => {
       const response = await apiClient.playPetCardRaceCards(token, meet.attemptId, {
         cardIds: selectedCards.map((card) => card.cardId),
-        ...(needsTarget && targetRacerId ? { targetRacerId } : {}),
+        ...(needsTarget && targetCompetitorId ? { targetCompetitorId } : {}),
       });
 
       ingest(response);
       setSelectedIds([]);
-      setTargetRacerId(null);
+      setTargetCompetitorId(null);
     });
   }
 
@@ -442,30 +512,6 @@ export function PetCardRaceCard() {
     });
   }
 
-  /** Background refresh: rivals keep running whether or not the player plays a card. */
-  async function syncRace() {
-    const current = meetRef.current;
-    if (
-      !current ||
-      busyRef.current ||
-      current.meetPhase !== 'RACING' ||
-      current.currentRace?.phase !== 'RUNNING'
-    ) {
-      return;
-    }
-
-    try {
-      const token = await secureSessionStore.getAccessToken();
-      if (!token) {
-        return;
-      }
-
-      ingest(await apiClient.syncPetCardRace(token, current.attemptId));
-    } catch {
-      // A missed background sync is harmless: the next response carries the authoritative lanes.
-    }
-  }
-
   async function guard(action: (token: string) => Promise<void>) {
     setBusy(true);
     busyRef.current = true;
@@ -473,7 +519,7 @@ export function PetCardRaceCard() {
     try {
       const token = await secureSessionStore.getAccessToken();
       if (!token) {
-        throw new Error('Sign in again to play the Pet Card Race');
+        throw new Error('Sign in again to enter the Pet Card Race');
       }
 
       await action(token);
@@ -484,76 +530,203 @@ export function PetCardRaceCard() {
       busyRef.current = false;
     }
   }
-
-  function ingest(response: PetCardRaceResponse) {
-    setStatus(response.status);
-    setMeet(response.meet);
-    meetRef.current = response.meet;
-
-    const current = response.meet.currentRace;
-    if (!current) {
-      queue.current = [];
-      setLanes([]);
-      raceKey.current = null;
-      return;
-    }
-
-    const key = `${response.meet.attemptId}:${current.raceNumber}`;
-    if (raceKey.current !== key) {
-      raceKey.current = key;
-      queue.current = [];
-      setLog([]);
-      setSelectedIds([]);
-      setTargetRacerId(null);
-      setLanes(reconcilePetCardRaceLanes(current.lanes));
-    }
-
-    queue.current = [...queue.current, ...current.events];
-    needsReconcile.current = true;
-    setCooldownMs(current.cooldownRemainingMs);
-  }
 }
 
-function Lane({
-  lane,
-  mudSteps,
-  name,
-  trackLength,
+/** START → checkpoints → final checkpoint → FINISH, with every racer's place on the course. */
+function ProgressRail({
+  checkpoints,
+  competitors,
+  courseMetres,
+  progressOf,
 }: {
-  lane: PetCardRaceLane;
-  mudSteps: readonly number[];
-  name: string;
-  trackLength: number;
+  checkpoints: readonly PetCardRaceCheckpoint[];
+  competitors: readonly PetCardRaceCompetitor[];
+  courseMetres: number;
+  progressOf: (competitorId: string) => number;
 }) {
-  const progress = petCardRaceLaneProgress(lane.step, trackLength);
+  return (
+    <View style={styles.railBlock}>
+      <View style={styles.railLabels}>
+        <Text style={styles.railLabel}>START</Text>
+        <Text style={styles.railLabel}>FINISH</Text>
+      </View>
+      <View style={styles.rail}>
+        {checkpoints.map((checkpoint) => (
+          <View
+            key={checkpoint.index}
+            style={[
+              styles.railCheckpoint,
+              checkpoint.isFinal && styles.railFinalCheckpoint,
+              checkpoint.reached && styles.railCheckpointReached,
+              { left: `${checkpoint.atFraction * 100}%` },
+            ]}
+          />
+        ))}
+        <View style={styles.railFinish} />
+        {competitors.map((competitor) => (
+          <View
+            key={competitor.competitorId}
+            style={[
+              styles.railMarker,
+              {
+                backgroundColor: competitor.pet.palette.accent,
+                borderColor: competitor.isYou ? colors.text.primary : 'transparent',
+                left: `${progressOf(competitor.competitorId) * 100}%`,
+              },
+            ]}
+          />
+        ))}
+      </View>
+      <View style={styles.railLegendRow}>
+        {checkpoints.map((checkpoint) => (
+          <Text key={checkpoint.index} style={styles.railLegend}>
+            {checkpoint.isFinal
+              ? `final +${checkpoint.cardsAwarded}`
+              : `+${checkpoint.cardsAwarded}`}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function RaceLane({
+  competitor,
+  courseMetres,
+  obstacles,
+  position,
+  progressFraction,
+  progressMetres,
+  running,
+}: {
+  competitor: PetCardRaceCompetitor;
+  courseMetres: number;
+  obstacles: readonly PetCardRaceObstacle[];
+  position: number;
+  progressFraction: number;
+  progressMetres: number;
+  running: boolean;
+}) {
+  const laneMud = obstacles.filter((obstacle) => obstacle.affectsYou === competitor.isYou);
+  const shielded = competitor.statuses.some((status) => status.kind === 'SHIELDED');
+  const slowed = competitor.statuses.some(
+    (status) => status.kind === 'WEIGHTS' || status.kind === 'CHASED' || status.kind === 'MUD',
+  );
+  const boosted = competitor.statuses.some(
+    (status) => status.kind === 'SPRINT' || status.kind === 'BOOST',
+  );
 
   return (
-    <View style={styles.lane}>
-      <View style={styles.laneLabel}>
-        <Text style={lane.isChampion ? styles.laneNameChampion : styles.laneName}>{name}</Text>
-        <Text style={styles.laneMeta}>
-          {lane.finishPosition ? formatPetCardRacePosition(lane.finishPosition) : `${lane.step}`}
-        </Text>
-      </View>
-      <View style={styles.laneTrack} accessibilityLabel={`${name} on step ${lane.step}`}>
-        <View style={styles.finishLine} />
-        {/* Rail is inset by a figure width so a racer is fully visible at both ends. */}
-        <View style={styles.markerRail}>
-          {mudSteps.map((step, index) => (
-            <View
-              key={`mud-${step}-${index}`}
-              style={[styles.mud, { left: `${petCardRaceLaneProgress(step, trackLength) * 100}%` }]}
-            />
+    <View style={[styles.lane, competitor.isYou && styles.laneYours]}>
+      <View style={styles.laneHeader}>
+        <View style={styles.positionBadge}>
+          <Text style={styles.positionText}>{position}</Text>
+        </View>
+        <View style={styles.laneIdentity}>
+          <Text style={competitor.isYou ? styles.lanePetYours : styles.lanePet}>
+            {competitor.pet.displayName}
+          </Text>
+          <Text style={styles.laneTrainer}>
+            {competitor.isYou
+              ? (competitor.trainerAvatarName ?? 'You')
+              : competitor.trainerName.replace(' (Voxora house trainer)', '')}
+          </Text>
+        </View>
+        <View style={styles.laneStatuses}>
+          {competitor.statuses.slice(0, 2).map((statusEffect, index) => (
+            <Text
+              key={`${statusEffect.kind}-${index}`}
+              style={[
+                styles.statusChip,
+                statusEffect.kind === 'SHIELDED' && styles.statusShield,
+                (statusEffect.kind === 'SPRINT' || statusEffect.kind === 'BOOST') &&
+                  styles.statusBoost,
+              ]}
+            >
+              {describePetCardRaceStatus(statusEffect)}
+            </Text>
           ))}
-          <View style={[styles.racerMarker, { left: `${progress * 100}%` }]}>
-            <PetRacerFigure racerId={lane.racerId} faded={lane.finishPosition !== null} />
+        </View>
+      </View>
+
+      <View style={styles.laneTrack}>
+        {laneMud.map((obstacle) => (
+          <View
+            key={obstacle.obstacleId}
+            style={[
+              styles.mud,
+              {
+                left: `${(obstacle.startMetres / courseMetres) * 100}%`,
+                width: `${((obstacle.endMetres - obstacle.startMetres) / courseMetres) * 100}%`,
+              },
+            ]}
+          />
+        ))}
+        <View style={styles.laneFinishLine} />
+        <View style={styles.laneRail}>
+          <View style={[styles.racerHolder, { left: `${progressFraction * 100}%` }]}>
+            {shielded ? <View style={styles.shieldRing} /> : null}
+            {boosted ? <View style={styles.speedTrail} /> : null}
+            <PetRacerFigure
+              pet={competitor.pet}
+              size={44}
+              gaitPhase={petCardRaceGaitPhase(progressMetres)}
+              running={running}
+              faded={competitor.finishPosition !== null}
+              effort={slowed ? 0.85 : boosted ? 1.25 : 1}
+            />
           </View>
         </View>
       </View>
-      <View style={styles.laneFlags}>
-        {lane.shielded ? <Text style={styles.flagShield}>shield</Text> : null}
-        {lane.slowedSteps > 0 ? <Text style={styles.flagSlow}>-{lane.slowedSteps}</Text> : null}
+    </View>
+  );
+}
+
+/** The four teams that line up: each Voxora avatar with the pet running for them. */
+function StartingGrid({
+  petId,
+  pets,
+  status,
+}: {
+  petId: PetCardRacePetId;
+  pets: readonly PetCardRacePet[];
+  status: PetCardRaceStatusResponse | null;
+}) {
+  const yours = pets.find((pet) => pet.petId === petId);
+  const houseNames = ['Vale', 'Orin', 'Sable'];
+  const rivals = pets.filter((pet) => pet.petId !== petId);
+
+  return (
+    <View style={styles.gridBox}>
+      <Text style={styles.sectionTitle}>Starting grid</Text>
+      <View style={styles.gridRow}>
+        <PetRacerFigure pet={yours ?? pets[0]!} size={40} />
+        <View style={styles.gridIdentity}>
+          <Text style={styles.gridTrainer}>
+            {status?.trainerAvatar?.displayName ?? 'Your avatar'} · you
+          </Text>
+          <Text style={styles.gridPet}>
+            {yours?.displayName} the {yours?.speciesFamily}
+          </Text>
+        </View>
       </View>
+      {rivals.map((pet, index) => (
+        <View key={pet.petId} style={styles.gridRow}>
+          <PetRacerFigure pet={pet} size={40} />
+          <View style={styles.gridIdentity}>
+            <Text style={styles.gridTrainer}>
+              {houseNames[index] ?? 'House'} · Voxora house trainer
+            </Text>
+            <Text style={styles.gridPet}>
+              {pet.displayName} the {pet.speciesFamily}
+            </Text>
+          </View>
+        </View>
+      ))}
+      <Text style={styles.infoText}>
+        Opening deal follows the pet you enter. Per-pet card tendencies are not defined yet, so
+        every pet currently opens on the same neutral mix.
+      </Text>
     </View>
   );
 }
@@ -590,46 +763,27 @@ function HandCard({
   );
 }
 
-function RaceResultPanel({
-  result,
-  roster,
-}: {
-  result: PetCardRaceRaceResult;
-  roster: PetCardRaceStatusResponse['roster'];
-}) {
+function RaceResultPanel({ result }: { result: PetCardRaceRaceResult }) {
   return (
     <View style={styles.resultBox}>
       <Text style={styles.sectionTitle}>
-        Race {result.raceNumber}: {petCardRaceRacerName(roster, result.championRacerId)} finished{' '}
-        {formatPetCardRacePosition(result.championPosition)}
+        Race {result.raceNumber}: you finished {formatPetCardRacePosition(result.yourPosition)}
       </Text>
       <Text style={styles.resultText}>
         {result.score} points — {result.breakdown.positionPoints} finish,{' '}
         {result.breakdown.comboPoints} combinations, {result.breakdown.tacticPoints} tactics,{' '}
-        {result.breakdown.marginBonus} margin
-        {result.photoFinish ? `, ${result.breakdown.photoFinishBonus} photo finish` : ''}
+        {result.breakdown.marginPoints} margin
+        {result.photoFinish ? `, ${result.breakdown.photoFinishPoints} photo finish` : ''}
       </Text>
-      <Text style={styles.resultText}>
-        {result.order
-          .map(
-            (entry) =>
-              `${formatPetCardRacePosition(entry.position)} ${petCardRaceRacerName(roster, entry.racerId)}`,
-          )
-          .join(' · ')}
-      </Text>
+      {result.order.map((entry) => (
+        <Text key={entry.competitorId} style={styles.resultText}>
+          {formatPetCardRacePosition(entry.position)} {entry.petId.split('-').slice(-1)[0]} ·{' '}
+          {entry.isYou ? 'you' : entry.trainerName.replace(' (Voxora house trainer)', '')}
+          {entry.crossedLine ? '' : ' (did not finish)'}
+        </Text>
+      ))}
     </View>
   );
-}
-
-function placeholderLanes(): PetCardRaceLane[] {
-  return PET_CARD_RACE_ROSTER.map((racer, index) => ({
-    racerId: racer.racerId,
-    isChampion: index === 0,
-    step: 0,
-    slowedSteps: 0,
-    shielded: false,
-    finishPosition: null,
-  }));
 }
 
 const styles = StyleSheet.create({
@@ -694,81 +848,204 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
-  track: {
-    backgroundColor: '#1A1030',
+  railBlock: { marginTop: spacing.sm },
+  railLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  railLabel: {
+    color: colors.text.muted,
+    fontSize: typography.size.xs,
+    letterSpacing: 1,
+  },
+  rail: {
+    backgroundColor: '#241844',
+    borderRadius: radius.pill,
+    height: 14,
+    justifyContent: 'center',
+    marginTop: spacing.xxs,
+    overflow: 'hidden',
+  },
+  railCheckpoint: {
+    backgroundColor: colors.border.strong,
+    bottom: 0,
+    position: 'absolute',
+    top: 0,
+    width: 2,
+  },
+  railFinalCheckpoint: {
+    backgroundColor: colors.state.warning,
+    width: 3,
+  },
+  railCheckpointReached: {
+    backgroundColor: colors.brand.blue,
+  },
+  railFinish: {
+    backgroundColor: colors.brand.pink,
+    bottom: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 3,
+  },
+  railMarker: {
+    borderRadius: 5,
+    borderWidth: 1,
+    height: 10,
+    marginLeft: -5,
+    position: 'absolute',
+    width: 10,
+  },
+  railLegendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xxs,
+  },
+  railLegend: {
+    color: colors.text.muted,
+    fontSize: typography.size.xs,
+  },
+  arena: {
+    backgroundColor: '#170F2C',
     borderColor: colors.border.strong,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: spacing.xs,
     marginTop: spacing.sm,
+    overflow: 'hidden',
     padding: spacing.sm,
+    position: 'relative',
   },
   lane: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRadius: radius.sm,
+    paddingBottom: spacing.xxs,
+  },
+  laneYours: {
+    backgroundColor: 'rgba(139,92,246,0.14)',
+  },
+  laneHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
+    paddingHorizontal: spacing.xxs,
+    paddingTop: spacing.xxs,
   },
-  laneLabel: { width: 64 },
-  laneName: {
-    color: colors.text.secondary,
-    fontSize: typography.size.xs,
+  positionBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.background.soft,
+    borderColor: colors.border.strong,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
   },
-  laneNameChampion: {
-    color: colors.brand.blue,
+  positionText: {
+    color: colors.text.primary,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.bold,
   },
-  laneMeta: {
+  laneIdentity: { flexGrow: 1 },
+  lanePet: {
+    color: colors.text.secondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+  },
+  lanePetYours: {
+    color: colors.brand.blue,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
+  },
+  laneTrainer: {
     color: colors.text.muted,
     fontSize: typography.size.xs,
   },
-  laneTrack: {
-    backgroundColor: '#241844',
-    borderRadius: radius.pill,
-    flexGrow: 1,
-    height: 34,
-    justifyContent: 'center',
-    overflow: 'hidden',
+  laneStatuses: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
-  markerRail: {
-    bottom: 0,
+  statusChip: {
+    color: colors.state.warning,
+    fontSize: typography.size.xs,
+  },
+  statusBoost: { color: colors.state.success },
+  statusShield: { color: colors.brand.blue },
+  laneTrack: {
+    height: 46,
     justifyContent: 'center',
-    left: 2,
+    marginTop: 2,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  laneRail: {
+    bottom: 0,
+    left: 0,
     position: 'absolute',
-    right: 38,
+    right: 56,
     top: 0,
+  },
+  racerHolder: {
+    bottom: 0,
+    justifyContent: 'flex-end',
+    position: 'absolute',
+  },
+  shieldRing: {
+    borderColor: colors.brand.blue,
+    borderRadius: 30,
+    borderWidth: 2,
+    height: 52,
+    left: -4,
+    opacity: 0.8,
+    position: 'absolute',
+    top: -4,
+    width: 60,
+  },
+  speedTrail: {
+    backgroundColor: colors.brand.blue,
+    borderRadius: 3,
+    height: 5,
+    left: -22,
+    opacity: 0.5,
+    position: 'absolute',
+    top: 22,
+    width: 24,
   },
   mud: {
     backgroundColor: '#7A5A2E',
-    borderRadius: 3,
-    height: 22,
-    marginLeft: 12,
-    opacity: 0.85,
+    borderRadius: 4,
+    bottom: 4,
+    height: 12,
+    opacity: 0.9,
     position: 'absolute',
-    width: 6,
   },
-  finishLine: {
+  laneFinishLine: {
     backgroundColor: colors.brand.pink,
     bottom: 0,
     position: 'absolute',
-    right: 6,
+    right: 12,
     top: 0,
     width: 3,
   },
-  racerMarker: {
+  countdownOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(11,6,20,0.72)',
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
     position: 'absolute',
+    right: 0,
+    top: 0,
   },
-  laneFlags: {
-    alignItems: 'flex-end',
-    width: 44,
+  countdownText: {
+    color: colors.text.primary,
+    fontSize: typography.size.hero,
+    fontWeight: typography.weight.bold,
   },
-  flagShield: {
-    color: colors.brand.blue,
+  countdownHint: {
+    color: colors.text.secondary,
     fontSize: typography.size.xs,
-  },
-  flagSlow: {
-    color: colors.state.warning,
-    fontSize: typography.size.xs,
+    marginTop: spacing.xxs,
   },
   logBox: {
     backgroundColor: colors.background.soft,
@@ -807,21 +1084,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
     marginTop: spacing.xs,
-    // Room for two rows up front, so a station deal does not shove the button down the screen.
     minHeight: 104,
-  },
-  suggestButton: {
-    backgroundColor: colors.background.soft,
-    borderColor: colors.brand.blue,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-  },
-  suggestButtonText: {
-    color: colors.brand.blue,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
   },
   handCard: {
     alignItems: 'center',
@@ -833,12 +1096,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xs,
   },
-  fastCard: {
-    borderColor: colors.brand.blue,
-  },
-  jokerCard: {
-    borderColor: colors.state.focus,
-  },
+  fastCard: { borderColor: colors.brand.blue },
+  jokerCard: { borderColor: colors.state.focus },
   tacticCard: {
     backgroundColor: '#2A1B44',
     borderColor: colors.brand.purple,
@@ -847,6 +1106,8 @@ const styles = StyleSheet.create({
   handCardSelected: {
     backgroundColor: colors.brand.purple,
     borderColor: colors.text.primary,
+    // Selected cards lift out of the row so the intended play is obvious.
+    transform: [{ translateY: -6 }],
   },
   handCardLabel: {
     color: colors.text.primary,
@@ -859,27 +1120,24 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     marginTop: spacing.xxs,
   },
-  summaryBox: {
-    marginTop: spacing.sm,
-  },
   summaryValid: {
     color: colors.state.success,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
+    marginTop: spacing.sm,
   },
   summaryInvalid: {
     color: colors.text.secondary,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
+    marginTop: spacing.sm,
   },
   summaryDetail: {
     color: colors.text.muted,
     fontSize: typography.size.xs,
     marginTop: spacing.xxs,
   },
-  targetRow: {
-    marginTop: spacing.sm,
-  },
+  targetRow: { marginTop: spacing.sm },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -894,27 +1152,94 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
   },
-  petChip: {
-    alignItems: 'center',
-    backgroundColor: colors.background.soft,
-    borderColor: colors.border.strong,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  petChipText: { alignItems: 'flex-start' },
-  petChipMeta: {
-    color: colors.text.muted,
-    fontSize: typography.size.xs,
-  },
   chipSelected: {
     backgroundColor: colors.brand.purple,
     borderColor: colors.text.primary,
   },
   chipText: {
+    color: colors.text.primary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+  },
+  trainerRow: {
+    alignItems: 'center',
+    backgroundColor: colors.background.soft,
+    borderColor: colors.border.subtle,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    padding: spacing.sm,
+  },
+  trainerBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.brand.purple,
+    borderRadius: radius.pill,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  trainerInitial: {
+    color: colors.text.primary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
+  },
+  trainerText: {
+    color: colors.text.secondary,
+    flexShrink: 1,
+    fontSize: typography.size.xs,
+  },
+  petGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  petCard: {
+    alignItems: 'center',
+    backgroundColor: colors.background.soft,
+    borderColor: colors.border.strong,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    minWidth: 104,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  petCardSelected: {
+    backgroundColor: colors.brand.purple,
+    borderColor: colors.text.primary,
+  },
+  petName: {
+    color: colors.text.primary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+    marginTop: spacing.xxs,
+  },
+  petMeta: {
+    color: colors.text.muted,
+    fontSize: typography.size.xs,
+  },
+  gridBox: {
+    backgroundColor: '#201735',
+    borderColor: colors.border.subtle,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+  },
+  gridRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  gridIdentity: { flexShrink: 1 },
+  gridTrainer: {
+    color: colors.text.secondary,
+    fontSize: typography.size.xs,
+  },
+  gridPet: {
     color: colors.text.primary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,

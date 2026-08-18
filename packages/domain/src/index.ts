@@ -1,9 +1,10 @@
 export {
   buildPetCardRaceDeck,
   evaluatePetCardRaceSelection,
-  findBestPetCardRaceSelection,
   isPetCardRaceFastRank,
   PET_CARD_RACE_TACTIC_COPIES,
+  petCardRacePet,
+  petCardRaceProfileFor,
   petCardRaceSuitGlyph,
   petCardRaceTacticDefinition,
   scorePetCardRace,

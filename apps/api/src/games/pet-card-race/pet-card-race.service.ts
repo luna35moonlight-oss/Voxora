@@ -7,17 +7,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  PET_CARD_RACE_ROSTER,
+  PET_CARD_RACE_PETS,
+  PET_CARD_RACE_RACE_PROFILES,
   PetCardRaceDailyLimit,
   PetCardRaceLeaderboardSize,
   PetCardRaceMaxAcceptedScore,
   PetCardRaceRacesPerMeet,
   type PetCardRaceLeaderboardEntry,
+  type PetCardRacePetId,
   type PetCardRaceResponse,
-  type PetCardRaceRacerId,
   type PetCardRaceStatusResponse,
+  type PetCardRaceTrainerAvatar,
   type PlayPetCardRaceCardsRequest,
 } from '@voxora/contracts';
+import { STARTER_AVATAR_ID } from '../../avatars/avatar-seed';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   PET_CARD_RACE_ATTEMPT_COMPLETED,
@@ -37,8 +40,8 @@ import {
   petCardRaceMeetIsFinished,
   playPetCardRaceCards,
   PetCardRaceRuleError,
+  simulatePetCardRace,
   startNextPetCardRace,
-  syncPetCardRace,
   takePetCardRaceMeetView,
   type PetCardRaceMeetState,
 } from './pet-card-race.engine';
@@ -58,11 +61,13 @@ export class PetCardRaceService {
 
   async getStatus(userId: string): Promise<PetCardRaceStatusResponse> {
     const dayKey = getUtcDayStart();
-    const [counter, bestScore] = await Promise.all([
+    const [counter, bestScore, trainerAvatar, raceWins] = await Promise.all([
       this.prisma.gameDailyCounter.findUnique({
         where: { userId_gameId_dayKey: { userId, gameId: PET_CARD_RACE_GAME_ID, dayKey } },
       }),
       this.getUserBestScore(userId),
+      this.getTrainerAvatar(userId),
+      this.countRaceWins(userId),
     ]);
 
     const leaderboard = await this.getLeaderboard(userId);
@@ -75,24 +80,31 @@ export class PetCardRaceService {
       attemptsUsedToday,
       attemptsRemainingToday: PetCardRaceDailyLimit - attemptsUsedToday,
       racesPerMeet: PetCardRaceRacesPerMeet,
+      trainerAvatar,
       bestScore,
       bestRank: leaderboard.find((entry) => entry.playerLabel === 'You')?.rank ?? null,
+      raceWins,
       rewardStatus: 'REWARD_RULES_PENDING_OWNER_DECISION',
       rewardNote: PET_CARD_RACE_REWARD_NOTE,
       leaderboard: leaderboard.slice(0, PetCardRaceLeaderboardSize),
-      roster: [...PET_CARD_RACE_ROSTER],
+      pets: [...PET_CARD_RACE_PETS],
+      raceProfiles: [...PET_CARD_RACE_RACE_PROFILES],
+      petFoundationIntegrated: false,
       serverTime: new Date().toISOString(),
     };
   }
 
   /** Reserves one daily meet and shuffles the first race. Reservation is server-owned. */
-  async startMeet(userId: string, championRacerId: PetCardRaceRacerId) {
+  async startMeet(userId: string, petId: PetCardRacePetId) {
     const dayKey = getUtcDayStart();
     const now = new Date();
+    const trainerAvatar = await this.getTrainerAvatar(userId);
     const meet = createPetCardRaceMeet({
       seed: randomBytes(24).toString('hex'),
-      championRacerId,
+      petId,
       nowMs: now.getTime(),
+      trainerAvatarId: trainerAvatar?.avatarId ?? null,
+      trainerAvatarName: trainerAvatar?.displayName ?? null,
     });
 
     const attempt = await this.prisma.$transaction(async (tx) => {
@@ -133,7 +145,9 @@ export class PetCardRaceService {
             rulesVersion: PET_CARD_RACE_RULES_VERSION,
             racesPerMeet: PetCardRaceRacesPerMeet,
             maxAcceptedScore: PetCardRaceMaxAcceptedScore,
-            firstChampionRacerId: championRacerId,
+            firstPetId: petId,
+            // Which Voxora avatar entered this meet, for attribution and audit.
+            trainerAvatarId: trainerAvatar?.avatarId ?? null,
           },
           progressState: toJson(meet),
           reservedAt: now,
@@ -147,7 +161,7 @@ export class PetCardRaceService {
 
   async sync(userId: string, attemptId: string): Promise<PetCardRaceResponse> {
     return this.mutate(userId, attemptId, (meet, nowMs) => {
-      syncPetCardRace(meet, nowMs);
+      simulatePetCardRace(meet, nowMs);
     });
   }
 
@@ -159,7 +173,7 @@ export class PetCardRaceService {
     return this.mutate(userId, attemptId, (meet, nowMs) => {
       playPetCardRaceCards(
         meet,
-        { cardIds: input.cardIds, targetRacerId: input.targetRacerId },
+        { cardIds: input.cardIds, targetCompetitorId: input.targetCompetitorId },
         nowMs,
       );
     });
@@ -168,10 +182,10 @@ export class PetCardRaceService {
   async startNextRace(
     userId: string,
     attemptId: string,
-    championRacerId: PetCardRaceRacerId,
+    petId: PetCardRacePetId,
   ): Promise<PetCardRaceResponse> {
     return this.mutate(userId, attemptId, (meet, nowMs) => {
-      startNextPetCardRace(meet, championRacerId, nowMs);
+      startNextPetCardRace(meet, petId, nowMs);
     });
   }
 
@@ -306,6 +320,53 @@ export class PetCardRaceService {
     };
   }
 
+  /**
+   * The avatar that picks the pet. Read straight from the single avatar selection the Phase 3
+   * Avatar Foundation owns, so this game holds no avatar state of its own.
+   */
+  private async getTrainerAvatar(userId: string): Promise<PetCardRaceTrainerAvatar | null> {
+    const selection = await this.prisma.userAvatarSelection.findUnique({
+      where: { userId },
+      include: { avatar: true },
+    });
+
+    if (selection?.avatar?.active) {
+      return toTrainerAvatar(selection.avatar);
+    }
+
+    // Same fallback the avatar card uses, so both surfaces name the same avatar.
+    const starter = await this.prisma.userAvatarOwnership.findUnique({
+      where: { userId_avatarId: { userId, avatarId: STARTER_AVATAR_ID } },
+      include: { avatar: true },
+    });
+
+    return starter?.avatar?.active ? toTrainerAvatar(starter.avatar) : null;
+  }
+
+  /** Races won, read back from the server-owned meet state of finished meets. */
+  private async countRaceWins(userId: string): Promise<number> {
+    const attempts = await this.prisma.gameAttempt.findMany({
+      where: {
+        userId,
+        gameId: PET_CARD_RACE_GAME_ID,
+        status: PET_CARD_RACE_ATTEMPT_COMPLETED,
+      },
+      orderBy: { completedAt: 'desc' },
+      select: { progressState: true },
+      take: 100,
+    });
+
+    return attempts.reduce((wins, attempt) => {
+      const races = (attempt.progressState as { completedRaces?: Array<{ yourPosition?: number }> })
+        ?.completedRaces;
+      if (!Array.isArray(races)) {
+        return wins;
+      }
+
+      return wins + races.filter((race) => race.yourPosition === 1).length;
+    }, 0);
+  }
+
   private async getUserBestScore(userId: string): Promise<number> {
     const result = await this.prisma.gameAttempt.aggregate({
       where: {
@@ -375,6 +436,18 @@ export function rankPetCardRaceScores(
   }
 
   return leaderboard;
+}
+
+function toTrainerAvatar(avatar: {
+  id: string;
+  displayName: string;
+  thumbnailRef: string;
+}): PetCardRaceTrainerAvatar {
+  return {
+    avatarId: avatar.id,
+    displayName: avatar.displayName,
+    thumbnailRef: avatar.thumbnailRef,
+  };
 }
 
 function readMeetState(progressState: unknown): PetCardRaceMeetState {

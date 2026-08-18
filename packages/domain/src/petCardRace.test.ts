@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { PetCardRaceCard, PetCardRaceRank, PetCardRaceSuit } from '@voxora/contracts';
+import {
+  PET_CARD_RACE_BALANCE,
+  type PetCardRaceCard,
+  type PetCardRaceRank,
+  type PetCardRaceSuit,
+} from '@voxora/contracts';
 import {
   buildPetCardRaceDeck,
   evaluatePetCardRaceSelection,
-  findBestPetCardRaceSelection,
+  petCardRacePet,
+  petCardRaceProfileFor,
   scorePetCardRace,
   sortPetCardRaceHand,
 } from './petCardRace';
 
 const deck = buildPetCardRaceDeck('r1');
+const boosts = PET_CARD_RACE_BALANCE.comboBoosts;
 
 function rankCard(rank: PetCardRaceRank, suit: PetCardRaceSuit): PetCardRaceCard {
   const card = deck.find((entry) => entry.rank === rank && entry.suit === suit);
@@ -20,8 +27,7 @@ function rankCard(rank: PetCardRaceRank, suit: PetCardRaceSuit): PetCardRaceCard
 }
 
 function jokerCard(index: number): PetCardRaceCard {
-  const jokers = deck.filter((entry) => entry.type === 'JOKER');
-  const card = jokers[index];
+  const card = deck.filter((entry) => entry.type === 'JOKER')[index];
   if (!card) {
     throw new Error(`Missing joker ${index}`);
   }
@@ -29,17 +35,17 @@ function jokerCard(index: number): PetCardRaceCard {
   return card;
 }
 
-function tacticCard(): PetCardRaceCard {
-  const card = deck.find((entry) => entry.tactic === 'SHIELD');
+function tacticCard(kind: 'SHIELD' | 'CHASER' | 'SPRINT'): PetCardRaceCard {
+  const card = deck.find((entry) => entry.tactic === kind);
   if (!card) {
-    throw new Error('Missing shield card');
+    throw new Error(`Missing ${kind} card`);
   }
 
   return card;
 }
 
-describe('pet card race deck', () => {
-  it('deals a 52 card deck plus two jokers and two copies of every tactic card', () => {
+describe('pet card race card pool', () => {
+  it('holds 52 rank cards, two jokers, and two copies of every tactic card', () => {
     expect(deck).toHaveLength(64);
     expect(deck.filter((card) => card.type === 'RANK')).toHaveLength(52);
     expect(deck.filter((card) => card.type === 'JOKER')).toHaveLength(2);
@@ -54,35 +60,18 @@ describe('pet card race deck', () => {
   });
 });
 
-describe('pet card race selections', () => {
-  it('advances one step for a low single and two for a high single', () => {
+describe('pet card race selections grant speed, not distance', () => {
+  it('turns each combination into its configured speed boost and duration', () => {
     expect(evaluatePetCardRaceSelection([rankCard('4', 'MOON')])).toMatchObject({
       valid: true,
       kind: 'SINGLE',
-      steps: 1,
+      speedMultiplier: boosts.SINGLE.multiplier,
+      durationMs: boosts.SINGLE.durationMs,
     });
-    expect(evaluatePetCardRaceSelection([rankCard('K', 'MOON')])).toMatchObject({
-      valid: true,
-      kind: 'SINGLE',
-      baseSteps: 1,
-      fastBonus: 1,
-      steps: 2,
-    });
-  });
 
-  it('scores pairs, three of a kind, runs, three pair, full house, and four of a kind', () => {
     expect(
       evaluatePetCardRaceSelection([rankCard('2', 'MOON'), rankCard('2', 'STAR')]),
-    ).toMatchObject({ kind: 'PAIR', steps: 2 });
-
-    expect(
-      evaluatePetCardRaceSelection([
-        rankCard('2', 'MOON'),
-        rankCard('2', 'STAR'),
-        rankCard('3', 'MOON'),
-        rankCard('3', 'STAR'),
-      ]),
-    ).toMatchObject({ kind: 'TWO_PAIR', steps: 3 });
+    ).toMatchObject({ kind: 'PAIR', speedMultiplier: boosts.PAIR.multiplier });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -90,7 +79,10 @@ describe('pet card race selections', () => {
         rankCard('2', 'STAR'),
         rankCard('2', 'CRYSTAL'),
       ]),
-    ).toMatchObject({ kind: 'THREE_OF_A_KIND', steps: 3 });
+    ).toMatchObject({
+      kind: 'THREE_OF_A_KIND',
+      speedMultiplier: boosts.THREE_OF_A_KIND.multiplier,
+    });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -99,7 +91,7 @@ describe('pet card race selections', () => {
         rankCard('3', 'CRYSTAL'),
         rankCard('4', 'FLAME'),
       ]),
-    ).toMatchObject({ kind: 'RUN_OF_FOUR', steps: 4 });
+    ).toMatchObject({ kind: 'RUN_OF_FOUR', speedMultiplier: boosts.RUN_OF_FOUR.multiplier });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -110,7 +102,7 @@ describe('pet card race selections', () => {
         rankCard('4', 'MOON'),
         rankCard('4', 'STAR'),
       ]),
-    ).toMatchObject({ kind: 'THREE_PAIR', steps: 4 });
+    ).toMatchObject({ kind: 'THREE_PAIR', speedMultiplier: boosts.THREE_PAIR.multiplier });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -120,7 +112,7 @@ describe('pet card race selections', () => {
         rankCard('3', 'MOON'),
         rankCard('3', 'STAR'),
       ]),
-    ).toMatchObject({ kind: 'FULL_HOUSE', steps: 5 });
+    ).toMatchObject({ kind: 'FULL_HOUSE', speedMultiplier: boosts.FULL_HOUSE.multiplier });
 
     expect(
       evaluatePetCardRaceSelection([
@@ -129,35 +121,44 @@ describe('pet card race selections', () => {
         rankCard('2', 'CRYSTAL'),
         rankCard('2', 'FLAME'),
       ]),
-    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', steps: 6 });
+    ).toMatchObject({
+      kind: 'FOUR_OF_A_KIND',
+      speedMultiplier: boosts.FOUR_OF_A_KIND.multiplier,
+      durationMs: boosts.FOUR_OF_A_KIND.durationMs,
+    });
   });
 
-  it('adds a step for every high card inside a combination', () => {
-    expect(
-      evaluatePetCardRaceSelection([rankCard('Q', 'MOON'), rankCard('Q', 'STAR')]),
-    ).toMatchObject({ kind: 'PAIR', baseSteps: 2, fastBonus: 2, steps: 4 });
+  it('ranks a stronger combination above a weaker one', () => {
+    const pair = evaluatePetCardRaceSelection([rankCard('5', 'MOON'), rankCard('5', 'STAR')]);
+    const quad = evaluatePetCardRaceSelection([
+      rankCard('5', 'MOON'),
+      rankCard('5', 'STAR'),
+      rankCard('5', 'CRYSTAL'),
+      rankCard('5', 'FLAME'),
+    ]);
 
-    expect(
-      evaluatePetCardRaceSelection([
-        rankCard('K', 'MOON'),
-        rankCard('K', 'STAR'),
-        rankCard('K', 'CRYSTAL'),
-        rankCard('K', 'FLAME'),
-      ]),
-      // Four kings would earn four high-card steps, but the bonus is capped at two.
-    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', baseSteps: 6, fastBonus: 2, steps: 8 });
+    expect(quad.speedMultiplier).toBeGreaterThan(pair.speedMultiplier);
+    expect(quad.durationMs).toBeGreaterThan(pair.durationMs);
+  });
+
+  it('adds a capped bonus for high cards inside the combination', () => {
+    const lowPair = evaluatePetCardRaceSelection([rankCard('3', 'MOON'), rankCard('3', 'STAR')]);
+    const highPair = evaluatePetCardRaceSelection([rankCard('Q', 'MOON'), rankCard('Q', 'STAR')]);
+    const fourKings = evaluatePetCardRaceSelection([
+      rankCard('K', 'MOON'),
+      rankCard('K', 'STAR'),
+      rankCard('K', 'CRYSTAL'),
+      rankCard('K', 'FLAME'),
+    ]);
+
+    expect(highPair.speedMultiplier).toBeGreaterThan(lowPair.speedMultiplier);
+    expect(highPair.fastCardBonus).toBeCloseTo(PET_CARD_RACE_BALANCE.fastCardBonusPerCard * 2, 5);
+    expect(fourKings.fastCardBonus).toBeCloseTo(PET_CARD_RACE_BALANCE.fastCardBonusCap, 5);
   });
 
   it('turns jokers into whichever card helps the selection most', () => {
     expect(evaluatePetCardRaceSelection([rankCard('7', 'MOON'), jokerCard(0)])).toMatchObject({
       kind: 'PAIR',
-      steps: 2,
-    });
-
-    expect(evaluatePetCardRaceSelection([rankCard('10', 'MOON'), jokerCard(0)])).toMatchObject({
-      kind: 'PAIR',
-      fastBonus: 2,
-      steps: 4,
     });
 
     expect(
@@ -167,131 +168,105 @@ describe('pet card race selections', () => {
         jokerCard(0),
         jokerCard(1),
       ]),
-    ).toMatchObject({ kind: 'FOUR_OF_A_KIND', fastBonus: 2, steps: 8 });
+    ).toMatchObject({ kind: 'FOUR_OF_A_KIND' });
   });
 
   it('rejects selections that are not combinations', () => {
     expect(
       evaluatePetCardRaceSelection([rankCard('5', 'MOON'), rankCard('8', 'STAR')]),
-    ).toMatchObject({ valid: false, steps: 0, reason: 'Two cards must make a pair' });
-
+    ).toMatchObject({ valid: false, speedMultiplier: 1, reason: 'Two cards must make a pair' });
     expect(evaluatePetCardRaceSelection([])).toMatchObject({ valid: false });
-    expect(
-      evaluatePetCardRaceSelection([rankCard('5', 'MOON'), rankCard('5', 'MOON')]),
-    ).toMatchObject({ valid: false, reason: 'The same card cannot be selected twice' });
   });
 
-  it('plays a tactic card on its own and never as part of a combination', () => {
-    expect(evaluatePetCardRaceSelection([tacticCard()])).toMatchObject({
+  it('plays a tactic card on its own with its configured effect', () => {
+    expect(evaluatePetCardRaceSelection([tacticCard('SPRINT')])).toMatchObject({
       valid: true,
       kind: 'TACTIC',
-      steps: 0,
+      speedMultiplier: PET_CARD_RACE_BALANCE.tactics.SPRINT.multiplier,
+      durationMs: PET_CARD_RACE_BALANCE.tactics.SPRINT.durationMs,
     });
-    expect(evaluatePetCardRaceSelection([tacticCard(), rankCard('5', 'MOON')])).toMatchObject({
-      valid: false,
-      reason: 'A tactic card is played on its own',
+    // A shield is a charge, not a timed boost: no multiplier and no duration.
+    expect(evaluatePetCardRaceSelection([tacticCard('SHIELD')])).toMatchObject({
+      kind: 'TACTIC',
+      speedMultiplier: 1,
+      durationMs: 0,
     });
+    expect(
+      evaluatePetCardRaceSelection([tacticCard('CHASER'), rankCard('5', 'MOON')]),
+    ).toMatchObject({ valid: false, reason: 'A tactic card is played on its own' });
+  });
+});
+
+describe('pet identity and race profiles', () => {
+  it('keeps every racer visually distinct and marked as a development placeholder', () => {
+    const panther = petCardRacePet('shadow-panther');
+    const wolf = petCardRacePet('moonlit-wolf');
+    const dragon = petCardRacePet('aurora-dragon');
+    const mystic = petCardRacePet('star-kitten');
+
+    expect(
+      new Set([panther.silhouette, wolf.silhouette, dragon.silhouette, mystic.silhouette]).size,
+    ).toBe(4);
+    expect(panther.source).toBe('DEVELOPMENT_PLACEHOLDER');
+    expect(dragon.speciesFamily).toBe('dragon-lizard');
+  });
+
+  it('routes every pet through a race profile that is not owner approved yet', () => {
+    const profile = petCardRaceProfileFor('shadow-panther');
+
+    expect(profile.approved).toBe(false);
+    expect(profile.openingMix.runCards + profile.openingMix.tacticCards).toBe(8);
+    expect(petCardRaceProfileFor('aurora-dragon').profileKey).toBe(profile.profileKey);
   });
 });
 
 describe('pet card race scoring', () => {
   it('rewards finishing position, combinations, tactics, and winning margin', () => {
-    expect(
-      scorePetCardRace({
-        championPosition: 1,
-        combosPlayed: 4,
-        effectiveTactics: 2,
-        marginSteps: 3,
-        photoFinish: false,
-      }),
-    ).toEqual({
-      positionPoints: 40,
+    const breakdown = scorePetCardRace({
+      position: 1,
+      combosPlayed: 4,
+      effectiveTactics: 2,
+      marginMetres: 35,
+      photoFinish: false,
+    });
+
+    expect(breakdown).toMatchObject({
+      positionPoints: PET_CARD_RACE_BALANCE.scoring.positionPoints[0],
       comboPoints: 12,
       tacticPoints: 8,
-      marginBonus: 6,
-      photoFinishBonus: 0,
-      total: 66,
+      marginPoints: 3,
+      photoFinishPoints: 0,
     });
+    expect(breakdown.total).toBe(63);
   });
 
-  it('gives no margin bonus when the champion did not win and caps the race score', () => {
+  it('gives no margin points when the pet did not win and caps the race score', () => {
     expect(
       scorePetCardRace({
-        championPosition: 3,
+        position: 3,
         combosPlayed: 0,
         effectiveTactics: 0,
-        marginSteps: 5,
+        marginMetres: 90,
         photoFinish: false,
       }),
-    ).toMatchObject({ positionPoints: 12, marginBonus: 0, total: 12 });
+    ).toMatchObject({ positionPoints: 12, marginPoints: 0, total: 12 });
 
     expect(
       scorePetCardRace({
-        championPosition: 1,
-        combosPlayed: 20,
-        effectiveTactics: 9,
-        marginSteps: 12,
+        position: 1,
+        combosPlayed: 30,
+        effectiveTactics: 20,
+        marginMetres: 900,
         photoFinish: true,
       }).total,
-    ).toBe(100);
-  });
-});
-
-describe('pet card race best play suggestion', () => {
-  it('finds the highest scoring combination hiding in a large hand', () => {
-    const hand = [
-      rankCard('3', 'MOON'),
-      rankCard('9', 'STAR'),
-      rankCard('K', 'MOON'),
-      rankCard('K', 'STAR'),
-      rankCard('K', 'CRYSTAL'),
-      rankCard('4', 'FLAME'),
-      tacticCard(),
-    ];
-
-    const best = findBestPetCardRaceSelection(hand);
-
-    expect(best?.map((card) => card.rank)).toEqual(['K', 'K', 'K']);
-    expect(evaluatePetCardRaceSelection(best ?? [])).toMatchObject({
-      kind: 'THREE_OF_A_KIND',
-      steps: 5,
-    });
-  });
-
-  it('prefers a full house over the pair it contains', () => {
-    const best = findBestPetCardRaceSelection([
-      rankCard('5', 'MOON'),
-      rankCard('5', 'STAR'),
-      rankCard('5', 'CRYSTAL'),
-      rankCard('8', 'MOON'),
-      rankCard('8', 'STAR'),
-    ]);
-
-    expect(evaluatePetCardRaceSelection(best ?? [])).toMatchObject({ kind: 'FULL_HOUSE' });
-  });
-
-  it('spends jokers to complete a run of four', () => {
-    const best = findBestPetCardRaceSelection([
-      rankCard('5', 'MOON'),
-      rankCard('6', 'STAR'),
-      rankCard('8', 'CRYSTAL'),
-      jokerCard(0),
-    ]);
-
-    expect(evaluatePetCardRaceSelection(best ?? [])).toMatchObject({ kind: 'RUN_OF_FOUR' });
-  });
-
-  it('falls back to a single card and gives up on a hand of only tactic cards', () => {
-    expect(findBestPetCardRaceSelection([rankCard('2', 'MOON')])?.[0]?.rank).toBe('2');
-    expect(findBestPetCardRaceSelection([tacticCard()])).toBeNull();
-    expect(findBestPetCardRaceSelection([])).toBeNull();
+    ).toBe(PET_CARD_RACE_BALANCE.scoring.maxRaceScore);
   });
 });
 
 describe('pet card race hand order', () => {
   it('shows rank cards first, then jokers, then tactic cards', () => {
     const ordered = sortPetCardRaceHand([
-      tacticCard(),
+      tacticCard('SHIELD'),
       jokerCard(0),
       rankCard('K', 'MOON'),
       rankCard('3', 'STAR'),

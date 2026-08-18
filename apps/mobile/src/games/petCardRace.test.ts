@@ -1,18 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { PetCardRaceCard, PetCardRaceEvent, PetCardRaceLane } from '@voxora/contracts';
-import { PET_CARD_RACE_ROSTER } from '@voxora/contracts';
-import { buildPetCardRaceDeck } from '@voxora/domain';
+import type { PetCardRaceCard, PetCardRaceCompetitor, PetCardRacePetId } from '@voxora/contracts';
+import { PET_CARD_RACE_BALANCE } from '@voxora/contracts';
+import { buildPetCardRaceDeck, petCardRacePet } from '@voxora/domain';
 import {
-  applyPetCardRaceEvent,
+  describePetCardRaceStatus,
   formatPetCardRaceCooldown,
   formatPetCardRacePosition,
-  petCardRaceLaneProgress,
-  petCardRaceRacerName,
+  interpolatePetCardRaceProgress,
+  orderPetCardRaceLiveRacers,
+  petCardRaceCountdownLabel,
+  petCardRaceGaitPhase,
   petCardRaceSelectionNeedsTarget,
   summarisePetCardRaceSelection,
 } from './petCardRace';
 
 const deck = buildPetCardRaceDeck('m1');
+const courseMetres = PET_CARD_RACE_BALANCE.courseMetres;
 
 function card(match: (entry: PetCardRaceCard) => boolean): PetCardRaceCard {
   const found = deck.find(match);
@@ -23,72 +26,97 @@ function card(match: (entry: PetCardRaceCard) => boolean): PetCardRaceCard {
   return found;
 }
 
-const lanes: PetCardRaceLane[] = [
-  {
-    racerId: 'shadow-panther',
-    isChampion: false,
-    step: 2,
-    slowedSteps: 0,
-    shielded: false,
-    finishPosition: null,
-  },
-  {
-    racerId: 'moonlit-wolf',
-    isChampion: true,
-    step: 3,
-    slowedSteps: 1,
-    shielded: true,
-    finishPosition: null,
-  },
-];
+function competitor(
+  competitorId: string,
+  petId: PetCardRacePetId,
+  progressMetres: number,
+  speedMetresPerSecond: number,
+  finishPosition: number | null = null,
+): PetCardRaceCompetitor {
+  return {
+    competitorId,
+    trainerKind: competitorId === 'you' ? 'PLAYER' : 'HOUSE',
+    isYou: competitorId === 'you',
+    trainerName: competitorId === 'you' ? 'Voxora Guide' : 'Vale (Voxora house trainer)',
+    trainerAvatarId: null,
+    trainerAvatarName: null,
+    pet: petCardRacePet(petId),
+    progressMetres,
+    progressFraction: progressMetres / courseMetres,
+    speedMetresPerSecond,
+    speedMultiplier: speedMetresPerSecond / PET_CARD_RACE_BALANCE.baseSpeedMetresPerSecond,
+    position: 1,
+    statuses: [],
+    finishPosition,
+    finishTimeMs: null,
+  };
+}
 
-describe('pet card race lane animation', () => {
-  it('moves only the racer named by the event', () => {
-    const event: PetCardRaceEvent = {
-      sequence: 4,
-      type: 'RIVAL_ADVANCE',
-      racerId: 'shadow-panther',
-      step: 5,
-      message: 'Nyx reaches step 5 of 14',
-    };
+describe('live race interpolation', () => {
+  it('keeps a pet moving between server snapshots', () => {
+    const racer = competitor('you', 'moonlit-wolf', 100, 8);
 
-    const next = applyPetCardRaceEvent(lanes, event);
-
-    expect(next[0]?.step).toBe(5);
-    expect(next[1]?.step).toBe(3);
-    expect(lanes[0]?.step).toBe(2);
+    expect(interpolatePetCardRaceProgress(racer, 0, courseMetres)).toBe(100);
+    expect(interpolatePetCardRaceProgress(racer, 1_000, courseMetres)).toBe(108);
+    expect(interpolatePetCardRaceProgress(racer, 500, courseMetres)).toBe(104);
   });
 
-  it('leaves lanes alone for events without a racer or step', () => {
-    const event: PetCardRaceEvent = {
-      sequence: 5,
-      type: 'STATION_DEAL',
-      racerId: null,
-      step: null,
-      message: 'Final station: 4 cards dealt',
-    };
+  it('never runs a pet past the finish line', () => {
+    const racer = competitor('you', 'moonlit-wolf', courseMetres - 2, 20);
 
-    expect(applyPetCardRaceEvent(lanes, event).map((lane) => lane.step)).toEqual([2, 3]);
+    expect(interpolatePetCardRaceProgress(racer, 10_000, courseMetres)).toBe(courseMetres);
+  });
+
+  it('orders live positions so an overtake shows immediately', () => {
+    const racers = [
+      competitor('you', 'moonlit-wolf', 200, 12),
+      competitor('house-1', 'shadow-panther', 210, 6),
+      competitor('house-2', 'star-kitten', 150, 8),
+      competitor('house-3', 'aurora-dragon', 120, 8),
+    ];
+
+    expect(orderPetCardRaceLiveRacers(racers, 0, courseMetres)[0]?.competitorId).toBe('house-1');
+
+    const afterTwoSeconds = orderPetCardRaceLiveRacers(racers, 2_000, courseMetres);
+    expect(afterTwoSeconds[0]?.competitorId).toBe('you');
+    expect(afterTwoSeconds[0]?.position).toBe(1);
+    expect(afterTwoSeconds.map((racer) => racer.competitorId)).toEqual([
+      'you',
+      'house-1',
+      'house-2',
+      'house-3',
+    ]);
+  });
+
+  it('keeps finished pets ahead of pets still running', () => {
+    const racers = [
+      competitor('you', 'moonlit-wolf', 690, 9),
+      competitor('house-1', 'shadow-panther', courseMetres, 0, 1),
+    ];
+
+    expect(orderPetCardRaceLiveRacers(racers, 5_000, courseMetres)[0]?.competitorId).toBe(
+      'house-1',
+    );
   });
 });
 
-describe('pet card race selection summary', () => {
+describe('selection summary', () => {
   it('prompts for a selection when nothing is chosen', () => {
-    expect(summarisePetCardRaceSelection([])).toMatchObject({ valid: false, steps: 0 });
+    expect(summarisePetCardRaceSelection([])).toMatchObject({ valid: false, isTactic: false });
   });
 
-  it('describes a combination and the extra steps from high cards', () => {
+  it('describes the pace a combination grants and for how long', () => {
     const summary = summarisePetCardRaceSelection([
       card((entry) => entry.rank === 'Q' && entry.suit === 'MOON'),
       card((entry) => entry.rank === 'Q' && entry.suit === 'STAR'),
     ]);
 
-    expect(summary).toMatchObject({ valid: true, steps: 4, isTactic: false });
-    expect(summary.headline).toBe('Pair · 4 steps');
+    expect(summary.valid).toBe(true);
+    expect(summary.headline).toMatch(/^Pair · \d+% pace for \d+s$/);
     expect(summary.detail).toMatch(/high cards/);
   });
 
-  it('explains why a selection cannot run', () => {
+  it('explains why a selection cannot be played', () => {
     const summary = summarisePetCardRaceSelection([
       card((entry) => entry.rank === '4' && entry.suit === 'MOON'),
       card((entry) => entry.rank === '9' && entry.suit === 'MOON'),
@@ -105,21 +133,33 @@ describe('pet card race selection summary', () => {
     expect(summarisePetCardRaceSelection([chaser])).toMatchObject({
       valid: true,
       isTactic: true,
-      headline: 'Trail chaser · tactic card',
+      headline: 'Trail chaser · tactic',
     });
     expect(petCardRaceSelectionNeedsTarget([chaser])).toBe(true);
     expect(petCardRaceSelectionNeedsTarget([shield])).toBe(false);
   });
 });
 
-describe('pet card race formatting', () => {
-  it('formats positions, cooldowns, progress, and racer names', () => {
+describe('race presentation helpers', () => {
+  it('formats positions, cooldowns, countdown and statuses', () => {
     expect(formatPetCardRacePosition(1)).toBe('1st');
     expect(formatPetCardRacePosition(4)).toBe('4th');
-    expect(formatPetCardRaceCooldown(0)).toBe('Ready to run');
-    expect(formatPetCardRaceCooldown(3_200)).toBe('Next card in 4s');
-    expect(petCardRaceLaneProgress(7, 14)).toBe(0.5);
-    expect(petCardRaceLaneProgress(20, 14)).toBe(1);
-    expect(petCardRaceRacerName(PET_CARD_RACE_ROSTER, 'aurora-dragon')).toBe('Kai');
+    expect(formatPetCardRaceCooldown(0)).toBe('Commit play');
+    expect(formatPetCardRaceCooldown(3_200)).toBe('Next play in 4s');
+    expect(petCardRaceCountdownLabel(2_600)).toBe('3');
+    expect(petCardRaceCountdownLabel(400)).toBe('1');
+    expect(petCardRaceCountdownLabel(0)).toBe('GO');
+    expect(describePetCardRaceStatus({ kind: 'WEIGHTS', multiplier: 0.7, endsInMs: 2000 })).toBe(
+      'weighted',
+    );
+    expect(describePetCardRaceStatus({ kind: 'SHIELDED', multiplier: 1, endsInMs: 0 })).toBe(
+      'shield',
+    );
+  });
+
+  it('cycles the gait with distance so faster pets run visibly faster', () => {
+    expect(petCardRaceGaitPhase(0, 4)).toBe(0);
+    expect(petCardRaceGaitPhase(2, 4)).toBe(0.5);
+    expect(petCardRaceGaitPhase(4, 4)).toBe(0);
   });
 });

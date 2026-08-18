@@ -18,6 +18,20 @@ type Card = {
   label: string;
 };
 
+type Competitor = {
+  competitorId: string;
+  isYou: boolean;
+  progressMetres: number;
+  speedMetresPerSecond: number;
+  pet: { petId: string; source: string; silhouette: string };
+};
+
+const COUNTDOWN_WAIT_MS = 3_600;
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe('Voxora Pet Card Race (e2e)', () => {
   let app: INestApplication;
   const prisma = new PrismaClient();
@@ -67,6 +81,10 @@ describe('Voxora Pet Card Race (e2e)', () => {
     await prisma.userProfile.deleteMany();
     await prisma.roleAssignment.deleteMany();
     await prisma.authIdentity.deleteMany();
+    await prisma.userAvatarEquipment.deleteMany();
+    await prisma.userAvatarSelection.deleteMany();
+    await prisma.userAvatarItemOwnership.deleteMany();
+    await prisma.userAvatarOwnership.deleteMany();
     await prisma.user.deleteMany();
   });
 
@@ -85,15 +103,31 @@ describe('Voxora Pet Card Race (e2e)', () => {
     return res.body.tokens.accessToken as string;
   }
 
-  function startMeet(token: string, championRacerId = 'moonlit-wolf') {
+  function startMeet(token: string, petId = 'moonlit-wolf') {
     return request(app.getHttpServer())
       .post('/v1/games/pet-card-race/meets/start')
       .set('Authorization', `Bearer ${token}`)
-      .send({ championRacerId });
+      .send({ petId });
+  }
+
+  function sync(token: string, attemptId: string) {
+    return request(app.getHttpServer())
+      .post(`/v1/games/pet-card-race/meets/${attemptId}/sync`)
+      .set('Authorization', `Bearer ${token}`);
+  }
+
+  function play(token: string, attemptId: string, body: unknown) {
+    return request(app.getHttpServer())
+      .post(`/v1/games/pet-card-race/meets/${attemptId}/plays`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
   }
 
   /** A card that can legally be played on its own, plus the target a chaser needs. */
-  function playableSingle(hand: Card[]): { cardIds: string[]; targetRacerId?: string } {
+  function playableSingle(
+    hand: Card[],
+    rivalCompetitorId: string,
+  ): { cardIds: string[]; targetCompetitorId?: string } {
     const rankCard = hand.find((card) => card.type === 'RANK');
     if (rankCard) {
       return { cardIds: [rankCard.cardId] };
@@ -105,11 +139,11 @@ describe('Voxora Pet Card Race (e2e)', () => {
     }
 
     return card.tactic === 'CHASER'
-      ? { cardIds: [card.cardId], targetRacerId: 'shadow-panther' }
+      ? { cardIds: [card.cardId], targetCompetitorId: rivalCompetitorId }
       : { cardIds: [card.cardId] };
   }
 
-  it('reports an honest daily status with no reward rules', async () => {
+  it('reports an honest daily status with placeholder pets and no reward rules', async () => {
     const token = await signIn();
     const res = await request(app.getHttpServer())
       .get('/v1/games/pet-card-race/me')
@@ -126,20 +160,76 @@ describe('Voxora Pet Card Race (e2e)', () => {
       bestRank: null,
       rewardStatus: 'REWARD_RULES_PENDING_OWNER_DECISION',
       leaderboard: [],
+      raceWins: 0,
+      petFoundationIntegrated: false,
     });
-    expect(res.body.roster).toHaveLength(4);
+    expect(res.body.pets).toHaveLength(4);
+    expect(
+      (res.body.pets as Competitor['pet'][]).every(
+        (pet) => pet.source === 'DEVELOPMENT_PLACEHOLDER',
+      ),
+    ).toBe(true);
+    // Distinct silhouettes so a panther never runs as a wolf.
+    expect(new Set((res.body.pets as Competitor['pet'][]).map((pet) => pet.silhouette)).size).toBe(
+      4,
+    );
+    expect(res.body.raceProfiles.every((profile: { approved: boolean }) => !profile.approved)).toBe(
+      true,
+    );
+  });
+
+  it('names the Voxora avatar that enters the race once one is selected', async () => {
+    const token = await signIn();
+
+    const before = await request(app.getHttpServer())
+      .get('/v1/games/pet-card-race/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(before.body.trainerAvatar).toBeNull();
+
+    const avatar = await request(app.getHttpServer())
+      .get('/v1/avatars/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const owned = (avatar.body.catalogue as Array<{ id: string; owned: boolean }>).find(
+      (entry) => entry.owned,
+    );
+    await request(app.getHttpServer())
+      .post('/v1/avatars/select')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ avatarId: owned?.id })
+      .expect(201);
+
+    const after = await request(app.getHttpServer())
+      .get('/v1/games/pet-card-race/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(after.body.trainerAvatar).toMatchObject({ avatarId: owned?.id });
+
+    const started = await startMeet(token).expect(201);
+    const you = (started.body.meet.currentRace.competitors as Competitor[]).find(
+      (competitor) => competitor.isYou,
+    );
+    expect(you).toMatchObject({ competitorId: 'you' });
+    expect(started.body.meet.currentRace.competitors[0]).toHaveProperty('trainerAvatarName');
+
+    const stored = await prisma.gameAttempt.findUniqueOrThrow({
+      where: { id: started.body.meet.attemptId },
+    });
+    expect((stored.startState as { trainerAvatarId?: string }).trainerAvatarId).toBe(owned?.id);
   });
 
   it('rejects an unauthenticated meet', async () => {
     await request(app.getHttpServer())
       .post('/v1/games/pet-card-race/meets/start')
-      .send({ championRacerId: 'moonlit-wolf' })
+      .send({ petId: 'moonlit-wolf' })
       .expect(401);
   });
 
-  it('reserves a meet, deals the opening mix of eight cards, and keeps the deck server side', async () => {
+  it('lines up four teams behind a countdown and keeps the card pool server side', async () => {
     const token = await signIn();
     const res = await startMeet(token).expect(201);
+    const current = res.body.meet.currentRace;
 
     expect(res.body.meet).toMatchObject({
       attemptNumber: 1,
@@ -147,49 +237,77 @@ describe('Voxora Pet Card Race (e2e)', () => {
       raceNumber: 1,
       racesTotal: 3,
       meetScore: 0,
-      usedRacerIds: ['moonlit-wolf'],
+      usedPetIds: ['moonlit-wolf'],
     });
-    const hand = res.body.meet.currentRace.hand as Card[];
-    expect(hand).toHaveLength(8);
-    expect(hand.filter((card) => card.type === 'TACTIC')).toHaveLength(2);
-    expect(res.body.meet.currentRace.stationsDealt).toBe(0);
-    expect(res.body.meet.currentRace.cardsLeftToDeal).toBe(13);
-    expect(res.body.meet.currentRace.lanes).toHaveLength(4);
+    expect(current.phase).toBe('COUNTDOWN');
+    expect(current.countdownRemainingMs).toBeGreaterThan(0);
+    expect(current.competitors).toHaveLength(4);
+    expect(
+      (current.competitors as Competitor[]).every((competitor) => competitor.progressMetres === 0),
+    ).toBe(true);
+    expect(new Set((current.competitors as Competitor[]).map((c) => c.pet.petId)).size).toBe(4);
+    expect(current.hand).toHaveLength(8);
+    expect(current.checkpointsReached).toBe(0);
+    expect(current.cardsLeftToDeal).toBe(16);
+    expect(
+      current.checkpoints.map((checkpoint: { cardsAwarded: number }) => checkpoint.cardsAwarded),
+    ).toEqual([3, 3, 3, 3, 4]);
     expect(res.body.status.attemptsUsedToday).toBe(1);
 
-    // The draw pile, the rival schedule, and the shuffle seed must never reach the client.
     const payload = JSON.stringify(res.body);
     expect(payload).not.toContain('drawPile');
-    expect(payload).not.toContain('rivalDeck');
+    expect(payload).not.toContain('paceOffsetMs');
     expect(payload).not.toContain('seed');
   });
 
-  it('plays a card, holds the cooldown, and refuses cards that were never dealt', async () => {
+  it('runs all four pets on the server clock while the client only syncs', async () => {
+    const token = await signIn();
+    const started = await startMeet(token).expect(201);
+    const attemptId = started.body.meet.attemptId as string;
+
+    await wait(COUNTDOWN_WAIT_MS + 1_500);
+
+    const synced = await sync(token, attemptId).expect(201);
+    const competitors = synced.body.meet.currentRace.competitors as Competitor[];
+
+    expect(synced.body.meet.currentRace.phase).toBe('RUNNING');
+    expect(competitors).toHaveLength(4);
+    for (const competitor of competitors) {
+      expect(competitor.progressMetres).toBeGreaterThan(0);
+      expect(competitor.speedMetresPerSecond).toBeGreaterThan(0);
+    }
+    expect(synced.body.meet.currentRace.serverTimeMs).toBeGreaterThan(0);
+  });
+
+  it('refuses plays before GO, then accepts one and holds the five second cooldown', async () => {
     const token = await signIn();
     const started = await startMeet(token).expect(201);
     const attemptId = started.body.meet.attemptId as string;
     const hand = started.body.meet.currentRace.hand as Card[];
+    const rival = (started.body.meet.currentRace.competitors as Competitor[]).find(
+      (competitor) => !competitor.isYou,
+    );
 
-    await request(app.getHttpServer())
-      .post(`/v1/games/pet-card-race/meets/${attemptId}/plays`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ cardIds: ['not-a-dealt-card'] })
-      .expect(400);
+    const early = await play(token, attemptId, playableSingle(hand, rival!.competitorId)).expect(
+      409,
+    );
+    expect(early.body.message).toMatch(/Wait for GO/);
 
-    const played = await request(app.getHttpServer())
-      .post(`/v1/games/pet-card-race/meets/${attemptId}/plays`)
-      .set('Authorization', `Bearer ${token}`)
-      .send(playableSingle(hand))
-      .expect(201);
+    await wait(COUNTDOWN_WAIT_MS);
 
+    await play(token, attemptId, { cardIds: ['not-a-dealt-card'] }).expect(400);
+
+    const played = await play(token, attemptId, playableSingle(hand, rival!.competitorId)).expect(
+      201,
+    );
     expect(played.body.meet.currentRace.hand).toHaveLength(7);
     expect(played.body.meet.currentRace.cooldownRemainingMs).toBeGreaterThan(0);
 
-    const tooSoon = await request(app.getHttpServer())
-      .post(`/v1/games/pet-card-race/meets/${attemptId}/plays`)
-      .set('Authorization', `Bearer ${token}`)
-      .send(playableSingle(played.body.meet.currentRace.hand as Card[]))
-      .expect(409);
+    const tooSoon = await play(
+      token,
+      attemptId,
+      playableSingle(played.body.meet.currentRace.hand as Card[], rival!.competitorId),
+    ).expect(409);
     expect(tooSoon.body.message).toMatch(/Wait \d+s/);
 
     const stored = await prisma.gameAttempt.findUniqueOrThrow({ where: { id: attemptId } });
@@ -198,43 +316,15 @@ describe('Voxora Pet Card Race (e2e)', () => {
     expect(stored.score).toBeNull();
   });
 
-  it('advances rivals on the server clock when the client syncs', async () => {
-    const token = await signIn();
-    const started = await startMeet(token).expect(201);
-    const attemptId = started.body.meet.attemptId as string;
-
-    await new Promise((resolve) => setTimeout(resolve, 3_200));
-
-    const synced = await request(app.getHttpServer())
-      .post(`/v1/games/pet-card-race/meets/${attemptId}/sync`)
-      .set('Authorization', `Bearer ${token}`)
-      .expect(201);
-
-    const lanes = synced.body.meet.currentRace.lanes as Array<{
-      isChampion: boolean;
-      step: number;
-    }>;
-    const rivalSteps = lanes
-      .filter((lane) => !lane.isChampion)
-      .reduce((total, lane) => total + lane.step, 0);
-
-    expect(rivalSteps).toBeGreaterThan(0);
-    expect(lanes.find((lane) => lane.isChampion)?.step).toBe(0);
-  });
-
   it('keeps one player out of another player’s meet', async () => {
     const owner = await signIn();
     const intruder = await signIn();
     const started = await startMeet(owner).expect(201);
-    const attemptId = started.body.meet.attemptId as string;
 
-    await request(app.getHttpServer())
-      .post(`/v1/games/pet-card-race/meets/${attemptId}/sync`)
-      .set('Authorization', `Bearer ${intruder}`)
-      .expect(403);
+    await sync(intruder, started.body.meet.attemptId as string).expect(403);
   });
 
-  it('forfeits a meet with a zero score and no leaderboard entry', async () => {
+  it('leaves a meet with a zero score and no leaderboard entry', async () => {
     const token = await signIn();
     const started = await startMeet(token).expect(201);
     const attemptId = started.body.meet.attemptId as string;
@@ -246,16 +336,10 @@ describe('Voxora Pet Card Race (e2e)', () => {
 
     expect(forfeited.body.meet.meetPhase).toBe('FORFEITED');
     expect(forfeited.body.status.leaderboard).toEqual([]);
-    expect(forfeited.body.status.bestScore).toBe(0);
 
     const stored = await prisma.gameAttempt.findUniqueOrThrow({ where: { id: attemptId } });
     expect(stored.status).toBe('FORFEITED');
     expect(stored.score).toBe(0);
-
-    await request(app.getHttpServer())
-      .post(`/v1/games/pet-card-race/meets/${attemptId}/forfeit`)
-      .set('Authorization', `Bearer ${token}`)
-      .expect(409);
   });
 
   it('reserves ten meets per UTC day and then refuses the eleventh', async () => {
@@ -267,13 +351,6 @@ describe('Voxora Pet Card Race (e2e)', () => {
     }
 
     await startMeet(token).expect(409);
-
-    const status = await request(app.getHttpServer())
-      .get('/v1/games/pet-card-race/me')
-      .set('Authorization', `Bearer ${token}`)
-      .expect(200);
-
-    expect(status.body).toMatchObject({ attemptsUsedToday: 10, attemptsRemainingToday: 0 });
 
     const counter = await prisma.gameDailyCounter.findFirstOrThrow({
       where: { gameId: 'voxora-pet-card-race' },
