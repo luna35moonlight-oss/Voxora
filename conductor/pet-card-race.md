@@ -262,20 +262,49 @@ push transport belongs with the Phase 13 Games Platform.
 
 ## 11. Runtime validation
 
-Verified against a real PostgreSQL database and a running API.
+Verified against a real PostgreSQL database and a running API, and by playing the real mobile card in
+a browser through react-native-web.
 
 | Check | Result |
 |-------|--------|
 | Migration `20260817203000_game_attempt_progress_state` applied by `prisma migrate deploy` | pass |
-| API end-to-end suite (`petCardRace.e2e.spec.ts`, 9 cases) plus the existing 26 e2e cases | pass |
+| API end-to-end suite (`petCardRace.e2e.spec.ts`, 10 cases) plus the existing 26 e2e cases | pass |
 | All four pets advance on the server clock with no card played | pass |
 | Player pet runs at base pace without cards; a combination raises pace rather than moving the pet | pass |
 | Plays rejected before GO; five second cooldown rejected with an honest message | pass |
 | Checkpoints deliver 3/3/3/3 then 4 cards into the hand while the race runs | pass |
 | Mud exists on the course, shield blocks a house tactic, chaser needs a named rival | pass |
 | Placements recorded as pets cross the line; race then meet results and standings | pass |
+| Race events delivered exactly once | pass (see fix below) |
 | Draw pile, house pace offsets, and shuffle seed absent from every response | pass |
 | Pets reported as development placeholders with four distinct silhouettes | pass |
+| Live browser play: countdown, four pets running, live positions, checkpoint deals, effects | pass |
+
+### Defects the play-testing found and fixed
+
+| Defect | Fix |
+|--------|-----|
+| Countdown showed "4" first, because a 3.2 s countdown ceilings to four seconds | Countdown is exactly 3 s, so it reads 3 → 2 → 1 → GO |
+| Queued race events were re-delivered on the next request, duplicating log lines | The view is drained **before** the state is persisted, so each event ships once |
+| The winning margin always measured 0 m, because distances are equal once every pet is home | The gap is snapshotted at the moment the player crosses the line |
+| The lane finish line sat short of the lane end, so pets appeared to stop before it | The lane rail is inset by exactly one figure width; a pet at 100% has its nose on the line |
+| Pets were dwarfed by the interface | Taller lanes, larger figures, one scrollable row of cards, shorter event log |
+
+### Balance measurement — OWNER DECISION
+
+The same scripted player was run at different deliberation speeds, which is the clearest read on how
+the pacing feels:
+
+| Time to choose and commit a play | Plays per race | Result |
+|----------------------------------|----------------|--------|
+| ~3.5 s (decisive) | 11 | Won all three races, meet score 206 |
+| ~3 s (decisive) | 11–12 | Won two of three races, meet score 187 |
+| ~6 s (deliberate) | 8–9 | Finished fourth in all three races, meet score 81 |
+
+That is the intended shape — hesitating costs ground because the pets never stop — but the penalty is
+currently steep: a player who takes about six seconds a play loses every race. Whether that is the
+right difficulty is a balance decision, and `baseSpeedMetresPerSecond`, `comboBoosts`, and
+`courseMetres` are the levers. **OWNER DECISION REQUESTED** (recorded as OQ-PCR-002).
 
 ---
 

@@ -108,6 +108,8 @@ export type PetCardRaceRaceState = {
   effectiveTactics: number;
   finishOrder: string[];
   orderSnapshot: string[];
+  /** Gap to the nearest rival at the moment the player crossed, in metres. */
+  marginAtYourFinishMetres: number | null;
   eventSequence: number;
   pendingEvents: PetCardRaceEvent[];
   result: PetCardRaceRaceResult | null;
@@ -437,6 +439,7 @@ function openRace(meet: PetCardRaceMeetState, petId: PetCardRacePetId, nowMs: nu
     effectiveTactics: 0,
     finishOrder: [],
     orderSnapshot: [],
+    marginAtYourFinishMetres: null,
     eventSequence: 0,
     pendingEvents: [],
     result: null,
@@ -847,6 +850,15 @@ function crossFinishLine(
   competitor.finishTimeMs = Math.max(0, Math.round(at - race.goAtMs));
   race.firstFinishAtMs = race.firstFinishAtMs ?? at;
 
+  // Measure the winning gap as the player crosses: once everyone is home the distances are equal.
+  if (competitor.isYou) {
+    const nearestRival = Math.max(
+      ...race.competitors.filter((entry) => !entry.isYou).map((entry) => entry.progressMetres),
+      0,
+    );
+    race.marginAtYourFinishMetres = Math.max(0, competitor.progressMetres - nearestRival);
+  }
+
   pushEvent(
     race,
     'FINISH',
@@ -909,7 +921,10 @@ function maybeCompleteRace(
     ...order.filter((entry) => !entry.isYou).map((entry) => entry.progressMetres),
     0,
   );
-  const marginMetres = you.position === 1 ? you.progressMetres - bestRivalMetres : 0;
+  const marginMetres =
+    you.position === 1
+      ? (race.marginAtYourFinishMetres ?? you.progressMetres - bestRivalMetres)
+      : 0;
   const photoFinish = you.position === 1 && marginMetres <= balance.scoring.photoFinishMetres;
   const breakdown = scorePetCardRace({
     position: you.position,

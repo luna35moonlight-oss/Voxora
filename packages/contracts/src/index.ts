@@ -423,8 +423,8 @@ export const PET_CARD_RACE_BALANCE = {
   /** House racers breathe around the base speed so the pack shuffles without random jumps. */
   housePaceAmplitude: 0.12,
   housePacePeriodMs: 9_000,
-  /** 3 → 2 → 1 → GO before the pets launch. */
-  countdownMs: 3_200,
+  /** 3 → 2 → 1 → GO before the pets launch. Exactly three seconds so three numerals show. */
+  countdownMs: 3_000,
   /** Server simulation resolution. Smaller is smoother and costs more work per request. */
   simulationStepMs: 100,
   /** Fractions of the course where cards are delivered. The last entry is the final checkpoint. */

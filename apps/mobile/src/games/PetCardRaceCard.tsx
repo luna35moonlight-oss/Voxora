@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
 import {
   PET_CARD_RACE_PETS,
@@ -33,7 +33,9 @@ import {
 } from './petCardRace';
 
 const frameIntervalMs = 60;
-const logLength = 3;
+const logLength = 2;
+/** The pets are the point of the screen, so they get the biggest figure the lane can hold. */
+const racerFigureSize = 52;
 
 export function PetCardRaceCard() {
   const [status, setStatus] = useState<PetCardRaceStatusResponse | null>(null);
@@ -241,7 +243,12 @@ export function PetCardRaceCard() {
             <Text style={styles.sectionMeta}>{race.cardsLeftToDeal} still to come</Text>
           </View>
 
-          <View style={styles.hand}>
+          <ScrollView
+            contentContainerStyle={styles.hand}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.handScroll}
+          >
             {hand.map((card) => (
               <HandCard
                 key={card.cardId}
@@ -251,7 +258,7 @@ export function PetCardRaceCard() {
                 selected={selectedIds.includes(card.cardId)}
               />
             ))}
-          </View>
+          </ScrollView>
 
           <Text style={summary.valid ? styles.summaryValid : styles.summaryInvalid}>
             {summary.headline}
@@ -650,26 +657,27 @@ function RaceLane({
       </View>
 
       <View style={styles.laneTrack}>
-        {laneMud.map((obstacle) => (
-          <View
-            key={obstacle.obstacleId}
-            style={[
-              styles.mud,
-              {
-                left: `${(obstacle.startMetres / courseMetres) * 100}%`,
-                width: `${((obstacle.endMetres - obstacle.startMetres) / courseMetres) * 100}%`,
-              },
-            ]}
-          />
-        ))}
+        {/* The rail is inset by one figure width so a pet at 100% has its nose on the line. */}
         <View style={styles.laneFinishLine} />
         <View style={styles.laneRail}>
+          {laneMud.map((obstacle) => (
+            <View
+              key={obstacle.obstacleId}
+              style={[
+                styles.mud,
+                {
+                  left: `${(obstacle.startMetres / courseMetres) * 100}%`,
+                  width: `${((obstacle.endMetres - obstacle.startMetres) / courseMetres) * 100}%`,
+                },
+              ]}
+            />
+          ))}
           <View style={[styles.racerHolder, { left: `${progressFraction * 100}%` }]}>
             {shielded ? <View style={styles.shieldRing} /> : null}
             {boosted ? <View style={styles.speedTrail} /> : null}
             <PetRacerFigure
               pet={competitor.pet}
-              size={44}
+              size={racerFigureSize}
               gaitPhase={petCardRaceGaitPhase(progressMetres)}
               running={running}
               faded={competitor.finishPosition !== null}
@@ -972,7 +980,7 @@ const styles = StyleSheet.create({
   statusBoost: { color: colors.state.success },
   statusShield: { color: colors.brand.blue },
   laneTrack: {
-    height: 46,
+    height: 62,
     justifyContent: 'center',
     marginTop: 2,
     overflow: 'hidden',
@@ -980,9 +988,10 @@ const styles = StyleSheet.create({
   },
   laneRail: {
     bottom: 0,
-    left: 0,
+    left: 2,
     position: 'absolute',
-    right: 56,
+    // Figure width (66) plus the finish line inset, so the nose lands on the line at 100%.
+    right: 72,
     top: 0,
   },
   racerHolder: {
@@ -992,30 +1001,30 @@ const styles = StyleSheet.create({
   },
   shieldRing: {
     borderColor: colors.brand.blue,
-    borderRadius: 30,
+    borderRadius: 40,
     borderWidth: 2,
-    height: 52,
-    left: -4,
-    opacity: 0.8,
+    bottom: -3,
+    height: 64,
+    left: -5,
+    opacity: 0.85,
     position: 'absolute',
-    top: -4,
-    width: 60,
+    width: 76,
   },
   speedTrail: {
     backgroundColor: colors.brand.blue,
-    borderRadius: 3,
-    height: 5,
-    left: -22,
-    opacity: 0.5,
+    borderRadius: 4,
+    bottom: 14,
+    height: 7,
+    left: -26,
+    opacity: 0.55,
     position: 'absolute',
-    top: 22,
-    width: 24,
+    width: 30,
   },
   mud: {
     backgroundColor: '#7A5A2E',
     borderRadius: 4,
-    bottom: 4,
-    height: 12,
+    bottom: 2,
+    height: 14,
     opacity: 0.9,
     position: 'absolute',
   },
@@ -1023,7 +1032,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.pink,
     bottom: 0,
     position: 'absolute',
-    right: 12,
+    right: 6,
     top: 0,
     width: 3,
   },
@@ -1079,12 +1088,15 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
     fontSize: typography.size.xs,
   },
-  hand: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
+  handScroll: {
     marginTop: spacing.xs,
-    minHeight: 104,
+  },
+  hand: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
+    paddingTop: spacing.xs,
   },
   handCard: {
     alignItems: 'center',

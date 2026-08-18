@@ -156,7 +156,18 @@ export class PetCardRaceService {
       });
     });
 
-    return this.respond(userId, attempt, meet);
+    // Build the view first: it takes the queued race events, and the drained state is what persists.
+    const view = takePetCardRaceMeetView(
+      meet,
+      { attemptId: attempt.id, attemptNumber: attempt.attemptNumber },
+      Date.now(),
+    );
+    await this.prisma.gameAttempt.update({
+      where: { id: attempt.id },
+      data: { progressState: toJson(meet) },
+    });
+
+    return { meet: view, status: await this.getStatus(userId) };
   }
 
   async sync(userId: string, attemptId: string): Promise<PetCardRaceResponse> {
@@ -209,6 +220,13 @@ export class PetCardRaceService {
       throw translateRuleError(error);
     }
 
+    // Draining the events into the view before persisting stops them being delivered twice.
+    const view = takePetCardRaceMeetView(
+      meet,
+      { attemptId: attempt.id, attemptNumber: attempt.attemptNumber },
+      Date.now(),
+    );
+
     if (petCardRaceMeetIsFinished(meet)) {
       await this.finalizeAttempt(userId, attempt, meet);
     } else {
@@ -218,7 +236,7 @@ export class PetCardRaceService {
       });
     }
 
-    return this.respond(userId, attempt, meet);
+    return { meet: view, status: await this.getStatus(userId) };
   }
 
   private async loadReservedAttempt(userId: string, attemptId: string): Promise<AttemptRecord> {
@@ -303,21 +321,6 @@ export class PetCardRaceService {
         });
       }
     });
-  }
-
-  private async respond(
-    userId: string,
-    attempt: AttemptRecord,
-    meet: PetCardRaceMeetState,
-  ): Promise<PetCardRaceResponse> {
-    return {
-      meet: takePetCardRaceMeetView(
-        meet,
-        { attemptId: attempt.id, attemptNumber: attempt.attemptNumber },
-        Date.now(),
-      ),
-      status: await this.getStatus(userId),
-    };
   }
 
   /**

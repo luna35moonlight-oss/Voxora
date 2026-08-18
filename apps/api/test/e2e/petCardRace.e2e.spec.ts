@@ -26,7 +26,7 @@ type Competitor = {
   pet: { petId: string; source: string; silhouette: string };
 };
 
-const COUNTDOWN_WAIT_MS = 3_600;
+const COUNTDOWN_WAIT_MS = 3_400;
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -314,6 +314,22 @@ describe('Voxora Pet Card Race (e2e)', () => {
     const progress = stored.progressState as { currentRace: { hand: Card[] } };
     expect(progress.currentRace.hand).toHaveLength(7);
     expect(stored.score).toBeNull();
+  });
+
+  it('delivers each race event exactly once', async () => {
+    const token = await signIn();
+    const started = await startMeet(token).expect(201);
+    const attemptId = started.body.meet.attemptId as string;
+    const firstEvents = started.body.meet.currentRace.events as Array<{ sequence: number }>;
+
+    expect(firstEvents.length).toBeGreaterThan(0);
+
+    const synced = await sync(token, attemptId).expect(201);
+    const repeated = (synced.body.meet.currentRace.events as Array<{ sequence: number }>).filter(
+      (event) => firstEvents.some((first) => first.sequence === event.sequence),
+    );
+
+    expect(repeated).toEqual([]);
   });
 
   it('keeps one player out of another player’s meet', async () => {
