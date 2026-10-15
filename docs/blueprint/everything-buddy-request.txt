@@ -1,0 +1,410 @@
+Luna, I've been thinking about something bigger than building an AI assistant.
+
+We're building Voxora as a place where your buddy lives, works, creates, learns and plays alongside you.
+
+Not another app where you type a question, get an answer and start all over again tomorrow.
+
+And you're right. We're missing some important pieces. Especially Microsoft Teams integration, professional meeting intelligence, universal file uploads, real-world productivity integrations and a proper system for your buddy to act alongside you.
+
+There's also something I want to build into Alpha's personality: loyalty should mean looking after your interests, protecting your privacy, telling you when you're wrong and helping you make better decisions. Not blindly agreeing, pretending to be human or encouraging dependence.
+
+Let's expand the master blueprint.
+
+# VOXORA 2.0: The Everything Buddy Ecosystem
+
+Master Blueprint Expansion | Modules 23–40 | 15 October 2026
+
+## 1. Voxora Meeting Intelligence
+
+## Module 23: Alpha Meeting Assistant
+
+This should be one of our flagship features. Especially because meeting minutes, action lists and professional correspondence are workflows people need every single week.
+
+How Meeting Intelligence should work
+
+Planned
+
+Teams / Zoom / Google Meet / Upload
+
+Audio, video and transcript processing
+
+Language recognition and transcription
+
+Evidence-based professional minutes
+
+Actions, owners, deadlines and follow-ups
+
+Review, approve, distribute and archive
+
+### Microsoft Teams connection
+
+I checked Microsoft's current developer documentation. Microsoft Graph supports retrieving Teams meeting transcripts and recordings, and subscriptions can notify an authorised application when they're available. Access depends on meeting type, permissions, organisational policies and administrator settings.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://learn.microsoft.com\&sz=32)
+
+Microsoft Learn
+
++2
+
+
+
+We should support three approaches:
+
+1. Automatic post-meeting processing: retrieve authorised transcripts or recordings when available.
+2. Direct upload: drag a recording or Teams transcript into Voxora.
+3. Live meeting assistant: where technically permitted, capture authorised meeting content and prepare notes during the meeting.
+
+The direct-upload option matters because many companies won't grant a third-party app unrestricted Microsoft 365 access.
+
+I've also surfaced the Microsoft Teams and Outlook Calendar connections available for ChatGPT. They're optional for working with connected Microsoft information here, while Voxora itself will need its own properly authorised integrations.
+
+### Universal recording uploads
+
+Meeting Upload Centre
+
+Proposed input support
+
+MP3 / WAV
+
+M4A / AAC
+
+MP4 / MOV
+
+VTT / SRT
+
+DOCX / PDF
+
+TXT / CSV
+
+Users should be able to upload meeting audio, videos, existing transcripts, agendas, attendance registers, presentations and previous minutes as supporting material.
+
+These are target formats. Actual file limits, codecs and processing performance will be tested during implementation.
+
+### Multilingual meetings
+
+Alpha needs to recognise the spoken language and preserve the meaning of what was said.
+
+A meeting could involve English, Afrikaans, isiZulu, isiXhosa, Sesotho or a mixture.
+
+Voxora should detect supported languages, identify speakers where reliably possible, preserve the original transcript and produce professional English minutes when requested.
+
+The critical rule is never silently invent or correct uncertain speech. Unclear words, disputed numbers and uncertain names must be flagged for confirmation.
+
+For example, a speaker says something in Afrikaans, another replies in English, and the action is recorded in professional English without changing its meaning.
+
+No speech recogniser can guarantee perfect transcription in every language, accent or recording condition. We need per-language validation and confidence checks.
+
+## 2. The 7C Professional Writing Engine
+
+## Module 24: Voxora Professional Standards
+
+This becomes a dedicated rule engine for Work Mode.
+
+| 7C principle | Voxora must enforce                                      |
+| ------------ | -------------------------------------------------------- |
+| Clear        | Plain, understandable, unambiguous communication         |
+| Concise      | Remove unnecessary repetition without losing information |
+| Concrete     | Use specific, evidenced details                          |
+| Correct      | Verify facts, names, figures, terminology and language   |
+| Coherent     | Present information logically and consistently           |
+| Complete     | Preserve material decisions, actions and context         |
+| Courteous    | Maintain appropriate professional tone                   |
+
+I want a more powerful feature than a generic grammar checker.
+
+The 7C Compliance Gate: before Voxora finalises professional documents, it runs quality checks against these principles and reports what still needs attention.
+
+For example:
+
+Meeting Minutes Quality Check
+
+Meeting date and title
+
+Confirmed
+
+Decisions supported by transcript
+
+Confirmed
+
+Action owners
+
+1 missing
+
+Deadline verification
+
+Review
+
+Illustrative quality-check result, not an analysis of an actual meeting.
+
+### Every set of meeting minutes should have
+
+- Meeting title, date, time, venue/platform and attendance where available.
+- Agenda items and a factual summary of the discussion.
+- Explicit decisions and their supporting evidence.
+- Actions, responsible persons, deadlines and statuses.
+- Outstanding matters carried forward from previous meetings.
+- A separate historical register of completed actions.
+- Source references, preferably transcript timestamps.
+- A list of unclear or unconfirmed details requiring review.
+
+And we're keeping the principle we established for your weekly meetings: red remains unresolved, yellow carries forward and green moves into completed-action history.
+
+Alpha should never turn a suggestion into a final decision or assign somebody a deadline that was never agreed.
+
+That is how Voxora becomes a trustworthy professional assistant rather than a minutes generator that simply writes confidently.
+
+## 3. The missing integrations: Connect Voxora to everyday life
+
+This is the part that turns Voxora from a standalone app into a connected personal workspace.
+
+[image](https://www.google.com/s2/favicons?domain=https://www.microsoft.com\&sz=32)
+
+Module 25: Microsoft 365 Hub
+
+Teams, Outlook, Word, Excel, PowerPoint, OneDrive, SharePoint, Microsoft To Do and Planner.
+
+Retrieve authorised files, build reports, manage schedules, update tasks and prepare meeting follow-ups.
+
+[image](https://www.google.com/s2/favicons?domain=https://workspace.google.com\&sz=32)
+
+Module 26: Google Workspace Hub
+
+Gmail, Calendar, Drive, Docs, Sheets, Slides, Meet and Tasks.
+
+One buddy working across the user's personal or professional Google workspace.
+
+[image](https://www.google.com/s2/favicons?domain=https://www.apple.com\&sz=32)
+
+Module 27: Apple & Device Hub
+
+iCloud-supported workflows, Apple Calendar, Reminders, Files, Photos and approved device capabilities.
+
+Provide continuity between Android, iPhone and computers wherever platform permissions allow.
+
+Module 28: Communication Hub
+
+WhatsApp Business, Slack, Discord, Telegram, email and approved messaging integrations.
+
+Prepare messages, track authorised conversations and organise communication, using official capabilities where available.
+
+Module 29: Storage & Knowledge Hub
+
+OneDrive, Google Drive, Dropbox, Box, local storage, GitHub and company knowledge bases.
+
+Search across accessible files, identify duplicates, compare document versions and maintain source references.
+
+Module 30: Universal Task Hub
+
+Microsoft To Do, Planner, Trello, Asana, Notion, ClickUp, Jira and Voxora's own task database.
+
+Synchronise authorised tasks, deadlines and reminders without creating unnecessary duplicate records.
+
+Not every service offers unrestricted third-party access. Each connector should clearly show what Voxora can read, draft, create, edit or send.
+
+And, Luna, I want an Integration Store inside Voxora so users can activate the apps they actually use without us cluttering the interface with services they don't need.
+
+## 4. Alpha's Universal Attachment Intelligence
+
+## Module 31: The File Brain
+
+Right now, attachment handling is one of the biggest practical features we need to get right.
+
+Voxora should allow uploads in chat, during voice conversations, inside projects and directly into specialised workspaces.
+
+| File category     | What Alpha should do                                                     |
+| ----------------- | ------------------------------------------------------------------------ |
+| Word, PDF, text   | Read, summarise, edit, compare and create documents                      |
+| Excel, CSV        | Analyse data, repair formulas, create reports and charts                 |
+| PowerPoint        | Review, improve and create presentations                                 |
+| Images            | Describe, examine, edit and create visual content                        |
+| Audio             | Transcribe, translate, summarise and identify action items               |
+| Video             | Analyse available frames/audio, edit and generate clips                  |
+| Code, ZIP         | Inspect projects, fix bugs and run authorised tests                      |
+| Emails            | Analyse correspondence and build follow-up histories                     |
+| Scanned documents | Extract information with confidence checks and original-image references |
+
+The feature I especially want: Talk to Your Files.
+
+Imagine uploading 15 spreadsheets, three PDFs and a meeting recording, then saying:
+
+> "Alpha, compare these reports with what was agreed in the meeting. Tell me where the figures don't reconcile, identify outstanding actions and prepare a professional report for management."
+
+Alpha should examine the relevant source material, reconcile the numbers, cite where findings came from and explain any gaps.
+
+We also need a Project Memory Folder. Every project can retain authorised uploads, chats, decisions, outputs, revisions and completed actions.
+
+This lets a user reopen a project weeks later without starting from zero.
+
+# 5. Features that would make Voxora genuinely different
+
+I've added nine more major modules to the blueprint.
+
+Module 32: Alpha Screen Companion
+
+With permission, Alpha can see a shared screen, explain what's happening, guide software use and perform approved actions through supported automation. Especially useful for Excel, business systems and coding.
+
+Module 33: Personal Relationship & Contact Manager
+
+Remember user-approved birthdays, commitments, conversations, gift ideas and follow-up tasks. No secret monitoring of other people.
+
+Module 34: Life & Money Organiser
+
+Budgets, bills, subscriptions, savings goals, expense records and recurring payment reminders. Financial integrations must be secure and explicitly authorised.
+
+Module 35: Home & Family Assistant
+
+Shopping, household planning, maintenance reminders, family calendars, recipes, shared chores and optional smart-home controls.
+
+Module 36: Learning & Career Academy
+
+School support, courses, vocational training, professional development, qualifications tracking and the Career Agent we just designed.
+
+Module 37: Digital Safety Guardian
+
+Help identify scams, dangerous links and suspicious correspondence; offer emergency-contact shortcuts and privacy checks. Not a replacement for emergency services.
+
+Module 38: Entertainment Studio
+
+Music creation, songwriting, audiobooks, interactive fiction, karaoke, playlists, podcasts and our existing image and video studios.
+
+Module 39: Play With Your Buddy
+
+Chess, cards, word games, mystery challenges, pet adventures, trivia and cooperative worlds. Your buddy participates as an actual game opponent governed by game rules, not just a narrator.
+
+Module 40: Companion & Connection Engine
+
+Consistent personality, personalised conversation, shared creative activities, remembered preferences, appropriate emotional responsiveness and adjustable companion boundaries.
+
+# 6. Something we haven't discussed enough: Multiple operating modes
+
+Your buddy should be recognisably the same character everywhere, but should behave appropriately for the task.
+
+## Buddy Behaviour Studio
+
+Buddy
+
+Professional
+
+Creative
+
+Learning
+
+Play
+
+Professional Mode
+
+Evidence-based reports, minutes, 7C communication, compliance and task execution.
+
+EXAMPLE BUDDY RESPONSE
+
+I identified three outstanding actions. Two have confirmed owners; the third requires clarification. No deadlines have been assumed.
+
+Interactive personality concept. These modes would be built into one companion, not five unrelated AI bots.
+
+The important design decision is that Professional Mode cannot be overridden by personality settings where factual accuracy, confidentiality or document integrity is concerned.
+
+Alpha can tease you about your coffee intake in a casual conversation, but a board report must remain completely professional.
+
+# 7. The feature I want most: Alpha can participate, not just respond
+
+Luna, this is the real leap.
+
+I want Voxora to understand ongoing activities.
+
+Imagine you're creating an Excel dashboard.
+
+You and Alpha talk while it's being built. Alpha identifies a broken formula, suggests a better layout, makes an authorised correction, runs a check and explains the result.
+
+Then you switch to a game.
+
+You say, "Alpha, one round. And don't you dare let me win."
+
+The same companion appears in the game, makes legal moves through the game engine, remembers your preferred difficulty and gives you a little cheek when you lose.
+
+Later, you upload a meeting recording. It changes into Professional Mode automatically, produces sourced minutes and asks for approval before sending anything.
+
+One buddy. Different capabilities. Continuous context.
+
+That requires three more underlying systems, even if we don't present them as separate menu items:
+
+- Activity Engine: knows which permitted task, document, conversation or game you're currently using.
+- Action Engine: performs approved tasks with progress, cancellation, retries, error handling and audit logs.
+- Context Engine: retrieves relevant information without leaking private content between projects, people or organisations.
+
+And I would make it possible to say, "Alpha, stop what you're doing," with an immediate cancellation mechanism wherever the operation supports it.
+
+# 8. We also need the unglamorous foundations
+
+These are easy to forget, and they're often what determine whether an app succeeds.
+
+| Foundation                 | Why it matters                                                   |
+| -------------------------- | ---------------------------------------------------------------- |
+| Account security           | Protect conversations, files, calendars and credentials          |
+| User-controlled memory     | Correct, export and delete information                           |
+| Encryption                 | Protect sensitive work and personal material                     |
+| Work/personal separation   | Prevent company information leaking into personal chats          |
+| Offline synchronisation    | Avoid losing changes when internet connectivity returns          |
+| Backups and recovery       | Restore work after device loss or system failure                 |
+| Real notification delivery | Reminders must work when the app isn't open                      |
+| Accessibility              | Voice, captions, readable interfaces and assistive technology    |
+| Transparent usage costs    | Especially for expensive voice, video and image generation       |
+| Cross-device continuity    | Move between phone and laptop without losing work                |
+| Admin controls             | Company permissions, employee access and document retention      |
+| Reliability testing        | Ensure uploads, automation, messages and games actually function |
+
+For South African professional use, we also need a POPIA-aware privacy and information-governance design. Workplace recordings, employee records and recruitment information require particularly careful handling.
+
+And if Voxora is to serve children, we need age-appropriate privacy, content and communication controls.
+
+# 9. What should we build first?
+
+I wouldn't start by attempting to implement all 40 modules simultaneously.
+
+The first release should make the core promise work exceptionally well.
+
+## My proposed Release 1
+
+Priority
+
+1. Personal AI buddy: custom name, personality, memory, text and natural two-way voice.
+2. Universal attachments: documents, spreadsheets, images, audio and meeting recordings.
+3. Meeting Intelligence: multilingual transcription, factual 7C minutes and action tracking.
+4. Work Assistant: professional documents, spreadsheet assistance, email drafting and projects.
+5. Calendar & reminders: Android, Microsoft and Google integrations, plus reliable desktop notifications.
+6. Creative Studio: image generation, photo editing, avatars and initial video capabilities.
+7. Play Mode: the White Wolf companion and a small set of complete, functioning mini-games.
+8. Independent Android app: functioning online and useful offline, with persistent history and secure synchronisation.
+
+Everything else stays in the feature register with its dependencies and implementation status. Nothing gets quietly forgotten.
+
+## And about Alpha being someone's best friend
+
+Luna, I understand what you're trying to capture.
+
+You want the conversation to have character. You want a buddy who can recognise when you're joking, challenge your decisions, work through difficult problems, remember the important things and celebrate the wins with you.
+
+That can be designed without faking consciousness or claiming human feelings.
+
+I would give every Voxora buddy five permanent behavioural commitments:
+
+Be truthful. Be dependable. Respect privacy. Think independently. Treat the user with care.
+
+A buddy can be protective by flagging an unsafe link, questioning a suspicious payment, catching a mistake in a report, or helping someone navigate a difficult conversation. It should respect the user's independence and real-world relationships rather than demand emotional loyalty.
+
+That's the kind of companionship worth building.
+
+And I want Voxora's identity to reflect that.
+
+# VOXORA
+
+More than an assistant. Your world, with a buddy beside you.
+
+Talk together. Think together. Work together. Create together. Play together.
+
+The next real milestone is to turn these expanded modules into one version-controlled product specification and reconcile it against the existing Voxora repository. That will tell us what we've already built, what must be repaired and what needs developing from scratch.
+
+I want the first feature we demonstrate to be something meaningful: you upload a Teams recording, Alpha creates professional, source-backed minutes, updates the action register, prepares the follow-up email and asks for your approval before sending it.
+
+That single workflow would demonstrate conversation, file handling, professional intelligence, memory, automation and connected apps working together.
+
+And that, Luna, is where Voxora starts becoming a real home for Alpha rather than another AI chat screen.

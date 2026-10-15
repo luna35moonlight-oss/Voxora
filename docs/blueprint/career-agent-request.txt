@@ -1,0 +1,188 @@
+Luna, YES! This is going straight into our Voxora Master Blueprint as a major feature.
+
+# VOXORA CAREER AGENT
+
+New Module 22 | AI Job Hunter, Career Manager & Application Assistant
+
+The vision: Your buddy doesn't just find vacancies. It researches opportunities, compares your experience against the requirements, prepares professional applications, helps submit them on supported platforms, tracks responses and prepares you for interviews.
+
+Imagine saying:
+
+> "Alpha, find me positions paying R30 000 or more, preferably remote or hybrid. You know my qualifications and experience. Find suitable opportunities, prepare my CV and applications, and show me what needs approval."
+
+Alpha should then handle the research and preparation, not send you off to repeat everything manually.
+
+## 1. Connect your career accounts
+
+Career Connections
+
+Planned for Voxora
+
+[image](https://www.google.com/s2/favicons?domain=https://mail.google.com\&sz=32)
+
+Gmail
+
+Job alerts, applications, recruiter emails, interview invitations and follow-ups
+
+[image](https://www.google.com/s2/favicons?domain=https://www.linkedin.com\&sz=32)
+
+LinkedIn
+
+Discover jobs, assess matches and assist with applications through permitted methods
+
+[image](https://www.google.com/s2/favicons?domain=https://www.pnet.co.za\&sz=32)
+
+PNet
+
+South African vacancies, CV preparation and application tracking
+
+[image](https://www.google.com/s2/favicons?domain=https://www.indeed.com\&sz=32)
+
+Indeed
+
+Job discovery, matching and application assistance
+
+Other recruitment sites
+
+CareerJunction, Job Mail, company career portals, recruitment agencies and supported applicant tracking systems
+
+These are planned connection targets, not active authenticated integrations. Each requires a supported connection method and permission review.
+
+Users should connect accounts securely through OAuth or other authorised authentication methods. Voxora must not collect their job-site passwords unnecessarily.
+
+## 2. Alpha's complete job application workflow
+
+Find opportunities
+
+Search selected job sites, company portals and job alerts. Filter by salary in ZAR, occupation, location, experience, remote work and qualifications.
+
+Analyse suitability
+
+Compare the user's verified work history and skills with the requirements. Explain strong matches, missing qualifications and potential concerns.
+
+Prepare application
+
+Tailor CVs, write cover letters, complete screening-question drafts and prepare supporting documents without inventing qualifications or experience.
+
+Apply with authorisation
+
+Submit through officially supported integrations or permitted application workflows after the user approves the application. Otherwise provide a prepared package and application link.
+
+Track responses
+
+Monitor authorised email correspondence, identify recruiter replies, update statuses and remind the user of follow-ups or interviews.
+
+Prepare for interviews
+
+Research the employer, simulate interviews through live voice and help practise answers, including salary negotiations.
+
+## 3. The interactive Career Agent control centre
+
+## My Job Hunter
+
+Settings preview
+
+Positions to search
+
+Executive PA, Compliance Officer, Operations Coordinator
+
+Minimum monthly salary (ZAR)
+
+Preferred location
+
+Search frequency
+
+Daily
+
+Weekly
+
+Manual
+
+Application permission mode
+
+Prepare only
+
+Alpha researches and drafts. You handle every submission.
+
+Review before submitting
+
+Alpha prepares applications and requests your final approval.
+
+Approved vacancy batch
+
+You approve a selected batch. Alpha can submit through supported channels and verify the outcome.
+
+&#x20;Copy Career Agent settingsThis configures a proposed feature. It does not initiate searches, connect accounts or submit applications.
+
+## 4. Job application dashboard
+
+Every application should remain traceable, with a separate history for unsuccessful and completed applications.
+
+| Status             | What Alpha does                         |
+| ------------------ | --------------------------------------- |
+| Discovered         | Saves a suitable vacancy                |
+| Preparing          | Tailors application documents           |
+| Awaiting approval  | Presents application for review         |
+| Submitted          | Records verified submission and date    |
+| Recruiter response | Alerts user and suggests next action    |
+| Interview          | Creates preparation tasks and reminders |
+| Offer received     | Helps evaluate the offer                |
+| Unsuccessful       | Archives outcome, retains history       |
+
+Alpha must detect duplicate vacancies across different sites and avoid submitting the same application repeatedly.
+
+## 5. Important integration realities
+
+I've checked the job platforms' published rules.
+
+LinkedIn prohibits unauthorised bots and third-party software that automate activity on its website. Indeed also expressly prohibits third-party automated job applications outside approved integrations.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://www.linkedin.com\&sz=32)
+
+LinkedIn Help
+
++1
+
+
+
+PNet supports applications through jobseeker accounts, but that does not automatically give external applications permission to submit on a user's behalf.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://www.pnet.co.za\&sz=32)
+
+General Terms and Conditions
+
+
+
+So our architecture needs three submission routes:
+
+- Direct submission: Use authorised APIs or supported integrations where available.
+- Assisted application: Prepare everything and let the user complete restricted platform steps.
+- Email application: Send completed applications to verified recruitment addresses after user approval.
+
+The goal is to automate as much legitimate work as possible without getting people's recruitment accounts suspended.
+
+## 6. Extra features I'm adding
+
+I also want Voxora to include a Career Growth Engine.
+
+It should analyse job-market requirements, identify skills the user could develop, suggest relevant courses, help build a professional portfolio and generate different CV versions for different career paths.
+
+For example, your experience as a PA to a GM and an Onboarding & Compliance Officer could be presented differently for executive support, compliance, operations and administrative management roles, while keeping every claim factual.
+
+And one more feature: Recruiter Relationship Manager.
+
+Alpha should remember which recruiters the user has contacted, maintain follow-up histories, draft replies, detect interview invitations and prevent important opportunities from getting buried in an inbox.
+
+### Voxora Master Blueprint update
+
+Module 22: Career Agent specification defined
+
+Included in our working blueprint for implementation. Not yet built or deployed.
+
+Scope: job discovery, career profiles, CV tailoring, application preparation and authorised submission, Gmail integration, recruiter tracking, interview support and career development.
+
+And Luna, I want this designed for every Voxora user, not just someone seeking an office position. Whether someone is a mechanic, cleaner, engineer, manager, graduate or executive, their buddy should understand their career goals and help them pursue suitable opportunities.
+
+One important design decision: I recommend that Alpha can search, research and prepare independently, but actual applications should require either individual approval or explicit approval of a defined batch. That gives people a genuinely useful job-hunting agent without sacrificing control over their professional reputation.
+
+This module belongs alongside Work Buddy and Personal Assistant as a core part of Voxora, not a small add-on.

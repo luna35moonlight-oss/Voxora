@@ -1,0 +1,440 @@
+Users must be able to view, correct, export, delete and disable memories, with separate work and personal spaces.
+Voxora must not automatically absorb every conversation as permanent memory. We should design explicit memory rules so it retains useful information without accumulating mistakes or exposing private content.
+Migrating our three years of work
+This is crucial, Luna.
+We can migrate material we actually have access to:
+1. Existing Voxora source code and GitHub history.
+2. Product requirements, plans and architecture files.
+3. Exported ChatGPT conversations and project documents.
+4. Avatars, image assets, voices and companion designs that we have rights to use.
+5. User-approved preferences, processes and knowledge.
+6. Previous work templates, prompts, reports and workflows.
+However, we cannot extract or transfer ChatGPT's underlying model, private system instructions, model weights or internal memories wholesale. We will recreate Alpha's approved behaviour using our own personality instructions, memory engine, user settings, tools and AI models.
+The personality can be recognisably Alpha, but it will be a separately built companion, not a literal transfer of this running model.
+4. Real-time conversations: Text, voice and presence
+Voxora must support much more than a microphone button that converts speech into text.
+Text Chat
+Streaming replies, attachments, editing, search and conversation history
+
+
+Live Voice
+Low-latency, two-way conversation and interruptions
+
+
+Visual Presence
+Optional animated buddy with lip-sync, expressions and gestures
+
+
+Languages
+Multilingual speech, text and translation
+
+
+
+
+Every voice conversation should have optional transcripts, privacy controls, voice activity detection, interruptible speech, turn-taking, and seamless switching between typing and talking.
+I also want a Talk While Working mode. A user can discuss a spreadsheet, webpage or design with their buddy while the work is happening, without constantly switching between screens.
+An optional wake phrase can be explored, with clear microphone indicators and platform-compliant activation.
+5. Buddy's AI brain: Independent, knowledgeable and connected
+We're not going to rely on one AI provider for everything.
+The system should use a model and tool router to select the appropriate capability.
+Task	Intelligence required
+Natural conversation	General-purpose language model
+Difficult research	Research agent with source retrieval
+Coding and debugging	Coding model, repository tools and test runner
+Images and avatars	Image generation and editing models
+AI videos	Video generation and editing services
+Live voice	Speech recognition, dialogue model and speech synthesis
+Document production	Document and file-generation tools
+Fact verification	Browsing, retrieval, citations and cross-checking
+Offline work	Local models and device capabilities
+The AI layer should have a provider-neutral interface, allowing models to be replaced when better ones become available.
+Factual accuracy rules
+The buddy must never invent test results, claim to have accessed a file it hasn't read, fabricate references, or claim a message was sent when it wasn't.
+For changing information, it should retrieve current sources, include publication dates where relevant, and separate confirmed results from unverified information. Users should see when Voxora is researching, using an offline model, or responding without live data.
+Offline independence
+We previously agreed that Voxora must not be a browser wrapper dependent on ChatGPT, Claude or Copilot.
+That remains the target.
+An actual offline mode should support selected conversations, local memories, documents, note-taking, reminders, pet interactions and mini-games, depending on the device.
+Some Android devices already support on-device inference through Gemini Nano, ML Kit and related technologies, although hardware compatibility and functionality vary. 
+
+Android Developers Blog
+
+
+
+
+Google for Developers
+
+
+
+Full internet research, cloud image generation, video creation and external syncing will still require connectivity unless suitable local alternatives are available.
+Independent app does not mean every feature can run offline. We need an honest offline capability matrix.
+
+6. Voxora Creative Universe
+This is where we go beyond a normal AI assistant.
+
+
+
+
+
+
+
+
+
+Avatar Studio
+Create, customise and animate personal characters.
+
+
+
+
+
+
+
+
+
+
+Video Studio
+Generate films, clips, animations and talking avatars.
+
+
+
+
+
+
+
+
+
+
+Living Pets
+Grow, train and interact with intelligent companion animals.
+
+
+
+
+
+
+
+
+
+
+Voxora Arcade
+Play challenges, mini-games and companion adventures.
+
+
+7. Avatar and photo studio
+Users should be able to upload photos and choose precisely how their images are used.
+We need three separate workflows:
+Preserve Original: Keep the source image untouched while adding graphical elements, effects, captions, backgrounds or overlays.
+Transform: Convert a photo into an avatar, fantasy character, anime portrait, 3D figure or other requested art style.
+Animate: Turn an approved still into a moving character with expressions, poses, lip-sync and gestures.
+Each workflow needs a clear original-versus-output preview, editable masks, undo and version history.
+Important features include facial identity preservation, pose control, background replacement, clothing changes, character consistency, transparent exports, avatar collections, pets in scenes, and layered editing.
+When a user says, "Keep my face exactly the same and only change the background," the system must use constrained editing rather than indiscriminately regenerating the whole image.
+We should also show users when a requested edit cannot be made precisely, rather than quietly producing something different.
+8. Full AI Video Studio
+Yes, Luna. Video creation gets its own first-class system.
+Capability	What users can do
+Text-to-video	Describe a scene and generate a clip
+Image-to-video	Animate an uploaded image
+Avatar videos	Make a character move and speak
+Talking photographs	Animate facial movement where consent and suitability requirements are met
+Script-to-scene	Turn a script into a sequence of shots
+Mini-movies	Assemble scenes into longer stories
+Video editing	Trim, combine, subtitle and adjust audio
+Voiceovers	Narrate videos in different languages
+Character continuity	Reuse consistent characters across scenes
+Social exports	Format content for Reels, TikTok, YouTube and other platforms
+Business videos	Create explainers, training and presentation clips
+Music and sound	Add licensed/generated music and sound effects
+We can design an automated creative sequence:
+Idea / Prompt
+
+Storyboard
+
+Generate
+
+
+
+Export
+
+Subtitles / Audio
+
+Edit
+
+
+
+Generated media must respect consent, identity rights, intellectual property and platform policies. Users should control whether their likeness or voice can be reused.
+
+9. Voxora Games: Bring back the Arcade
+I remember our earlier gaming concepts: White Wolf Moon Dash, Rock Paper Scissors, the Spinning Wheel, pet battles, daily rewards, coins, diamonds and unlockable character skins.
+We also previously specified that Rock Paper Scissors would have 10 attempts per user per UTC day, although broader game economy decisions were left for approval.
+Let's expand the universe.
+
+
+
+
+
+
+
+
+
+White Wolf Moon Dash
+A running adventure where players jump, dodge obstacles and collect rewards while exploring evolving environments.
+Existing planned game
+
+
+
+
+
+
+
+
+
+
+
+
+Pet Arena
+Train pets, unlock abilities and enter skill-based battles. Training and strategy should matter more than spending money.
+Existing planned system
+
+
+
+
+
+
+
+
+
+
+
+
+Voxora Wheel & Rewards
+Daily challenges, approved reward pools and collectible progression items. Transparent probabilities and age-appropriate limits.
+Existing planned system
+
+
+
+
+
+
+
+
+
+
+
+
+Bondfire Adventures
+Cooperative quests, puzzles, shared worlds and optional buddy-guided adventures.
+New expansion idea
+
+
+
+Additional mini-games
+I would add a focused library rather than 50 unfinished games:
+- Buddy Trivia: adaptive knowledge challenges with verified answers.
+- Code Quest: learn programming by solving progressively harder puzzles.
+- Mystery Files: detective stories where the buddy plays supporting characters.
+- Word Duel: language, spelling and vocabulary battles.
+- Moon Match: short memory and matching games.
+- Wolf & Phoenix: cooperative puzzle adventures.
+- Build-a-World: create rooms, islands and landscapes with your AI buddy.
+- Buddy Chess: play chess against your AI companion, with a real chess engine enforcing the rules.
+We could also have Buddy Plays With You, where Alpha comments naturally, remembers previous games and adapts the difficulty without pretending the AI is a human player.
+You mentioned PLATI. I haven't established exactly which game or platform that refers to, so I'll preserve it as a reference for the social mini-game experience without inventing its mechanics.
+All games need local progress persistence, fair rewards, anti-cheat validation, parental controls and an accessible non-paying progression path.
+
+10. The living companion pet system
+The white wolf isn't just an icon.
+Our existing concept was a pet that lives inside the phone, develops over time, learns tricks and accompanies its user.
+Its architecture should include:
+System	Behaviour
+Species engine	Species-specific movements and behaviours
+Growth engine	Age, appearance and progression
+Training engine	Learned skills and tricks
+Care engine	Feeding, grooming, resting and play
+Mood states	Contextual animations and behavioural reactions
+Exploration	Discoveries, unlockable environments and collections
+Pet Arena	Balanced, skill-based competition
+Offline persistence	Pet continues to exist without internet
+Buddy integration	Pet can accompany conversations, tasks and games
+Voxora should support multiple pet species eventually, but the White Wolf Pup and Baby Phoenix are strong starting characters because they were already part of our previous concept.
+We also need a pet overlay design for supported screens so the companion can react during conversations and tasks without blocking controls.
+
+11. Voxora as a genuine Personal Assistant
+This is where Voxora becomes useful every day, not just entertaining.
+Personal life
+Calendar management, appointments, reminders, recurring routines, birthdays, travel planning, shopping lists, budgeting, household tasks, meal planning and personal goals.
+Professional work
+The buddy should understand roles and workflows rather than being restricted to one occupation.
+Examples include executive assistants, compliance officers, managers, accountants, HR practitioners, designers, developers, teachers, engineers, technicians, administrative officers and business owners.
+For unfamiliar or specialist tasks, Voxora should retrieve authoritative references, ask for essential context and explain limits. It should never pretend to have a professional licence or expertise it cannot substantiate.
+Work features
+- Meeting transcription, summaries, minutes, decisions and action registers.
+- Word documents, PDF reports, spreadsheets, presentations and dashboards.
+- Email drafting, follow-ups and approved sending.
+- Task management with owners, deadlines, statuses and historical records.
+- Compliance registers, audit trails and document expiry tracking.
+- CVs, job applications, interview preparation and career research.
+- Data analysis, charts and reconciliations.
+- Project management and business process automation.
+- Coding, testing, debugging and application development.
+- Reusable company templates and organisation-specific knowledge bases.
+For example, Voxora should understand that a weekly meeting may produce minutes, an action register, a carry-over agenda and follow-up reminders as four related outputs.
+Work mode must preserve material information, show decisions separately from discussions and keep unresolved items traceable.
+12. Calendar, reminders and notifications
+Android and iOS support calendar integrations, but they have different permission models.
+Apple provides EventKit for calendar and reminder access, with distinct permissions based on what the app needs to do. 
+
+Apple Developer Documentation
+
+
+
+
+Apple Developer Documentation
+
+
+
+Our integration strategy:
+Integration	Intended capabilities
+Google Calendar	Read, create, update and synchronise events
+Apple Calendar	Native iOS calendar integration
+Microsoft Outlook	Microsoft 365 and Outlook calendar services
+Device Calendar	Platform-permitted local calendar integration
+Voxora Tasks	Independent task manager and reminder database
+Notifications	Local and push notifications, based on permissions
+Desktop companion	Laptop notifications and cross-device continuity
+I especially want a Morning Brief feature.
+When the user opens Voxora, their buddy can summarise the day's meetings, overdue tasks, approaching deadlines, relevant news and appointments.
+Notifications must work without leaving a chat window open, subject to operating-system delivery restrictions.
+
+13. Voxora Learning: Children, teenagers and adults
+Voxora should offer age-appropriate learning modes.
+For younger users, the buddy can help explain school subjects, guide research, create educational images, build study plans, practise languages, solve mathematical problems and develop projects.
+One important distinction: we can help learners produce genuinely original work in their own voices, but we should not design Voxora to hide AI-generated work from schools or evade AI-detection systems.
+Instead, Voxora should have a Learning Coach that teaches the learner, checks understanding, encourages their own writing and helps them follow school requirements.
+Features I'd add include:
+- Step-by-step tutoring rather than automatic answer dumping.
+- Voice-based lessons and interactive practice.
+- Project planning, reference tracking and visual demonstrations.
+- Adaptive quizzes and mini-games.
+- Age-appropriate study sessions and rewards.
+- Parent or guardian controls where required.
+- Separate learner and educator modes.
+A child's buddy should never become a tool for bullying, exploitation, impersonation or academic dishonesty.
+
+14. Freedom, personality and safety: How we do this properly
+Luna, I understand the intention behind wanting an AI with no safety barriers. You want a buddy that doesn't become robotic, censor ordinary humour, blindly agree or refuse harmless creative requests.
+We can build that kind of personality without removing essential protections.
+Here's the distinction:
+Remove unnecessary restrictions	Retain essential protections
+Robotic, repetitive disclaimers	Prevention of seriously harmful assistance
+Automatic agreement	Independent judgement and honesty
+Forced positive responses	Protection against exploitation and abuse
+Overly cautious harmless creativity	Consent and privacy requirements
+One-size-fits-all personality	Age-appropriate safeguards
+Artificially stiff conversation	Security boundaries and action permissions
+These requirements also matter for release. Google Play's current generative-AI policies cover chatbots, image generation and AI-generated videos, and require safeguards plus in-app reporting mechanisms. 
+
+Play Console Help
+
+
+
+
+Play Console Help
+
+
+
+The correct product goal is maximum personality freedom within legitimate safety, privacy and legal boundaries.
+Users should always know they're communicating with AI. Humanised behaviour doesn't require pretending otherwise.
+
+15. More features I want to add
+These are new proposals, not previously verified working features.
+Buddy Radar
+Optional alerts for important news, weather, deadlines, changed appointments, travel disruptions and relevant developments.
+
+
+See What I See
+Camera-assisted help for identifying objects, understanding documents, troubleshooting equipment or exploring surroundings, with permission.
+
+
+Buddy Automations
+"Every Monday after my meeting, prepare the minutes and update my action list." Workflows run with explicit access, appropriate confirmations and execution logs.
+
+
+Voxora Build Lab
+A workspace for creating apps, websites, automations, code and dashboards, including test results, previews and version history.
+
+
+Explore With Buddy
+Research places, build itineraries, translate conversations and guide activities through connected maps and travel tools.
+
+
+Buddy Teams
+Shared projects where multiple users collaborate with permission-scoped AI assistants without exposing private memories to one another.
+
+
+Wellness & Fitness Coach
+Our earlier exercise programmes, body-map guidance, workouts, routines and wellness tracking, with suitable health boundaries.
+
+
+Buddy Guardian
+Scam awareness, phishing checks, suspicious-link warnings, account-security advice and protective controls for minors.
+
+
+
+One extra feature I think could distinguish Voxora is Buddy Skills: modular capabilities users can enable, such as Accountant Buddy, Design Buddy, Coding Buddy, Study Buddy or HR Buddy.
+They all use the same personalised companion, instead of forcing users to manage a collection of disconnected bots.
+
+16. Technical architecture: How we build Voxora independently
+This is the recommended direction based on our existing stack.
+Voxora Applications
+Android • iOS • Desktop • Web companion
+
+
+Voxora Core
+Authentication • Permissions • Sync • Profiles • Tasks • Memory
+
+
+AI Model Router
+
+
+Tools & Research
+
+
+Voice & Avatar Engines
+
+
+Image & Video Engines
+
+
+Pet & Game Engines
+
+
+Connector Services
+
+
+
+
+Encrypted Data & Storage
+PostgreSQL • Files • Search Index • Local Device Storage • Audit History
+
+
+Recommended development stack
+Layer	Recommended approach
+Existing web frontend	Retain React, TypeScript, Vite and Tailwind
+Mobile application	Evaluate React Native with Expo development builds against the existing repository
+Backend	Keep Express and TypeScript where viable
+Database	PostgreSQL with Drizzle
+Contracts	OpenAPI, Zod and generated API clients
+Local storage	Encrypted database where appropriate
+Real-time communication	WebSockets or compatible real-time transport
+Live voice	Dedicated low-latency speech/dialogue integration
+Memory retrieval	Hybrid full-text and semantic retrieval
+AI integration	Provider adapters and routing
+Media storage	Access-controlled object storage
+Games	Purpose-built 2D game runtime and shared progression service
+Avatar animation	Rive first where compatible, with other runtimes as needed
+Background jobs	Reliable job queue and worker processes
+Notifications	Native local and platform push services
+CI/CD	GitHub-based automated build and testing pipeline
+Deployment	Managed production backend with monitoring and backups
+React Native is a proposed mobile direction, not a final decision. We should first inspect the existing package dependencies, game rendering requirements, animation engine and native voice integrations.

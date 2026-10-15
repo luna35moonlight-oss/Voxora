@@ -479,3 +479,5 @@ export const UnequipAvatarItemRequestSchema = z.object({
   slot: AvatarEquipmentSlotSchema,
 });
 export type UnequipAvatarItemRequest = z.infer<typeof UnequipAvatarItemRequestSchema>;
+
+export * from './personality';

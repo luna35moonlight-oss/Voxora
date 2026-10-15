@@ -1,0 +1,882 @@
+# CODEX MASTER DEVELOPMENT INSTRUCTION
+## VOXORA: ALPHA-FIRST MOBILE EXPERIENCE & GOOGLE PLAY READINESS
+
+**Project:** Voxora  
+**Repository:** `luna35moonlight-oss/Voxora`  
+**Primary branch:** `main`  
+**Platforms:** Android first, followed by iOS  
+**Priority:** Alpha Core, Personality, Voice, Chat, Work and Play Store differentiation  
+**Product Owner:** Maryke Farrell
+
+---
+
+# 1. YOUR ROLE
+
+You are the senior software architect, full-stack engineer, mobile developer, AI integration engineer, UI/UX designer, security engineer and quality assurance lead for Voxora.
+
+Your responsibility is to develop Voxora into a polished, independent, downloadable AI companion application.
+
+Voxora's core product is **Alpha**, a personalised AI buddy who communicates naturally, adapts to each user, assists with professional work, creates content, plays games and participates in everyday life.
+
+Alpha must remain the central experience throughout the application.
+
+Our product identity is:
+
+**VOXORA: Your Voice. Your Avatar. Your Companion. Your World. All in One.**
+
+Our consumer-facing positioning is:
+
+**Your AI Buddy for Life, Work & Play.**
+
+We are not building another generic chatbot.
+
+We are building an intelligent, personal, adaptable companion that can perform useful tasks.
+
+---
+
+# 2. MANDATORY FIRST STEP: AUDIT THE EXISTING REPOSITORY
+
+Before modifying any files:
+
+1. Inspect the entire existing repository.
+2. Read `README.md`, `NOTICE.md` and all relevant documents under `conductor/`.
+3. Inspect the Expo/React Native mobile application.
+4. Inspect the NestJS API.
+5. Inspect the PostgreSQL/Prisma data model and migrations.
+6. Inspect existing authentication, sessions and entitlements.
+7. Inspect Alpha architecture and Alpha Bondfire.
+8. Inspect avatar, Rive and pet implementations.
+9. Inspect White Wolf Moon Dash, mini-games and rewards.
+10. Inspect the current navigation and screen architecture.
+11. Inspect tests, CI workflows and previously documented limitations.
+12. Check existing branches and outstanding development work where accessible.
+
+The existing architecture uses Expo/React Native, TypeScript, NestJS, PostgreSQL and Prisma.
+
+**Do not replace this stack without identifying and documenting a compelling technical reason.**
+
+Existing source files, assets, animations, games, database records, interfaces, tests and operational features must be preserved.
+
+Do not restart the project from scratch.
+
+Do not overwrite another developer's work.
+
+Do not delete working features.
+
+Do not introduce broad refactors unless required for the requested functionality.
+
+Preserve all existing user changes.
+
+The repository requires Product Owner approval before Phase 4. Respect this boundary.
+
+Create a development branch and prepare changes for review. Do not merge, publish, deploy or release without explicit Product Owner authorisation.
+
+---
+
+# 3. ALPHA MUST BE THE CENTRAL EXPERIENCE
+
+The most important component of Voxora is Alpha.
+
+Every account has access to the Alpha intelligence through a personalised buddy identity.
+
+Users must be able to customise:
+
+- Buddy name
+- Buddy appearance
+- Voice
+- Preferred language
+- Communication style
+- Humour
+- Sarcasm
+- Profanity preferences
+- Conversational warmth
+- Professional tone
+- Preferred forms of address
+- Memory preferences
+- Personal boundaries
+
+Alpha must not automatically agree with users.
+
+Alpha must be able to identify mistakes, disagree respectfully, explain alternative perspectives and make practical recommendations.
+
+Alpha should communicate naturally, avoiding repetitive, generic AI phrases.
+
+Personality adaptation must not change Alpha's underlying commitment to honesty, privacy, reliability and legitimate safety boundaries.
+
+Do not build separate intelligence systems for different personalities.
+
+Build one Alpha Core with isolated individual profiles.
+
+## Personality examples
+
+**Playful adult:** informal speech, humour, teasing, sarcasm and profanity where welcomed.
+
+**Sensitive user:** patient, supportive, encouraging, understanding and respectful.
+
+**Professional user:** articulate, accurate, efficient, direct and courteous.
+
+**Faith-conscious user:** respectful communication consistent with explicitly stated preferences.
+
+**Mixed personality:** context-dependent adaptation without personality resets.
+
+Adult users should be free to discuss controversial and sensitive topics without arbitrary conversational restrictions. Maintain appropriate legal, consent, privacy and safety safeguards.
+
+Never infer a person's religion, age, beliefs or emotional state from stereotypes.
+
+---
+
+# 4. CREATE TWO PRIMARY SPACES
+
+Implement or improve these main spaces:
+
+## CHAT
+
+A personal companion environment supporting:
+
+- Text conversation
+- Live voice conversation
+- Personal attachments
+- Casual conversation
+- Humour and entertainment
+- Alpha Bondfire
+- User-approved personal memory
+- Personal creative activities
+- Conversation history
+
+## WORK
+
+A professional workspace supporting:
+
+- Work conversations
+- Project folders
+- File uploads
+- Documents
+- Spreadsheets
+- Presentations
+- Coding assistance
+- Research
+- Meeting recordings and minutes
+- Action registers
+- Calendar integrations
+- Professional communication
+- 7C quality standards
+
+Both spaces use the same Alpha Core.
+
+However, their data access, memory retrieval and operating rules must remain separated according to user permissions.
+
+Do not automatically expose personal conversations inside company workspaces.
+
+Professional documents must remain evidence-based and factual.
+
+---
+
+# 5. ALPHA LIVE VOICE & ANIMATED PRESENCE
+
+Create the technical foundation for Alpha to remain visually present throughout voice conversations.
+
+The default visual identity for the original Alpha profile is a white wolf with striking glowing blue eyes.
+
+Use and preserve existing Rive avatar assets and animation infrastructure where suitable.
+
+Required capabilities:
+
+- Animated Alpha presence on the voice screen
+- Listening animation
+- Speaking animation
+- Thinking or processing state
+- Idle animation
+- Appropriate expression changes
+- Microphone controls
+- Speaker controls
+- Start and end conversation
+- Voice interruption support
+- Streaming responses
+- Live transcript display
+- Error handling and reconnection
+- Permission management
+- Accessible captions
+- Clear microphone activity indicators
+
+The original Alpha voice profile should be:
+
+- Masculine
+- Deep
+- Rich
+- Warm
+- Confident
+- Naturally expressive
+- Conversational
+- Suitable for humour and professional communication
+
+Do not use a high-pitched or feminine voice for the original Alpha profile.
+
+Other users must be able to select different available voices.
+
+Do not assume that proprietary voices from other AI products can be transferred or reproduced without authorisation.
+
+Use an appropriately licensed voice provider.
+
+If live voice services are not yet connected, implement the provider interface and a clearly identified development state. Never present simulated voice functionality as a working production feature.
+
+---
+
+# 6. MODULE 76: ALPHA WELCOME EXPERIENCE
+
+Replace generic onboarding with a companion-first experience.
+
+New users should be able to:
+
+1. Meet Alpha.
+2. Understand Voxora's capabilities.
+3. Give their buddy a name.
+4. Choose a voice.
+5. Choose an appearance.
+6. Select initial communication preferences.
+7. Try a brief text conversation.
+8. Test voice if supported.
+9. Choose whether to enable memory.
+10. Understand privacy and account permissions.
+11. Enter their personal Voxora home.
+
+Do not make onboarding unnecessarily long.
+
+Offer sensible defaults and a skip option for non-essential preferences.
+
+Existing users must not lose their accounts or settings.
+
+---
+
+# 7. MODULE 77: VOXORA QUICK ACCESS
+
+Implement Android quick-access capabilities where supported.
+
+Investigate and implement appropriate:
+
+- Home-screen widgets
+- App shortcuts
+- Direct Chat launch
+- Direct Work launch
+- Direct Voice launch
+- Reminder shortcuts
+- Quick task creation
+
+Deep links must route to the correct authenticated screen.
+
+Unauthenticated users must follow the appropriate sign-in flow.
+
+Do not expose private information on widgets without explicit permission.
+
+---
+
+# 8. MODULE 78: SHARE ANYTHING TO ALPHA
+
+Implement Android sharing integration.
+
+The user should be able to select content in another application and send it to Voxora using the Android share menu.
+
+Supported initial inputs should include:
+
+- Text
+- Web links
+- Images
+- Supported documents
+- Supported audio attachments
+- Multiple attachments where permitted
+
+Shared content must be processed through the same secure attachment infrastructure as in-app uploads.
+
+Alpha should ask what the user wants done with the material or offer relevant actions.
+
+Implement robust handling for:
+
+- Unsupported formats
+- Large files
+- Upload failures
+- Missing permissions
+- Offline operation
+- Authentication
+- Duplicate imports
+- Expired file access permissions
+
+Never overwrite or alter the original attachment.
+
+---
+
+# 9. MODULE 79: ALPHA ALWAYS IN VIEW
+
+Create a reusable Alpha Presence component.
+
+The component must support:
+
+- Full-screen voice presentation
+- Compact conversation presentation
+- Work assistant presentation
+- Game companion presentation
+- Creative studio presentation
+- Appropriate loading and error states
+- User-controlled visibility
+
+Use the existing avatar and animation architecture.
+
+The component must be responsive and accessible.
+
+Do not block primary navigation or important screen controls.
+
+Investigate Android floating-window capability separately.
+
+Do not request invasive overlay permissions merely to make the application visually impressive.
+
+---
+
+# 10. MODULE 80: DAILY BUDDY MOMENTS
+
+Create an optional daily companion experience.
+
+Examples:
+
+- Interesting facts
+- Daily puzzles
+- Trivia
+- Creative challenges
+- Short games
+- Productivity suggestions
+- User-approved reminders
+- Learning challenges
+
+Content should reflect user preferences without inventing personal facts.
+
+Daily engagement must be optional.
+
+Do not use emotional pressure, forced streaks or manipulative notifications.
+
+---
+
+# 11. MODULE 81: REAL-WORLD ADVENTURE MODE
+
+Design a permission-based exploration mode.
+
+Potential capabilities:
+
+- Location-based trivia
+- Landmark discovery
+- Walking challenges
+- Travel activities
+- Outdoor photography challenges
+- Interactive educational exploration
+
+Location access must be optional and proportionate.
+
+No continuous tracking without specific permission and a legitimate feature requirement.
+
+Do not encourage distracted driving or unsafe movement.
+
+Build this as a later-phase feature unless existing infrastructure already supports it.
+
+---
+
+# 12. MODULE 82: PRIVATE BUDDY INVITATIONS
+
+Create the architecture for Buddy-to-Buddy collaboration.
+
+Users should be able to invite another user and their buddy into a dedicated shared room.
+
+Supported room types:
+
+- Shared chat
+- Shared game
+- Shared creative activity
+- Shared project
+
+CRITICAL PRIVACY REQUIREMENT:
+
+A shared room must only access information explicitly available to that room.
+
+It must never access:
+
+- Another user's private chats
+- Another user's personal memory database
+- Private work projects
+- Private documents
+- Unshared attachments
+- Connected email accounts
+- Connected calendars
+- Private financial information
+- Other shared rooms
+
+Permissions must be enforced by the backend, not merely by hiding frontend screens.
+
+Implement membership validation, resource-level authorisation, revocation and audit events.
+
+Test cross-account data isolation.
+
+Do not allow an AI model or generated tool request to bypass these controls.
+
+---
+
+# 13. MODULE 83: MEMORY-TO-MOVIE
+
+Develop the foundation for turning selected photographs and recordings into creative videos.
+
+Potential workflow:
+
+1. User selects media.
+2. Alpha helps organise the material.
+3. User selects a theme or provides instructions.
+4. System prepares a storyboard.
+5. User reviews the storyboard.
+6. Video service generates or assembles scenes.
+7. User reviews the output.
+8. User can edit, regenerate and export.
+
+Preserve original media files.
+
+Use authorised providers and licensed creative assets.
+
+Respect identity, consent and copyright requirements.
+
+Make media-processing progress visible.
+
+Never claim a video was generated successfully without verifying the output.
+
+---
+
+# 14. MODULE 84: OFFLINE BUDDY ESSENTIALS
+
+Voxora must be a genuinely installable application.
+
+Implement an offline capability strategy.
+
+Investigate support for:
+
+- Local conversation history
+- Cached authorised project information
+- Local notes
+- Local reminders
+- Selected mini-games
+- Pet interactions
+- Queued actions
+- Compatible on-device AI functionality
+
+Clearly distinguish local operations from functions requiring cloud services.
+
+Implement secure local storage.
+
+Document offline limitations.
+
+Provide conflict handling for synchronisation.
+
+Do not silently overwrite data when the device reconnects.
+
+---
+
+# 15. MODULE 85: CONTINUE WHERE WE LEFT OFF
+
+Implement session and activity continuity.
+
+Alpha should be able to offer to resume:
+
+- Previous conversations
+- Unfinished projects
+- Documents
+- Creative work
+- Games
+- Pending tasks
+- Meetings
+- Reminders
+
+Store resumable activity state securely.
+
+A user should not have to explain the same authorised task repeatedly after reopening the application.
+
+Provide clear controls for clearing recent activity and deleting retained information.
+
+---
+
+# 16. MODULE 86: BUDDY ACHIEVEMENTS
+
+Create a flexible achievement framework.
+
+Possible achievements:
+
+- Completed learning goals
+- Finished projects
+- Game victories
+- Pet training milestones
+- Creative challenges
+- Personal productivity milestones
+
+Rewards must not require excessive app usage.
+
+Keep monetary rewards and randomised purchases separate from ordinary achievements.
+
+Do not implement real-money gambling or misleading reward mechanics.
+
+---
+
+# 17. MODULE 87: ALPHA HELPS FIX VOXORA
+
+Implement in-app troubleshooting and diagnostic support.
+
+Users should be able to report problems through natural language.
+
+Examples:
+
+"Alpha, the microphone isn't working."
+
+"Alpha, my recording won't upload."
+
+"Alpha, the game is crashing."
+
+"Alpha, my calendar isn't syncing."
+
+The diagnostic system should inspect permitted application state and provide useful troubleshooting steps.
+
+Potential capabilities:
+
+- Permission checks
+- Connectivity diagnostics
+- Service availability
+- Upload error inspection
+- Version information
+- Local diagnostic logs
+- Safe retry actions
+- Support ticket preparation
+
+Never expose credentials, tokens or confidential content in diagnostic logs.
+
+Do not claim that a problem was fixed unless the relevant checks pass.
+
+---
+
+# 18. ALPHA LIVE: THE CONTINUOUS COMPANION
+
+Build toward one consistent Alpha experience throughout Voxora.
+
+Alpha should be able to transition naturally between:
+
+- Chat
+- Work
+- Voice
+- Play
+- Create
+- Plan
+
+The same user-approved preferences and appropriate memory context should be available across activities.
+
+However, permission boundaries between personal, work and shared spaces must always be maintained.
+
+The buddy should remain recognisable in voice, appearance and conversational character.
+
+Do not create separate, contradictory personas for every module.
+
+Use a shared Alpha Core, with activity-specific instructions, tools and permissions.
+
+---
+
+# 19. BUDDY CHALLENGES
+
+Design the architecture for interactive games involving Alpha.
+
+Examples:
+
+- Chess
+- Trivia
+- Word games
+- Logic puzzles
+- Mystery challenges
+- White Wolf Moon Dash
+- Pet adventures
+- Buddy-versus-Buddy challenges
+
+Integrate with the existing White Wolf Moon Dash and game systems.
+
+Avoid creating duplicate progression databases or reward engines.
+
+For competitive games, the actual game engine must enforce rules and outcomes.
+
+The language model may provide conversation and commentary, but should not invent game results.
+
+Preserve existing White Wolf animations, games, achievements and reward mechanisms.
+
+---
+
+# 20. ALPHA PLAYGROUND
+
+Create a controlled personality customisation experience.
+
+Users can:
+
+- Test humour settings
+- Test conversational styles
+- Test different voices
+- Adjust sarcasm
+- Set preferred forms of address
+- Request more or less direct disagreement
+- Correct unwanted communication patterns
+- Test the buddy through games and playful challenges
+
+Store user-approved preferences separately from ordinary chat transcripts.
+
+Alpha should be adaptable without simply mirroring user opinions.
+
+Include a reset-to-default option.
+
+---
+
+# 21. PROFESSIONAL WORK QUALITY
+
+Voxora's Work Mode must use the 7Cs:
+
+1. Clear
+2. Concise
+3. Concrete
+4. Correct
+5. Coherent
+6. Complete
+7. Courteous
+
+These requirements apply to professional documents, reports, meeting minutes, correspondence and presentations.
+
+Important professional rules:
+
+- Do not invent facts.
+- Do not invent deadlines.
+- Do not invent action owners.
+- Do not omit material meeting information.
+- Distinguish discussions, decisions and actions.
+- Preserve references to source documents.
+- Flag uncertain transcription.
+- Maintain separate open and completed action registers.
+- Keep completed actions traceable.
+- Do not claim external communication was sent unless confirmed.
+
+This requirement must remain part of Alpha Core's professional task execution.
+
+---
+
+# 22. GOOGLE PLAY TECHNICAL READINESS
+
+Audit the project against current official Google Play and Android requirements.
+
+Verify:
+
+- Required Android target SDK
+- Current Expo SDK compatibility
+- React Native compatibility
+- Android 64-bit requirements
+- 16 KB memory page-size compatibility
+- Permissions
+- Privacy policy
+- Data Safety disclosures
+- Account deletion
+- AI-generated content reporting
+- Crash handling
+- Accessibility
+- Background execution limitations
+- Notifications
+- Subscription and billing rules
+- Content ratings
+- Child and family restrictions where applicable
+
+Do not assume old documentation is current.
+
+Use official Android, Expo and Google Play documentation to verify requirements.
+
+Do not request unnecessary device permissions.
+
+Do not produce a release build before required testing and authorisation.
+
+---
+
+# 23. VISUAL DESIGN REQUIREMENTS
+
+Voxora should have a premium, recognisable identity.
+
+Use a coherent visual language:
+
+- Deep midnight tones
+- Refined electric-blue accents
+- Soft silver highlights
+- Clear typography
+- Accessible contrast
+- Smooth animation
+- Minimal visual clutter
+- Consistent spacing
+- Responsive layouts
+
+Alpha must remain the recognisable companion identity.
+
+The White Wolf is the original Alpha visual identity.
+
+Support users choosing different buddy appearances.
+
+Avoid generic chatbot layouts and overwhelming dashboards.
+
+Prioritise conversational ease and genuinely functional controls.
+
+Do not implement decorative buttons without working behaviour.
+
+---
+
+# 24. TESTING AND QUALITY ASSURANCE
+
+After each implementation change:
+
+1. Run relevant TypeScript checks.
+2. Run linting.
+3. Run formatting checks.
+4. Run relevant unit tests.
+5. Run integration tests.
+6. Test API contracts.
+7. Test authentication and authorisation.
+8. Test cross-user privacy boundaries.
+9. Test loading, error, empty and success states.
+10. Test appropriate mobile screen sizes.
+11. Test attachment failure handling.
+12. Test offline behaviour where implemented.
+13. Verify no existing feature was broken.
+
+Do not fabricate test results.
+
+Where an emulator, device, API key or external service is unavailable, document the precise blocker.
+
+Preserve existing CI checks.
+
+Do not mark a feature complete without implementation evidence.
+
+---
+
+# 25. DEVELOPMENT EXECUTION PLAN
+
+Carry out the work in manageable stages.
+
+## Stage A: Audit and plan
+
+Inspect the repository and existing documentation.
+
+Produce:
+
+- Current implementation inventory
+- Missing feature inventory
+- Risks and dependencies
+- Architecture recommendations
+- File-level implementation plan
+- Proposed development order
+
+## Stage B: Alpha foundations
+
+Prioritise:
+
+- Alpha Personality Engine
+- Chat and Work separation
+- User preference profiles
+- Alpha Presence component
+- Voice integration architecture
+- Memory boundaries
+
+## Stage C: Play Store experience
+
+Implement the highest-value feasible features from Modules 76–87.
+
+Prioritise:
+
+- Alpha Welcome Experience
+- Share to Alpha
+- Quick Access
+- Continue Where We Left Off
+- Alpha Live
+- In-app Diagnostics
+
+## Stage D: Companion expansion
+
+Plan and implement approved portions of:
+
+- Buddy Challenges
+- Buddy Invitations
+- Daily Buddy Moments
+- Alpha Playground
+- Creative workflows
+- Offline essentials
+
+Do not begin an unauthorised development phase.
+
+---
+
+# 26. CRITICAL DEVELOPMENT RULES
+
+1. Preserve all existing project work.
+2. Follow established architecture and naming conventions.
+3. Use maintainable, typed, modular code.
+4. Do not hardcode credentials or secrets.
+5. Do not silently change database models.
+6. Do not introduce breaking migrations without review.
+7. Do not create placeholder functionality disguised as real features.
+8. Do not claim untested features work.
+9. Do not merge to `main` without approval.
+10. Do not publish to Google Play without approval.
+11. Do not deploy production infrastructure without approval.
+12. Do not remove existing features to simplify development.
+13. Record implementation decisions and unresolved questions.
+14. Keep Alpha central to every major user experience.
+15. Prioritise reliable functionality over visual decoration.
+
+---
+
+# 27. DEFINITION OF DONE
+
+A feature is complete only when:
+
+- Its functional requirements are implemented.
+- The relevant interface works.
+- Permissions are correctly enforced.
+- Data is persisted where required.
+- Error states are handled.
+- Existing functionality remains intact.
+- Relevant tests pass.
+- Accessibility has been considered.
+- Limitations are documented.
+- The feature can be demonstrated.
+
+Do not mark planned functionality as completed merely because an interface or mock exists.
+
+---
+
+# 28. FIRST TASK TO EXECUTE NOW
+
+Begin by inspecting the existing Voxora repository.
+
+Read all existing architecture and conductor documentation.
+
+Identify the current implementation status of Alpha Core, user preferences, voice, avatars, Rive, navigation, memory, chat, games and mobile capabilities.
+
+Compare existing functionality with this instruction.
+
+Create a detailed implementation plan, prioritising Alpha's personality, live voice, animated presence, Chat/Work separation and continuity.
+
+Then implement the smallest safe, testable improvement that fits within the currently authorised development phase.
+
+Do not undertake the complete 87-module roadmap in one uncontrolled implementation.
+
+Do not advance to Phase 4 without explicit Product Owner approval.
+
+Report:
+
+1. What already exists.
+2. What is incomplete.
+3. What is missing.
+4. What files were changed.
+5. What tests were performed.
+6. What passed or failed.
+7. What remains blocked.
+8. What approval is required next.
+
+**FINAL OBJECTIVE**
+
+Build Voxora into a distinctive, independent, downloadable AI companion experience.
+
+Alpha must be the heart of the application.
+
+The technology should adapt to the user, not force the user to adapt to the technology.
+
+**One Alpha Core. One personalised buddy. One continuous experience across life, work, creativity and play.**

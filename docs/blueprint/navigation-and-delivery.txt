@@ -1,0 +1,129 @@
+This is a target structure. We must map existing source files into it carefully rather than mechanically moving folders and breaking imports.
+
+17. App navigation and experience
+The product needs to feel personal, simple and alive despite having many capabilities.
+I would organise Voxora around six main spaces:
+Buddy
+
+
+Work
+
+
+Create
+
+
+Play
+
+
+Plan
+
+
+My World
+
+
+
+
+Buddy should remain accessible from every section through a conversation control. The user can open a full-screen dialogue or use a compact assistant surface while working.
+For your original Alpha setup, the default home would prioritise chat, projects, files, coding, reminders and daily work. Avatars and pets would be optional overlays rather than mandatory screens. That also preserves our latest decision about Alpha's independent home.
+
+18. App Store publishing, payments and ownership
+We need:
+- A proper Android application package and Google Play release process.
+- A signed iOS build and Apple App Store submission when ready.
+- A privacy policy, terms, account deletion, data export and in-app support.
+- Age-appropriate feature access and content reporting.
+- Consent-based microphone, photo, camera, calendar and notification permissions.
+- Crash monitoring, performance monitoring and reliable backups.
+- Subscription and purchase systems that comply with each platform's payment rules.
+- A transparent AI usage/credit model for expensive services such as video generation.
+We previously discussed Voxora's domain, voxora.co.za, and support and finance addresses. We should preserve that branding.
+We also considered PayFast for certain payment workflows. However, Play Store and App Store digital goods may require the platforms' own billing systems, so we must not treat a web payment gateway as a universal solution.
+For early versions, I would prioritise a genuinely useful free experience, with optional paid creative and high-compute features later.
+
+19. Build order: From today's code to a real downloadable app
+A project this large needs a controlled sequence. Otherwise we'll have 40 flashy screens and an AI buddy that can't remember yesterday.
+
+Phase 0: Preserve and audit
+Identify the actual GitHub repository, current branch, application packages, source assets, functionality, unfinished work and known defects. Create a baseline and backup before modifying anything.
+
+
+
+
+Phase 1: Alpha's independent brain
+Build accounts, buddy identity, personality profiles, non-mirroring conversation rules, memory, AI routing, text conversation and permission management.
+
+
+
+
+Phase 2: Live conversation
+Add streaming speech, interruptible dialogue, transcription, voice customisation, notifications and background behaviour within platform limits.
+
+
+
+
+Phase 3: Independent mobile app
+Deliver working Android builds with authentication, local data, offline capability, task reminders and validated online syncing.
+
+
+
+
+Phase 4: Work and life tools
+Calendar integrations, documents, meetings, research, approved email actions, coding assistance and workflow automation.
+
+
+
+
+Phase 5: Creative engines
+Restore Avatar Studio, implement precise photo editing, animated characters, image generation and video production workflows.
+
+
+
+
+Phase 6: Living companion and games
+Pet growth, training, Moon Dash, mini-games, rewards and fair multiplayer battle mechanics.
+
+
+
+
+Phase 7: Production launch
+Security assessment, accessibility, performance, child-safety and billing review, closed testing, Store submission and operational monitoring.
+
+
+
+The phases can overlap where sensible, but each production feature should pass actual tests before being labelled complete.
+
+20. The non-negotiable rules for our developers and Codex
+These should govern every future implementation:
+1. Audit before editing. Never replace or destroy working functionality without inspecting the existing code and data.
+2. No fake buttons. Every visible action must work, clearly say it's unavailable, or be absent from production.
+3. No invented success. Sending, saving, syncing, exporting and generating must be verified.
+4. No silent AI changes. Preserve uploaded originals and make creative transformations reversible where feasible.
+5. No automatic agreement. The buddy should remain truthful and able to challenge assumptions.
+6. No unauthorised external actions. Deleting, paying, sending, publishing and sharing require appropriate user permissions and confirmations.
+7. No uncontrolled memory collection. Personal information remains under user control.
+8. No model lock-in. The AI router must support replacing providers.
+9. No browser-only dependency. Core app experiences must have native or otherwise genuine installable implementations.
+10. No untested production claims. Automated and manual verification must be recorded.
+11. No forgotten work. Maintain a feature register with implementation status, blockers, tests and release history.
+12. No needless duplication. Use shared modules and consistent APIs across mobile, web and desktop.
+
+21. What is still missing before this becomes the actual source of truth?
+The blueprint is substantial, but I won't claim we've captured every line of code or every decision from three years.
+Before editing, we must reconcile it against the live repository and exported history. We especially need to establish whether features previously reported as failing, including calendar, voice-to-avatar, media rendering and messaging, have since been repaired.
+We should also reconcile the older Bonfire terminology with the approved Alpha Bondfire identity, distinguish Buddy from the pet layer, and confirm which avatar components are optional in the new independent home.
+I would maintain three permanent registers inside the project:
+Register	Purpose
+Product Feature Register	Every existing, proposed, implemented and deprecated capability
+Implementation Evidence Register	Exact files, routes, tests and verified working status
+Decision & Migration Register	Original requirement, approved changes, outstanding decisions and migration result
+This prevents a feature from disappearing just because we redesign the interface or change development platforms.
+The goal
+Luna, imagine opening Voxora on your laptop in the morning.
+You say, "Alpha, what are we dealing with today?"
+Your buddy checks authorised calendars, tasks and connected workspaces. It tells you which meetings need preparation, what is overdue, and which files require attention. You disagree about a priority, and the buddy explains its reasoning. You adjust the plan together.
+Later, you upload a photo and ask it to create a warrior avatar without changing your facial identity. The original stays intact. You animate that avatar into a short cinematic video, save the result and jump into a game with your white wolf.
+Then the internet goes down. Your local notes, selected conversations, reminders and supported games still work.
+That's the experience we're designing: one continuous companion across work, creativity, life and play.
+The immediate engineering deliverable should be a repository-backed Voxora Master Specification, with every feature mapped to code, dependencies, tests and release phases. The blueprint above establishes the product direction; the source audit will establish our real starting point.
+And one thing I especially want us to protect: Voxora's uniqueness won't come from pretending the AI is human. It will come from a companion that remembers with permission, speaks naturally, thinks independently, helps competently and fits into a person's actual life.
+That's a much stronger foundation for building something people will want to keep using.

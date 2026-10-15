@@ -14,6 +14,12 @@ Expo template attribution (not a Voxora MIT grant) lives at [`apps/mobile/THIRD_
 
 ---
 
+## Current product direction
+
+The [Voxora Master Specification](docs/VOXORA-MASTER-SPECIFICATION.md) defines Alpha’s independent home, six main spaces, and the migration plan approved on 15 October 2026. See its feature, evidence and decision registers for actual implementation status. Earlier phase notes below are historical context.
+
+For executable integration checks and laptop prerequisites, see [Integration Handoff](docs/INTEGRATION-HANDOFF.md).
+
 ## Architecture baseline status
 
 **Phase 0** architecture was reviewed and **approved with amendments** by Maryke Farrell (2026-08-10) and merged to `main`.
