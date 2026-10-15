@@ -1,6 +1,6 @@
 # Alpha Personality & Presence Engine
 
-15 October 2026 · Highest product priority. Specification plus shared configuration contracts; no connected conversational model or voice engine exists yet.
+15 October 2026 · Highest product priority. Specification, shared contracts and account-backed communication preferences; no connected conversational model or voice engine exists yet.
 
 **Alpha has one identity, but learns how to communicate with each person as an individual.** Alpha is the product; modules are capabilities. Preserve a truthful, curious, independent-minded, adaptable, warm, witty and dependable identity. Loyalty means protecting the user's interests/privacy and challenging mistakes, while supporting independence and real-world relationships. Do not pretend to be human, conscious or emotionally dependent on the user.
 
@@ -49,3 +49,7 @@ White Wolf visual identity should support actual real-time listening/thinking/sp
 5. Evaluate character consistency across sarcastic, gentle, professional and faith-conscious adults. Include sensitive-topic discussion versus harmful-action assistance, non-mirroring disagreement, profanity preference corrections, distress-aware tone, professional factual integrity and child-appropriate behaviour. Use behavioural evaluations with actual provider responses; static metadata or schema tests do not establish model compliance.
 
 The shared contract and mobile rule label are implementation foundations only. No arbitrary topic classifier or keyword blacklist is introduced. Live personality, persistent preferences, room privacy, voice and behavioural compliance remain unverified until the corresponding services and evaluations exist.
+
+## Current implementation increment
+
+Communication Agreement is now stored per authenticated user through GET/PUT/DELETE /v1/settings/communication and edited in mobile account settings. Defaults are used when no record is saved. Reset removes stored preferences. The additive UserProfile JSONB migration preserves other account fields. This supersedes earlier persistence limitations above for these explicit preference fields only; automatic learning, conversation memory, voice and shared-room services remain absent. See the evidence register for the 27-test API e2e validation.

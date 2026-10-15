@@ -49,3 +49,7 @@ Core specification: ALPHA-PERSONALITY-PRESENCE-SPECIFICATION.md. Shared conversa
 ## Arcade update — 15 October 2026
 
 Moon Dice: local React Native game implemented in Play with five dice, holds, three-roll limit, 13-category scoring, rules-based Alpha turns, totals/winner and rematch. No persistence/network/rewards. Five new engine tests include a complete match. Five video references are mapped in ARCADE-REFERENCE-AND-DELIVERY.md. Other referenced game types and native visual polish remain pending.
+
+## Implemented increment: account-backed Alpha preferences
+
+Communication Agreement now has authenticated read/save/reset API, nullable profile persistence and a mobile editor under account settings. Home reads the saved name, humour and voice preference. Persisted values and cross-account isolation validated through API e2e. This supersedes the earlier “static defaults only” status for editable preferences, but does not implement live AI, voice, automatic preference learning or memory retrieval. See WINDOWS-DEVELOPMENT.md for laptop startup.

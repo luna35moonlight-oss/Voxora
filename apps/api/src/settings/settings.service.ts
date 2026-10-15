@@ -1,3 +1,9 @@
+import {
+  CommunicationAgreementSchema,
+  defaultCommunicationAgreement,
+  type CommunicationAgreement,
+} from '@voxora/contracts';
+import { Prisma } from '@prisma/client';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RbacService } from '../rbac/rbac.service';
@@ -15,6 +21,44 @@ export class SettingsService {
     private readonly entitlements: EntitlementsService,
     private readonly onboarding: OnboardingService,
   ) {}
+
+  async getCommunication(userId: string) {
+    const profile = await this.prisma.userProfile.findUnique({
+      where: { userId },
+      select: { communicationAgreement: true },
+    });
+    return {
+      agreement: CommunicationAgreementSchema.parse(
+        profile?.communicationAgreement ?? defaultCommunicationAgreement,
+      ),
+      saved: profile?.communicationAgreement != null,
+    };
+  }
+
+  async saveCommunication(userId: string, agreement: CommunicationAgreement) {
+    const validated = CommunicationAgreementSchema.parse(agreement);
+    const profile = await this.prisma.userProfile.upsert({
+      where: { userId },
+      create: { userId, communicationAgreement: validated },
+      update: { communicationAgreement: validated },
+      select: { communicationAgreement: true },
+    });
+    return {
+      agreement: CommunicationAgreementSchema.parse(profile.communicationAgreement),
+      saved: true,
+    };
+  }
+
+  async resetCommunication(userId: string) {
+    await this.prisma.userProfile.updateMany({
+      where: { userId },
+      data: { communicationAgreement: Prisma.DbNull },
+    });
+    return {
+      agreement: CommunicationAgreementSchema.parse(defaultCommunicationAgreement),
+      saved: false,
+    };
+  }
 
   async getSettings(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });

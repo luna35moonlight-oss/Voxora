@@ -24,3 +24,15 @@ export const CommunicationAgreementSchema = z.strictObject({
   personalBoundaries: z.array(z.string().trim().min(1).max(240)).max(30),
 });
 export type CommunicationAgreement = z.infer<typeof CommunicationAgreementSchema>;
+
+export const defaultCommunicationAgreement: CommunicationAgreement = {
+  buddyName: 'Alpha',
+  preferredAddress: '',
+  humour: 70,
+  sarcasm: 50,
+  profanity: 'none',
+  challengeStyle: 'balanced',
+  language: 'English',
+  voicePreference: 'Deep, warm and expressive',
+  personalBoundaries: [],
+};

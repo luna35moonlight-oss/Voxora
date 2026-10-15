@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
+import { CommunicationPreferences } from '../components/CommunicationPreferences';
 import { apiClient } from '../services/apiClient';
 import { secureSessionStore } from '../services/secureSessionStore';
 
@@ -42,6 +43,8 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
       </Text>
       <Text style={styles.title}>Account settings</Text>
       {error && <Text style={styles.error}>{error}</Text>}
+
+      <CommunicationPreferences />
 
       <Text style={styles.section}>Profile</Text>
       <Text style={styles.row}>Email: {String(account.email ?? '')}</Text>

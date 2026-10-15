@@ -141,6 +141,7 @@ model UserProfile {
   displayCurrency      String?
   phoneE164            String?
   phoneVerifiedAt      DateTime?
+  communicationAgreement Json?
   ageGateConfirmedAt   DateTime?
   ageGateRuleVersion   String?
   createdAt            DateTime   @default(now())

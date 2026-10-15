@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@voxora/design-system';
+import { defaultCommunicationAgreement, type CommunicationAgreement } from '@voxora/contracts';
+import { apiClient } from '../services/apiClient';
+import { secureSessionStore } from '../services/secureSessionStore';
 import { useAuth } from '../auth/AuthContext';
 import type { ConnectivityState } from '../hooks/useConnectivity';
 import { MoonDiceCard } from '../games/MoonDiceCard';
@@ -17,6 +20,28 @@ export function FoundationHomeScreen({
   const { user, signOut } = useAuth();
   const [space, setSpace] = useState<HomeSpace>('Buddy');
   const content = spaceDescriptions[space];
+  const [agreement, setAgreement] = useState<CommunicationAgreement>(defaultCommunicationAgreement);
+  const [preferenceStatus, setPreferenceStatus] = useState('Loading your preferences…');
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const access = await secureSessionStore.getAccessToken();
+        if (!access) throw new Error('No session');
+        const result = await apiClient.communicationAgreement(access);
+        if (!cancelled) {
+          setAgreement(result.agreement);
+          setPreferenceStatus(result.saved ? 'Your saved preferences' : 'Default preferences');
+        }
+      } catch {
+        if (!cancelled)
+          setPreferenceStatus('Preferences unavailable. Showing defaults; open settings to retry.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
@@ -54,19 +79,19 @@ export function FoundationHomeScreen({
         <Text style={styles.body}>{content.description}</Text>
         {space === 'Buddy' && (
           <>
-            <Text style={styles.label}>MEET {alphaProfile.name.toUpperCase()}</Text>
+            <Text style={styles.label}>MEET {agreement.buddyName.toUpperCase()}</Text>
             <Text style={styles.value}>Curious. Witty. Supportive. Comfortable disagreeing.</Text>
             <Text style={styles.meta}>
-              Humour {alphaProfile.humour}% · Independent judgement{' '}
-              {alphaProfile.independentJudgement}%
+              Humour {agreement.humour}% · Independent judgement {alphaProfile.independentJudgement}
+              %
             </Text>
             <Text style={styles.meta}>
-              {alphaProfile.conversationStyle} conversation · {alphaProfile.voice} voice preference
+              {alphaProfile.conversationStyle} conversation · {agreement.voicePreference} voice
+              preference
             </Text>
             <Text style={styles.meta}>{alphaProfile.rules.join(' · ')}</Text>
             <Text style={styles.notice}>
-              Design defaults, not an active AI connection. Voice and personality customisation are
-              planned.
+              {preferenceStatus}. No AI or voice provider is connected.
             </Text>
           </>
         )}

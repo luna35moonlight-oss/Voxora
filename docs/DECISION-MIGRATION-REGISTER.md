@@ -33,3 +33,7 @@ Owner explicitly removes predefined forbidden discussion topics. Adopt the exact
 ## Video-reference game decision — 15 October 2026
 
 Current request is to create games like the supplied clips. Treat the attached broad mobile development instruction as reference context, not a replacement task to implement/release the entire roadmap. Preserve existing changes and Moon Dash. Start with an original local dice-scorecard game, using a deterministic rules engine for outcomes and a rules-based opponent, not model-invented results. No commercial reference assets, paid progression or online multiplayer copied/added.
+
+## Implementation resumed — 15 October 2026
+
+User requests implementation from a Windows laptop. Prioritise durable, user-editable Alpha communication preferences before connecting model/voice services. Use an additive nullable profile JSONB column, preserve other profile fields and use authenticated owner ID only. Save is explicit; reset requires UI confirmation. Cloud validations do not imply Windows/device execution. Continue on voxora/alpha-home-and-arcade and push the tested increment for laptop use.

@@ -56,3 +56,7 @@ On your laptop, fetch origin and switch to `voxora/alpha-home-and-arcade` to con
 ## Meeting workflow slice
 
 See [Meeting and Ecosystem Specification](MEETING-AND-ECOSYSTEM-SPECIFICATION.md) for runnable transcript import/review commands and the remaining demonstration dependencies. Run `node --test scripts/integrations/*.test.mjs scripts/meetings/*.test.mjs` to exercise both local slices. Teams/Graph, transcription, AI minutes and email sending are not connected. Protect imported content/output as private; these CLIs do not upload it.
+
+## Windows implementation increment
+
+Use [Windows Development](WINDOWS-DEVELOPMENT.md) for PowerShell setup and the new account-backed Alpha preference editor. Prisma engine access and local migrations now pass in the cloud; API build, all 27 e2e tests and readiness have been verified. Earlier blocked-engine entries above describe the original onboarding state. This does not establish a real OAuth, model, voice or broker connection.

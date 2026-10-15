@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import type {
   AuthResponse,
+  CommunicationAgreement,
   CompleteWhiteWolfAttemptRequest,
   CompleteWhiteWolfAttemptResponse,
   CurrentAvatarResponse,
@@ -42,6 +43,21 @@ function auth(accessToken: string) {
 }
 
 export const apiClient = {
+  communicationAgreement: (accessToken: string) =>
+    request<{ agreement: CommunicationAgreement; saved: boolean }>('/settings/communication', {
+      headers: auth(accessToken),
+    }),
+  saveCommunicationAgreement: (accessToken: string, agreement: CommunicationAgreement) =>
+    request<{ agreement: CommunicationAgreement; saved: boolean }>('/settings/communication', {
+      method: 'PUT',
+      headers: auth(accessToken),
+      body: JSON.stringify(agreement),
+    }),
+  resetCommunicationAgreement: (accessToken: string) =>
+    request<{ agreement: CommunicationAgreement; saved: boolean }>('/settings/communication', {
+      method: 'DELETE',
+      headers: auth(accessToken),
+    }),
   health: () => request<{ status: string; service: string }>('/health'),
   register: (email: string, password: string) =>
     request<AuthResponse & { emailDeliveryStatus?: string; devVerificationToken?: string }>(
